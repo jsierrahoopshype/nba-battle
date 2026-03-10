@@ -1162,7 +1162,18 @@ function buildPlayersTab(){
           <input class="fi" style="flex:1;margin:0;font-size:11px;" value="${p.iconUrl||''}" oninput="DRAFT.roster[${i}].iconUrl=this.value" placeholder="Weapon image URL (optional)">
         </div>
       </div>
-      <div style="margin-top:6px;">
+      ${isCustom
+        ?`<div style="margin-top:6px;">
+        <label class="lbl">Photo</label>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <div id="cimgpv${i}" style="width:30px;height:30px;border-radius:50%;overflow:hidden;flex-shrink:0;border:2px solid ${p.customImg?p.color:'#1a1a30'};background:${p.bg};">${p.customImg?`<img src="${p.customImg}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'">`:''}
+          </div>
+          <input type="file" id="cimgfile${i}" accept="image/png,image/jpeg,image/gif,image/webp" style="display:none" onchange="handleFileUpload(${i},this)">
+          <button style="background:#1a1a30;color:#8af;border:1px solid #2a2a44;border-radius:4px;padding:4px 8px;cursor:pointer;font-size:11px;white-space:nowrap;" onclick="document.getElementById('cimgfile${i}').click()">Upload</button>
+          <button style="background:#1a1a30;color:#778;border:1px solid #2a2a44;border-radius:4px;padding:4px 8px;cursor:pointer;font-size:11px;" onclick="clearCustomImg(${i})">✕</button>
+        </div>
+      </div>`
+        :`<div style="margin-top:6px;">
         <label class="lbl">Custom Ball Image (overrides headshot)</label>
         <div style="display:flex;gap:6px;align-items:center;">
           <div id="cimgpv${i}" style="width:30px;height:30px;border-radius:50%;overflow:hidden;flex-shrink:0;border:2px solid ${p.customImg?p.color:'#1a1a30'};background:${p.bg};">${p.customImg?`<img src="${p.customImg}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'">`:''}
@@ -1172,17 +1183,33 @@ function buildPlayersTab(){
           <input class="fi" id="cimgurl${i}" style="flex:1;margin:0;font-size:11px;" value="${p.customImg&&!p.customImg.startsWith('data:')?p.customImg:''}" oninput="previewCustomImg(${i},this.value)" placeholder="Image URL…">
           <button style="background:#1a1a30;color:#778;border:1px solid #2a2a44;border-radius:4px;padding:4px 8px;cursor:pointer;font-size:11px;" onclick="clearCustomImg(${i})">✕</button>
         </div>
-      </div>
+      </div>`}
     </div>`;
   });
 
   if(DRAFT.roster.length<10){
     const dbCount = FULL_DB.length;
     const countLabel = FULL_DB_LOADED ? `<span style="font-size:10px;color:#3366aa;font-weight:400;margin-left:6px;">${dbCount} players available</span>` : '';
-    html+=`<div class="shd">Add Player${countLabel}</div>
+    html+=`<div class="shd">Add NBA Player${countLabel}</div>
     <input class="fi" id="psearch" placeholder="Search by name or team…" oninput="filterPP()" style="margin-bottom:6px">
     <div class="pplist" id="pplist">${buildPPList('')}</div>
-    <button class="addbtn" style="margin-top:8px;" onclick="addCustomP()">+ ADD CUSTOM PLAYER</button>`;
+    <div class="shd" style="margin-top:16px;">Add Custom Character</div>
+    <div class="pcard">
+      <div style="margin-bottom:8px;"><label class="lbl">Name (required)</label><input class="fi" id="ccName" style="margin:0" placeholder="Character name"></div>
+      <div style="margin-bottom:8px;"><label class="lbl">Upload Photo</label><input type="file" id="ccFile" accept="image/png,image/jpeg,image/webp" style="font-size:11px;color:#778;"></div>
+      <div class="pctrls">
+        <div>
+          <label>Win % (1–99)</label>
+          <input type="range" id="ccPct" min="1" max="99" value="20" oninput="document.getElementById('ccPctVal').textContent=this.value+'%'">
+        </div>
+        <div><label>Primary</label><input type="color" class="sw" id="ccColor" value="#ff6644"></div>
+        <div><label>BG</label><input type="color" class="sw" id="ccBg" value="#222244"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
+        <span class="pct-val" id="ccPctVal" style="font-size:16px;">20%</span>
+        <button class="addbtn" style="flex:1;margin:0;" onclick="addCustomFromForm()">+ ADD CHARACTER</button>
+      </div>
+    </div>`;
   }
   return html;
 }
@@ -1204,10 +1231,23 @@ function removeP(i){if(DRAFT.roster.length<=2){alert('Minimum 2 players');return
 function addP(id){if(DRAFT.roster.length>=10)return;const p=FULL_DB.find(p=>p.id===id);if(!p)return;DRAFT.roster.push({...p,winPct:20,icon:p.icon||'',iconUrl:'',customImg:''});renderTab('players');}
 
 let _customIdCounter=Date.now();
-function addCustomP(){
-  if(DRAFT.roster.length>=10)return;
-  DRAFT.roster.push({id:'custom_'+(++_customIdCounter),slug:'',name:'Custom Player',team:'',color:'#ff6644',bg:'#222244',winPct:20,icon:'',iconUrl:'',customImg:'',_custom:true});
-  renderTab('players');
+function addCustomFromForm(){
+  if(DRAFT.roster.length>=10){alert('Maximum 10 players');return;}
+  const name=(document.getElementById('ccName')?.value||'').trim();
+  if(!name){alert('Name is required');return;}
+  const pct=+(document.getElementById('ccPct')?.value||20);
+  const color=document.getElementById('ccColor')?.value||'#ff6644';
+  const bg=document.getElementById('ccBg')?.value||'#222244';
+  const file=document.getElementById('ccFile')?.files?.[0];
+  const addIt=(dataUrl)=>{
+    DRAFT.roster.push({id:'custom_'+(++_customIdCounter),slug:'',name,team:'',color,bg,winPct:pct,icon:'',iconUrl:'',customImg:dataUrl||'',_custom:true});
+    renderTab('players');
+  };
+  if(file){
+    const reader=new FileReader();
+    reader.onload=e=>addIt(e.target.result);
+    reader.readAsDataURL(file);
+  } else { addIt(''); }
 }
 
 function previewCustomImg(i,url){
