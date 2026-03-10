@@ -304,30 +304,47 @@ function traceArenaPath(shape, inset){
 }
 
 // Polygon wall collision: reflect ball off nearest edge if outside
-function polyWallCollide(ball, verts){
-  const n=verts.length, bx=ball.x, by=ball.y, br=ball.r;
+// Precompute edge normals for a shape (cached per shape string)
+const EDGE_NORMALS = {};
+function getEdgeNormals(shape, verts){
+  if(EDGE_NORMALS[shape]) return EDGE_NORMALS[shape];
+  const n=verts.length, edges=[];
   for(let i=0;i<n;i++){
     const v1=verts[i], v2=verts[(i+1)%n];
-    const ex=v2.x-v1.x, ey=v2.y-v1.y;
-    // Outward normal (pointing inward toward center)
-    let nx=-ey, ny=ex;
+    let nx=-(v2.y-v1.y), ny=v2.x-v1.x;
     const nl=Math.hypot(nx,ny);
     nx/=nl; ny/=nl;
-    // Ensure normal points inward (toward CX,CY)
     const mx=(v1.x+v2.x)/2, my=(v1.y+v2.y)/2;
     if(nx*(CX-mx)+ny*(CY-my)<0){nx=-nx;ny=-ny;}
-    // Distance from ball center to edge line
-    const dist = (bx-v1.x)*nx + (by-v1.y)*ny;
-    if(dist<br){
-      // Ball is too close to or past the edge
-      const dot = ball.vx*nx+ball.vy*ny;
-      if(dot<0){
-        ball.vx -= 2*dot*nx;
-        ball.vy -= 2*dot*ny;
+    edges.push({v1,v2,nx,ny});
+  }
+  EDGE_NORMALS[shape]=edges;
+  return edges;
+}
+
+function polyWallCollide(ball, verts){
+  const shape=CFG.arenaShape||'circle';
+  const edges=getEdgeNormals(shape,verts);
+  const br=ball.r;
+  // Multiple passes to handle corners and high-speed overshoots
+  for(let pass=0;pass<3;pass++){
+    let pushed=false;
+    for(let i=0;i<edges.length;i++){
+      const {v1,nx,ny}=edges[i];
+      // Use live ball position each iteration
+      const dist=(ball.x-v1.x)*nx+(ball.y-v1.y)*ny;
+      if(dist<br){
+        const dot=ball.vx*nx+ball.vy*ny;
+        if(dot<0){
+          ball.vx-=2*dot*nx;
+          ball.vy-=2*dot*ny;
+        }
+        ball.x+=nx*(br-dist);
+        ball.y+=ny*(br-dist);
+        pushed=true;
       }
-      ball.x += nx*(br-dist);
-      ball.y += ny*(br-dist);
     }
+    if(!pushed) break;
   }
 }
 
@@ -363,6 +380,8 @@ function initGame(){
   N = CFG.roster.length;
   CX = W/2; CY = H*0.468; AR = 218;
   BR = Math.max(24, Math.min(46, Math.floor(AR/(N*1.28))));
+  // Clear cached edge normals (depend on CX/CY/AR)
+  Object.keys(EDGE_NORMALS).forEach(k=>delete EDGE_NORMALS[k]);
   eliminated = Array(N).fill(false);
   aliveCnt = N;
   flash = null; particles = []; dmgNums = [];
@@ -771,6 +790,8 @@ function drawArenaFloor(){
   ctx.save();
   traceArenaPath(shape,1);
   ctx.clip();
+  // Re-trace to fill (clip may consume the path in some browsers)
+  traceArenaPath(shape,1);
   ctx.fillStyle='#040416';ctx.fill();
   ctx.strokeStyle='rgba(255,255,255,.02)';ctx.lineWidth=1;
   [.28,.56,.84].forEach(t=>{ctx.beginPath();ctx.arc(CX,CY,AR*t,0,Math.PI*2);ctx.stroke();});
