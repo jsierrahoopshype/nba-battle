@@ -378,8 +378,8 @@ function startGame(){
 
 function initGame(){
   N = CFG.roster.length;
-  CX = W/2; CY = H*0.468; AR = 218;
-  BR = Math.max(24, Math.min(46, Math.floor(AR/(N*1.28))));
+  CX = W/2; CY = H*0.468; AR = 260;
+  BR = Math.max(18, Math.min(36, Math.floor(AR/(N*1.5))));
   // Clear cached edge normals (depend on CX/CY/AR)
   Object.keys(EDGE_NORMALS).forEach(k=>delete EDGE_NORMALS[k]);
   eliminated = Array(N).fill(false);
@@ -569,8 +569,8 @@ class Ball {
         if(this.atkF>0){ctx.beginPath();ctx.arc(ix,iy,imgSz,0,Math.PI*2);ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.shadowColor='#fff';ctx.shadowBlur=14;ctx.stroke();ctx.shadowBlur=0;}
       } else if(pIcon){
         // Orbiting emoji
-        const orbitR = this.r*1.8;
-        const fontSize = this.r*1.1;
+        const orbitR = this.r*1.5;
+        const fontSize = this.r*0.55;
         const ix = this.x+Math.cos(this.bladeAngle)*orbitR;
         const iy = this.y+Math.sin(this.bladeAngle)*orbitR;
         ctx.save();
