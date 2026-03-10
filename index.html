@@ -351,6 +351,7 @@ let phase; // 'loading'|'intro'|'fight'|'end'
 let phaseT;
 let flash, particles, dmgNums, screenShake;
 let endWinner;
+let speedMultiplier;
 
 function pickRoundDur(){
   return CFG.roundMinSec + Math.random()*(CFG.roundMaxSec-CFG.roundMinSec);
@@ -376,6 +377,7 @@ function initGame(){
   flash = null; particles = []; dmgNums = [];
   screenShake = {x:0, y:0, mag:0};
   endWinner = -1;
+  speedMultiplier = 1.0;
   roundDur = pickRoundDur();
   timerAcc = 0;
   roundTimer = roundDur;
@@ -393,7 +395,7 @@ class Ball {
     this.idx = idx;
     this.p   = CFG.roster[idx];
     this.sf  = sf; // strength factor
-    this.maxHP = Math.round(82*(0.6+sf*0.4));
+    this.maxHP = 82;
     this.hp    = this.maxHP;
     this.r     = BR; this.baseR = BR;
 
@@ -452,7 +454,7 @@ class Ball {
 
     this.trail.push({x:this.x,y:this.y});
     if(this.trail.length>14) this.trail.shift();
-    this.x+=this.vx; this.y+=this.vy;
+    this.x+=this.vx*speedMultiplier; this.y+=this.vy*speedMultiplier;
 
     // Arena wall
     const dx=this.x-CX,dy=this.y-CY,dist=Math.hypot(dx,dy),wall=AR-this.r;
@@ -508,7 +510,7 @@ class Ball {
     ctx.shadowBlur=this.atkF>0?24:10;
     ctx.stroke();ctx.shadowBlur=0;
 
-    // HP arc
+    // Energy arc
     if(!this.dead){
       const hf=this.hp/this.maxHP;
       const rOut=this.r+6;
@@ -633,18 +635,6 @@ function triggerEnd(){
          color:endWinner>=0?CFG.roster[endWinner].color:'#fff',t:performance.now()};
 }
 
-// Timer elimination
-function timerElim(){
-  const alive=balls.map((b,i)=>({b,i})).filter(({b,i})=>!eliminated[i]&&b.alive);
-  if(alive.length<=1) return;
-  alive.sort((a,z)=>(a.b.hp/a.b.maxHP)-(z.b.hp/z.b.maxHP));
-  const loser=alive[0];
-  flash={text:`TIME! ${CFG.roster[loser.i].team} ${CFG.elimMsg}`,color:CFG.roster[loser.i].color,t:performance.now()};
-  loser.b.die();
-  // Reset timer for next interval
-  roundDur=pickRoundDur();
-  timerAcc=0; roundTimer=roundDur;
-}
 
 // ════════════════════════════ MAIN LOOP ════════════════════════════
 let lastT=performance.now();
@@ -666,7 +656,12 @@ function loop(now){
   if(phase==='fight'){
     timerAcc+=dt;
     roundTimer=Math.max(0,roundDur-timerAcc);
-    if(roundTimer<=0) timerElim();
+    // When timer expires, ramp up speed and reset timer
+    if(roundTimer<=0){
+      speedMultiplier=Math.min(speedMultiplier+0.25, 3.0);
+      roundDur=pickRoundDur();
+      timerAcc=0; roundTimer=roundDur;
+    }
     balls.forEach(b=>b.update());
     physicsStep();
     updateFX(dt);
@@ -746,26 +741,6 @@ function drawHUD(now){
   ctx.fillText(CFG.subtitle,CX,ty+CFG.title.length*lh+3);
   ctx.restore();
 
-  // Countdown timer
-  if(phase==='fight'){
-    const secs=Math.ceil(roundTimer);
-    const urgent=secs<=10;
-    const pulse=urgent?(0.65+Math.sin(now/130)*.35):1;
-    ctx.save();
-    ctx.font=`900 ${W*.11}px 'Bebas Neue',sans-serif`;
-    ctx.textAlign='center';ctx.textBaseline='middle';
-    // Background circle
-    ctx.beginPath();ctx.arc(CX,CY-AR-48,W*.072,0,Math.PI*2);
-    ctx.fillStyle=urgent?`rgba(80,0,0,${pulse*.7})`:'rgba(0,0,20,.7)';ctx.fill();
-    ctx.strokeStyle=urgent?`rgba(255,60,60,${pulse})`:'rgba(80,120,220,.5)';
-    ctx.lineWidth=2;ctx.stroke();
-    // Number
-    ctx.fillStyle=urgent?`rgba(255,60,60,${pulse})`:'rgba(200,220,255,.85)';
-    ctx.shadowColor=urgent?'#ff3333':'rgba(100,150,255,.5)';ctx.shadowBlur=urgent?30:12;
-    ctx.fillText(secs,CX,CY-AR-47);
-    ctx.shadowBlur=0;ctx.restore();
-  }
-
   // Score panel
   drawPanel();
 }
@@ -804,7 +779,7 @@ function drawPanel(){
     ctx.textAlign='center';ctx.textBaseline='middle';
     ctx.fillText(wObj?wObj.emoji:'⚔️',sx,ty+tr+9);
 
-    // HP bar
+    // Energy bar
     const bw=sw*.76,bh=5,bx=sx-bw/2,bby=py+36+Math.max(9,sw*.19)+5;
     if(!dead){
       const hf=b.hp/b.maxHP;
@@ -989,7 +964,7 @@ function renderTab(t){
 
 // ── PLAYERS ──
 function buildPlayersTab(){
-  let html=`<div style="font-size:11px;color:#334;margin-bottom:10px;line-height:1.5;">Win % sets strength, HP, speed, and damage. Higher % = stronger fighter. Weapon is cosmetic.</div>`;
+  let html=`<div style="font-size:11px;color:#334;margin-bottom:10px;line-height:1.5;">Win % sets strength, speed, and damage. Higher % = stronger fighter. All players start with 82 energy. Weapon is cosmetic.</div>`;
   DRAFT.roster.forEach((p,i)=>{
     const wObj=WEAPONS.find(w=>w.id===p.weapon)||WEAPONS[0];
     html+=`<div class="pcard">
@@ -1049,7 +1024,7 @@ function addP(id){if(DRAFT.roster.length>=10)return;const p=PDATA.find(p=>p.id==
 function buildGameTab(){
   return`
     <div class="shd">Round Timer</div>
-    <p style="font-size:11px;color:#336;line-height:1.5;margin-bottom:10px;">Each round lasts a random time between Min and Max. When the timer hits 0, the player with the lowest HP is eliminated. This repeats until only one player stands.</p>
+    <p style="font-size:11px;color:#336;line-height:1.5;margin-bottom:10px;">Ball speed gradually ramps up over time. Each phase lasts a random time between Min and Max seconds before the next speed increase. Players are eliminated only when their energy reaches 0.</p>
     <div class="r2">
       <div><label class="lbl">Min seconds (10–80)</label><input id="gtmin" class="fi" type="number" min="10" max="80" value="${DRAFT.roundMinSec}"></div>
       <div><label class="lbl">Max seconds (20–90)</label><input id="gtmax" class="fi" type="number" min="20" max="90" value="${DRAFT.roundMaxSec}"></div>
