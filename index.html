@@ -147,11 +147,11 @@ const WEAPONS = [
 // ════════════════════════════ CONFIG ════════════════════════════
 let CFG = {
   roster: [
-    {...PDATA[0], winPct:35, icon:PDATA[0].icon, iconUrl:''},
-    {...PDATA[1], winPct:30, icon:PDATA[1].icon, iconUrl:''},
-    {...PDATA[2], winPct:10, icon:PDATA[2].icon, iconUrl:''},
-    {...PDATA[3], winPct:15, icon:PDATA[3].icon, iconUrl:''},
-    {...PDATA[4], winPct:10, icon:PDATA[4].icon, iconUrl:''},
+    {...PDATA[0], winPct:35, icon:PDATA[0].icon, iconUrl:'', customImg:''},
+    {...PDATA[1], winPct:30, icon:PDATA[1].icon, iconUrl:'', customImg:''},
+    {...PDATA[2], winPct:10, icon:PDATA[2].icon, iconUrl:'', customImg:''},
+    {...PDATA[3], winPct:15, icon:PDATA[3].icon, iconUrl:'', customImg:''},
+    {...PDATA[4], winPct:10, icon:PDATA[4].icon, iconUrl:'', customImg:''},
   ],
   roundMinSec: 45,
   roundMaxSec: 90,
@@ -200,14 +200,16 @@ function loadImages(roster, cb){
 // Pre-render circular face to offscreen canvas (avoids CORS taint issues on repeated draws)
 const FACE_CACHE = {};
 function getFace(p, r){
-  const key = p.id+'_'+Math.round(r);
-  if(FACE_CACHE[key]) return FACE_CACHE[key];
+  const ckey = p.customImg ? 'c_'+p.customImg+'_'+Math.round(r) : p.id+'_'+Math.round(r);
+  if(FACE_CACHE[ckey]) return FACE_CACHE[ckey];
   const sz = r*2;
   const oc = document.createElement('canvas'); oc.width=sz; oc.height=sz;
   const c = oc.getContext('2d');
   c.beginPath(); c.arc(r,r,r,0,Math.PI*2); c.clip();
   c.fillStyle = p.bg; c.fillRect(0,0,sz,sz);
-  const img = IMGS[p.id];
+  // Use custom image if available, otherwise NBA headshot
+  const img = (p.customImg && CUSTOM_IMGS[p.customImg] && CUSTOM_IMGS[p.customImg]!=='loading')
+    ? CUSTOM_IMGS[p.customImg] : IMGS[p.id];
   if(img){
     try{
       const aw=img.naturalWidth, ah=img.naturalHeight;
@@ -216,7 +218,7 @@ function getFace(p, r){
       c.drawImage(img, (sz-dw)/2, (sz-dh)/2, dw, dh);
     }catch(e){}
   }
-  FACE_CACHE[key] = oc;
+  FACE_CACHE[ckey] = oc;
   return oc;
 }
 function clearFaceCache(){ Object.keys(FACE_CACHE).forEach(k=>delete FACE_CACHE[k]); }
@@ -232,6 +234,19 @@ function loadIconImg(url){
   ICON_IMGS[url] = 'loading';
   img.src = url;
   return null;
+}
+
+// Custom ball image cache
+const CUSTOM_IMGS = {};
+function loadCustomImg(url, cb){
+  if(!url) return;
+  if(CUSTOM_IMGS[url] && CUSTOM_IMGS[url]!=='loading') { if(cb) cb(); return; }
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = ()=>{ CUSTOM_IMGS[url]=img; if(cb) cb(); };
+  img.onerror = ()=>{ CUSTOM_IMGS[url]=null; if(cb) cb(); };
+  CUSTOM_IMGS[url] = 'loading';
+  img.src = url;
 }
 
 // ════════════════════════════ HELPERS ════════════════════════════
@@ -368,12 +383,19 @@ function startGame(){
   clearFaceCache();
   // Preload any icon URL images
   CFG.roster.forEach(p=>{ if(p.iconUrl) loadIconImg(p.iconUrl); });
-  loadImages(CFG.roster, ()=>{
-    clearFaceCache();
-    initGame();
-    phase = 'intro';
-    phaseT = performance.now();
-  });
+  // Preload custom ball images
+  const customUrls = CFG.roster.filter(p=>p.customImg).map(p=>p.customImg);
+  let customPending = customUrls.length;
+  const onCustomDone = ()=>{
+    loadImages(CFG.roster, ()=>{
+      clearFaceCache();
+      initGame();
+      phase = 'intro';
+      phaseT = performance.now();
+    });
+  };
+  if(customPending===0){ onCustomDone(); return; }
+  customUrls.forEach(url=>loadCustomImg(url, ()=>{ customPending--; if(customPending===0) onCustomDone(); }));
 }
 
 function initGame(){
@@ -904,7 +926,8 @@ function drawPanel(){
     // Thumb
     const tr=14, ty=py+16;
     ctx.save();ctx.beginPath();ctx.arc(sx,ty,tr,0,Math.PI*2);ctx.clip();
-    const img=IMGS[p.id];
+    const cimg=(p.customImg&&CUSTOM_IMGS[p.customImg]&&CUSTOM_IMGS[p.customImg]!=='loading')?CUSTOM_IMGS[p.customImg]:null;
+    const img=cimg||IMGS[p.id];
     if(img){
       try{
         const asp=img.naturalWidth/img.naturalHeight,dw=tr*2.1,dh=dw/asp;
@@ -990,7 +1013,7 @@ function drawEndScreen(now){
   if(t>.2&&endWinner>=0){
     const t2=(t-.2)/.8, p=CFG.roster[endWinner];
     ctx.globalAlpha=t2;
-    const bigR=105, img=IMGS[p.id];
+    const bigR=105, cImg=(p.customImg&&CUSTOM_IMGS[p.customImg]&&CUSTOM_IMGS[p.customImg]!=='loading')?CUSTOM_IMGS[p.customImg]:null, img=cImg||IMGS[p.id];
     ctx.save();ctx.beginPath();ctx.arc(CX,H/2-85,bigR,0,Math.PI*2);
     ctx.fillStyle=p.bg;ctx.fill();ctx.clip();
     if(img){
@@ -1116,11 +1139,17 @@ function renderTab(t){
 function buildPlayersTab(){
   let html=`<div style="font-size:11px;color:#334;margin-bottom:10px;line-height:1.5;">Win % sets strength, speed, and damage. Higher % = stronger fighter. All players start with 82 energy. Set an emoji or image URL as weapon — leave blank for razor ring.</div>`;
   DRAFT.roster.forEach((p,i)=>{
+    const isCustom = p._custom;
+    const faceSrc = p.customImg || (p.slug ? `${BASE}${p.slug}.png` : '');
+    const faceErr = p.slug ? `this.src='${NBA_CDN}${p.id}.png'` : `this.style.display='none'`;
     html+=`<div class="pcard">
       <button class="del" onclick="removeP(${i})">✕</button>
       <div class="prow">
-        <div class="pface"><img src="${BASE}${p.slug}.png" onerror="this.src='${NBA_CDN}${p.id}.png'"></div>
-        <div class="pinfo"><div class="pname">${p.name}</div><div class="psub">${p.team}</div></div>
+        <div class="pface">${faceSrc?`<img src="${faceSrc}" onerror="${faceErr}">`:`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:18px;color:#334;">?</div>`}</div>
+        <div class="pinfo">${isCustom
+          ?`<input class="fi" style="margin:0 0 3px;padding:4px 6px;font-size:13px;font-weight:700;" value="${p.name}" oninput="DRAFT.roster[${i}].name=this.value" placeholder="Name">
+            <input class="fi" style="margin:0;padding:3px 6px;font-size:11px;" value="${p.team}" oninput="DRAFT.roster[${i}].team=this.value" placeholder="Team / label (optional)">`
+          :`<div class="pname">${p.name}</div><div class="psub">${p.team}</div>`}</div>
         <div style="text-align:right;"><div style="font-size:9px;color:#334;text-transform:uppercase;letter-spacing:.8px;">Win %</div>
         <div class="pct-val" id="pv${i}">${p.winPct||10}%</div></div>
       </div>
@@ -1133,11 +1162,20 @@ function buildPlayersTab(){
         <div><label>BG</label><input type="color" class="sw" value="${p.bg}" oninput="DRAFT.roster[${i}].bg=this.value"></div>
       </div>
       <div style="margin-top:8px;">
-        <label class="lbl">Weapon (emoji or image URL — leave blank for razor ring)</label>
+        <label class="lbl">Weapon (emoji or image URL — leave blank for saw blade)</label>
         <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
           <input class="fi" style="width:60px;margin:0;text-align:center;font-size:18px;" value="${p.icon||''}" oninput="DRAFT.roster[${i}].icon=this.value" placeholder="🔪">
           <button style="background:#1a1a30;color:#778;border:1px solid #2a2a44;border-radius:4px;padding:4px 8px;cursor:pointer;font-size:11px;" onclick="DRAFT.roster[${i}].icon='';this.previousElementSibling.value=''">✕</button>
-          <input class="fi" style="flex:1;margin:0;font-size:11px;" value="${p.iconUrl||''}" oninput="DRAFT.roster[${i}].iconUrl=this.value" placeholder="Image URL (optional)">
+          <input class="fi" style="flex:1;margin:0;font-size:11px;" value="${p.iconUrl||''}" oninput="DRAFT.roster[${i}].iconUrl=this.value" placeholder="Weapon image URL (optional)">
+        </div>
+      </div>
+      <div style="margin-top:6px;">
+        <label class="lbl">Custom Ball Image (URL — overrides headshot)</label>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <div id="cimgpv${i}" style="width:30px;height:30px;border-radius:50%;overflow:hidden;flex-shrink:0;border:2px solid ${p.customImg?p.color:'#1a1a30'};background:${p.bg};">${p.customImg?`<img src="${p.customImg}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'">`:''}
+          </div>
+          <input class="fi" style="flex:1;margin:0;font-size:11px;" value="${p.customImg||''}" oninput="previewCustomImg(${i},this.value)" placeholder="Paste image URL…">
+          <button style="background:#1a1a30;color:#778;border:1px solid #2a2a44;border-radius:4px;padding:4px 8px;cursor:pointer;font-size:11px;" onclick="clearCustomImg(${i})">✕</button>
         </div>
       </div>
     </div>`;
@@ -1145,8 +1183,9 @@ function buildPlayersTab(){
 
   if(DRAFT.roster.length<10){
     html+=`<div class="shd">Add Player</div>
-    <input class="fi" id="psearch" placeholder="Search player…" oninput="filterPP()" style="margin-bottom:6px">
-    <div class="pplist" id="pplist">${buildPPList('')}</div>`;
+    <input class="fi" id="psearch" placeholder="Search NBA player…" oninput="filterPP()" style="margin-bottom:6px">
+    <div class="pplist" id="pplist">${buildPPList('')}</div>
+    <button class="addbtn" style="margin-top:8px;" onclick="addCustomP()">+ ADD CUSTOM PLAYER</button>`;
   }
   return html;
 }
@@ -1164,7 +1203,36 @@ function buildPPList(q){
 function filterPP(){const q=document.getElementById('psearch')?.value||'';const el=document.getElementById('pplist');if(el)el.innerHTML=buildPPList(q);}
 function setPct(i,v){DRAFT.roster[i].winPct=+v;const el=document.getElementById('pv'+i);if(el)el.textContent=v+'%';}
 function removeP(i){if(DRAFT.roster.length<=2){alert('Minimum 2 players');return;}DRAFT.roster.splice(i,1);renderTab('players');}
-function addP(id){if(DRAFT.roster.length>=10)return;const p=PDATA.find(p=>p.id===id);if(!p)return;DRAFT.roster.push({...p,winPct:20,icon:p.icon||'',iconUrl:''});renderTab('players');}
+function addP(id){if(DRAFT.roster.length>=10)return;const p=PDATA.find(p=>p.id===id);if(!p)return;DRAFT.roster.push({...p,winPct:20,icon:p.icon||'',iconUrl:'',customImg:''});renderTab('players');}
+
+let _customIdCounter=Date.now();
+function addCustomP(){
+  if(DRAFT.roster.length>=10)return;
+  DRAFT.roster.push({id:'custom_'+(++_customIdCounter),slug:'',name:'Custom Player',team:'',color:'#ff6644',bg:'#222244',winPct:20,icon:'',iconUrl:'',customImg:'',_custom:true});
+  renderTab('players');
+}
+
+function previewCustomImg(i,url){
+  DRAFT.roster[i].customImg=url;
+  const pv=document.getElementById('cimgpv'+i);
+  if(!pv)return;
+  if(url){
+    pv.style.borderColor=DRAFT.roster[i].color;
+    pv.innerHTML=`<img src="${url}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'">`;
+  } else {
+    pv.style.borderColor='#1a1a30';
+    pv.innerHTML='';
+  }
+}
+
+function clearCustomImg(i){
+  DRAFT.roster[i].customImg='';
+  const pv=document.getElementById('cimgpv'+i);
+  if(pv){pv.style.borderColor='#1a1a30';pv.innerHTML='';}
+  // Also clear the text input (sibling before the clear button)
+  const inputs=document.querySelectorAll(`#cimgpv${i}`);
+  if(inputs[0]){const inp=inputs[0].nextElementSibling;if(inp&&inp.tagName==='INPUT')inp.value='';}
+}
 
 // ── GAME ──
 function buildGameTab(){
