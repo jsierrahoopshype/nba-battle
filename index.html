@@ -212,7 +212,7 @@ function getFace(p, r){
       const aw=img.naturalWidth, ah=img.naturalHeight;
       const scale = (sz*1.05)/Math.min(aw,ah);
       const dw=aw*scale, dh=ah*scale;
-      c.drawImage(img, (sz-dw)/2, sz*0.04-dh*0.18, dw, dh);
+      c.drawImage(img, (sz-dw)/2, (sz-dh)/2, dw, dh);
     }catch(e){}
   }
   FACE_CACHE[key] = oc;
@@ -870,7 +870,7 @@ function drawEndScreen(now){
     ctx.save();ctx.beginPath();ctx.arc(CX,H/2-85,bigR,0,Math.PI*2);
     ctx.fillStyle=p.bg;ctx.fill();ctx.clip();
     if(img){
-      try{const a=img.naturalWidth/img.naturalHeight,dw=bigR*2.2,dh=dw/a;ctx.drawImage(img,CX-dw/2,H/2-85-dh*.9,dw,dh);}catch(e){}
+      try{const a=img.naturalWidth/img.naturalHeight,dw=bigR*2.2,dh=dw/a;ctx.drawImage(img,CX-dw/2,H/2-85-dh/2,dw,dh);}catch(e){}
     } ctx.restore();
     ctx.beginPath();ctx.arc(CX,H/2-85,bigR,0,Math.PI*2);
     ctx.strokeStyle=p.color;ctx.lineWidth=6;ctx.shadowColor=p.color;ctx.shadowBlur=55;ctx.stroke();ctx.shadowBlur=0;
