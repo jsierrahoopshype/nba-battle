@@ -1157,11 +1157,13 @@ function buildPlayersTab(){
         </div>
       </div>
       <div style="margin-top:6px;">
-        <label class="lbl">Custom Ball Image (URL — overrides headshot)</label>
+        <label class="lbl">Custom Ball Image (overrides headshot)</label>
         <div style="display:flex;gap:6px;align-items:center;">
           <div id="cimgpv${i}" style="width:30px;height:30px;border-radius:50%;overflow:hidden;flex-shrink:0;border:2px solid ${p.customImg?p.color:'#1a1a30'};background:${p.bg};">${p.customImg?`<img src="${p.customImg}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'">`:''}
           </div>
-          <input class="fi" style="flex:1;margin:0;font-size:11px;" value="${p.customImg||''}" oninput="previewCustomImg(${i},this.value)" placeholder="Paste image URL…">
+          <input type="file" id="cimgfile${i}" accept="image/png,image/jpeg,image/gif,image/webp" style="display:none" onchange="handleFileUpload(${i},this)">
+          <button style="background:#1a1a30;color:#8af;border:1px solid #2a2a44;border-radius:4px;padding:4px 8px;cursor:pointer;font-size:11px;white-space:nowrap;" onclick="document.getElementById('cimgfile${i}').click()">Upload</button>
+          <input class="fi" id="cimgurl${i}" style="flex:1;margin:0;font-size:11px;" value="${p.customImg&&!p.customImg.startsWith('data:')?p.customImg:''}" oninput="previewCustomImg(${i},this.value)" placeholder="Image URL…">
           <button style="background:#1a1a30;color:#778;border:1px solid #2a2a44;border-radius:4px;padding:4px 8px;cursor:pointer;font-size:11px;" onclick="clearCustomImg(${i})">✕</button>
         </div>
       </div>
@@ -1209,19 +1211,49 @@ function previewCustomImg(i,url){
   if(url){
     pv.style.borderColor=DRAFT.roster[i].color;
     pv.innerHTML=`<img src="${url}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'">`;
+    // Also update pface header
+    const pface=pv.closest('.pcard')?.querySelector('.pface');
+    if(pface) pface.innerHTML=`<img src="${url}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'">`;
   } else {
     pv.style.borderColor='#1a1a30';
     pv.innerHTML='';
   }
+  // Clear file input since URL takes priority
+  const fileInput=document.getElementById('cimgfile'+i);
+  if(fileInput) fileInput.value='';
 }
 
 function clearCustomImg(i){
   DRAFT.roster[i].customImg='';
   const pv=document.getElementById('cimgpv'+i);
   if(pv){pv.style.borderColor='#1a1a30';pv.innerHTML='';}
-  // Also clear the text input (sibling before the clear button)
-  const inputs=document.querySelectorAll(`#cimgpv${i}`);
-  if(inputs[0]){const inp=inputs[0].nextElementSibling;if(inp&&inp.tagName==='INPUT')inp.value='';}
+  const urlInput=document.getElementById('cimgurl'+i);
+  if(urlInput) urlInput.value='';
+  const fileInput=document.getElementById('cimgfile'+i);
+  if(fileInput) fileInput.value='';
+}
+
+function handleFileUpload(i,input){
+  const file=input.files&&input.files[0];
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const dataUrl=e.target.result;
+    DRAFT.roster[i].customImg=dataUrl;
+    // Update preview circle
+    const pv=document.getElementById('cimgpv'+i);
+    if(pv){
+      pv.style.borderColor=DRAFT.roster[i].color;
+      pv.innerHTML=`<img src="${dataUrl}" style="width:100%;height:100%;object-fit:cover;">`;
+    }
+    // Clear URL field since file upload takes priority
+    const urlInput=document.getElementById('cimgurl'+i);
+    if(urlInput) urlInput.value='';
+    // Also update the pface header image
+    const pface=pv?.closest('.pcard')?.querySelector('.pface');
+    if(pface) pface.innerHTML=`<img src="${dataUrl}" style="width:100%;height:100%;object-fit:cover;">`;
+  };
+  reader.readAsDataURL(file);
 }
 
 // ── GAME ──
