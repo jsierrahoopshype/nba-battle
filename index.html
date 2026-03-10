@@ -425,7 +425,8 @@ class Ball {
     this.dead  = false; this.deadT = 0;
     this.hitF  = 0; // hit flash frames
     this.atkF  = 0; // attack flash frames
-    this.bladeAngle = Math.random()*Math.PI*2; // razor ring rotation
+    this.bladeAngle = Math.random()*Math.PI*2; // saw blade rotation
+    this.sawBoostF = 0; // frames of 3x spin boost after collision
   }
 
   get alive(){ return !this.dead && this.hp>0; }
@@ -461,9 +462,15 @@ class Ball {
     }
     if(this.hitF>0) this.hitF--;
     if(this.atkF>0) this.atkF--;
-    // Weapon orbit spin (slower for emoji/image, faster for razor ring)
+    if(this.sawBoostF>0) this.sawBoostF--;
+    // Weapon orbit spin (slower for emoji/image, saw blade for fallback)
     const hasIcon = this.p.icon || this.p.iconUrl;
-    this.bladeAngle += hasIcon ? 0.02 : (endgameBoost>1 ? 0.09 : 0.04);
+    if(hasIcon){
+      this.bladeAngle += 0.02;
+    } else {
+      const sawBase = endgameBoost>1 ? 0.14 : 0.06;
+      this.bladeAngle += this.sawBoostF>0 ? sawBase*3 : sawBase;
+    }
 
     this.trail.push({x:this.x,y:this.y});
     if(this.trail.length>14) this.trail.shift();
@@ -574,33 +581,72 @@ class Ball {
         ctx.shadowBlur=0;
         ctx.restore();
       } else {
-        // RAZOR RING — 8 sharp blades orbiting the ball
-        const bladeN=8, orbitR=this.r+4, bladeLen=this.r*.55, bladeW=this.r*.18;
-        const flash=this.atkF>0;
-        for(let k=0;k<bladeN;k++){
-          const ba=this.bladeAngle+(k/bladeN)*Math.PI*2;
-          const bx=this.x+Math.cos(ba)*orbitR, by=this.y+Math.sin(ba)*orbitR;
-          const tipX=bx+Math.cos(ba)*bladeLen, tipY=by+Math.sin(ba)*bladeLen;
-          const perpX=-Math.sin(ba)*bladeW, perpY=Math.cos(ba)*bladeW;
-          ctx.save();
-          if(flash){
-            ctx.fillStyle='#fff';
-            ctx.shadowColor='#fff';ctx.shadowBlur=14;
-          } else {
-            const grad=ctx.createLinearGradient(bx,by,tipX,tipY);
-            grad.addColorStop(0,'#ffffff');grad.addColorStop(0.5,'#888888');grad.addColorStop(1,'#cccccc');
-            ctx.fillStyle=grad;
-            ctx.shadowColor='#aaddff';ctx.shadowBlur=8;
-          }
-          ctx.beginPath();
-          ctx.moveTo(bx+perpX,by+perpY);
-          ctx.lineTo(tipX,tipY);
-          ctx.lineTo(bx-perpX,by-perpY);
-          ctx.closePath();
-          ctx.fill();
-          ctx.shadowBlur=0;
-          ctx.restore();
+        // CIRCULAR SAW BLADE — mechanical sierra at ball edge
+        const sawR = this.r*0.55; // total radius including teeth
+        const discR = sawR*0.78; // inner disc radius
+        const teethN = 24;
+        const toothLen = sawR*0.22; // tooth length
+        const toothW = sawR*0.08; // half-width of tooth base
+        // Position: overlapping the ball rim
+        const sawDist = this.r - sawR*0.15;
+        const sx = this.x+Math.cos(this.bladeAngle)*sawDist;
+        const sy = this.y+Math.sin(this.bladeAngle)*sawDist;
+        const isHit = this.atkF>0;
+
+        ctx.save();
+        // Glow
+        if(isHit){
+          ctx.shadowColor='#ff8800';ctx.shadowBlur=18;
+        } else {
+          ctx.shadowColor='rgba(170,200,255,.4)';ctx.shadowBlur=6;
         }
+
+        // Disc body — radial gradient gunmetal to chrome
+        const dg=ctx.createRadialGradient(sx,sy,0,sx,sy,discR);
+        if(isHit){
+          dg.addColorStop(0,'#ff8800');dg.addColorStop(0.5,'#ffaa44');dg.addColorStop(1,'#ffe0aa');
+        } else {
+          dg.addColorStop(0,'#1a1a1a');dg.addColorStop(0.6,'#666666');dg.addColorStop(1,'#cccccc');
+        }
+        ctx.beginPath();ctx.arc(sx,sy,discR,0,Math.PI*2);
+        ctx.fillStyle=dg;ctx.fill();
+        ctx.shadowBlur=0;
+
+        // Teeth + gullets
+        for(let k=0;k<teethN;k++){
+          const ta = this.bladeAngle+(k/teethN)*Math.PI*2;
+          const taNext = this.bladeAngle+((k+0.5)/teethN)*Math.PI*2;
+          // Tooth tip
+          const tipX=sx+Math.cos(ta)*(discR+toothLen);
+          const tipY=sy+Math.sin(ta)*(discR+toothLen);
+          // Tooth base points on disc edge
+          const perpX=-Math.sin(ta)*toothW, perpY=Math.cos(ta)*toothW;
+          const bx1=sx+Math.cos(ta)*discR+perpX, by1=sy+Math.sin(ta)*discR+perpY;
+          const bx2=sx+Math.cos(ta)*discR-perpX, by2=sy+Math.sin(ta)*discR-perpY;
+
+          // Draw tooth
+          ctx.beginPath();
+          ctx.moveTo(bx1,by1);ctx.lineTo(tipX,tipY);ctx.lineTo(bx2,by2);
+          ctx.closePath();
+          ctx.fillStyle=isHit?'#ffcc66':'#aaaaaa';
+          ctx.fill();
+
+          // Gullet (dark slot between teeth)
+          const gx=sx+Math.cos(taNext)*discR*0.92;
+          const gy=sy+Math.sin(taNext)*discR*0.92;
+          ctx.beginPath();ctx.arc(gx,gy,toothW*0.8,0,Math.PI*2);
+          ctx.fillStyle=isHit?'#aa4400':'#0a0a0a';ctx.fill();
+        }
+
+        // Center hole
+        const holeR=sawR*0.14;
+        ctx.beginPath();ctx.arc(sx,sy,holeR,0,Math.PI*2);
+        ctx.fillStyle=isHit?'#663300':'#333333';ctx.fill();
+        // Hole rim
+        ctx.beginPath();ctx.arc(sx,sy,holeR,0,Math.PI*2);
+        ctx.strokeStyle=isHit?'#ff8800':'#555555';ctx.lineWidth=1;ctx.stroke();
+
+        ctx.restore();
       }
     }
 
@@ -660,14 +706,20 @@ function spawnClash(x,y,col){
 }
 
 function spawnBladeSparks(ball){
-  const n=6, orbitR=ball.r+4, bladeLen=ball.r*.55;
-  for(let k=0;k<8;k++){
-    const ba=ball.bladeAngle+(k/8)*Math.PI*2;
-    const tipX=ball.x+Math.cos(ba)*(orbitR+bladeLen);
-    const tipY=ball.y+Math.sin(ba)*(orbitR+bladeLen);
+  const hasIcon = ball.p.icon || ball.p.iconUrl;
+  // Trigger saw boost spin on collision (only for saw blade)
+  if(!hasIcon) ball.sawBoostF=8;
+  const sawR=ball.r*0.55, sawDist=ball.r-sawR*0.15;
+  const sx=ball.x+Math.cos(ball.bladeAngle)*sawDist;
+  const sy=ball.y+Math.sin(ball.bladeAngle)*sawDist;
+  const sparkColors=hasIcon?['#ffffff','#ccddff','#aabbcc']:['#ff8800','#ffaa33','#ffffff','#ffcc44'];
+  const n=hasIcon?6:8;
+  for(let k=0;k<(hasIcon?8:12);k++){
+    const sa=Math.random()*Math.PI*2, sp=3+Math.random()*5;
+    const ox=hasIcon?ball.x:sx, oy=hasIcon?ball.y:sy;
     for(let j=0;j<n;j++){
-      const sa=ba+(Math.random()-.5)*1.2, sp=3+Math.random()*5;
-      particles.push({x:tipX,y:tipY,vx:Math.cos(sa)*sp,vy:Math.sin(sa)*sp,size:1+Math.random()*2.5,color:['#ffffff','#ccddff','#aabbcc'][~~(Math.random()*3)],life:1,spark:true});
+      const a2=sa+(Math.random()-.5)*1.2, sp2=sp*(0.6+Math.random()*0.8);
+      particles.push({x:ox,y:oy,vx:Math.cos(a2)*sp2,vy:Math.sin(a2)*sp2,size:1+Math.random()*2.5,color:sparkColors[~~(Math.random()*sparkColors.length)],life:1,spark:true});
     }
   }
 }
