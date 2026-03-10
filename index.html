@@ -99,37 +99,37 @@ canvas{display:block}
 const BASE = "/players/headshots/face/";
 const NBA_CDN = "https://cdn.nba.com/headshots/nba/latest/260x190/";
 
-const PDATA = [
-  {id:203999, slug:"203999-nikola-jokic",              name:"Nikola Jokic",             team:"DEN",color:"#FEC524",bg:"#0E2240"},
-  {id:1628983,slug:"1628983-shai-gilgeous-alexander",  name:"Shai Gilgeous-Alexander",  team:"OKC",color:"#007AC1",bg:"#EF3B24"},
-  {id:1630595,slug:"1630595-cade-cunningham",          name:"Cade Cunningham",          team:"DET",color:"#C8102E",bg:"#1D428A"},
-  {id:1641705,slug:"1641705-victor-wembanyama",        name:"Victor Wembanyama",        team:"SAS",color:"#C4CED4",bg:"#061922"},
-  {id:1627759,slug:"1627759-jaylen-brown",             name:"Jaylen Brown",             team:"BOS",color:"#007A33",bg:"#BA9653"},
-  {id:2544,   slug:"2544-lebron-james",                name:"LeBron James",             team:"LAL",color:"#FDB927",bg:"#552583"},
-  {id:201939, slug:"201939-stephen-curry",             name:"Stephen Curry",            team:"GSW",color:"#FFC72C",bg:"#1D428A"},
-  {id:203507, slug:"203507-giannis-antetokounmpo",     name:"Giannis Antetokounmpo",    team:"MIL",color:"#00471B",bg:"#EEE1C6"},
-  {id:1629029,slug:"1629029-luka-doni",                name:"Luka Doncic",              team:"DAL",color:"#00538C",bg:"#002B5E"},
-  {id:1628369,slug:"1628369-jayson-tatum",             name:"Jayson Tatum",             team:"BOS",color:"#007A33",bg:"#BA9653"},
-  {id:203954, slug:"203954-joel-embiid",               name:"Joel Embiid",              team:"PHI",color:"#006BB6",bg:"#ED174C"},
-  {id:1628378,slug:"1628378-donovan-mitchell",         name:"Donovan Mitchell",         team:"CLE",color:"#860038",bg:"#FDBB30"},
-  {id:1629027,slug:"1629027-trae-young",               name:"Trae Young",               team:"ATL",color:"#E03A3E",bg:"#C1D32F"},
-  {id:1626164,slug:"1626164-devin-booker",             name:"Devin Booker",             team:"PHX",color:"#E56020",bg:"#1D1160"},
-  {id:1626157,slug:"1626157-karl-anthony-towns",       name:"Karl-Anthony Towns",       team:"NYK",color:"#006BB6",bg:"#F58426"},
-  {id:1628389,slug:"1628389-bam-adebayo",              name:"Bam Adebayo",              team:"MIA",color:"#98002E",bg:"#F9A01B"},
-  {id:1628973,slug:"1628973-jalen-brunson",            name:"Jalen Brunson",            team:"NYK",color:"#006BB6",bg:"#F58426"},
-  {id:1628368,slug:"1628368-deaaron-fox",              name:"De'Aaron Fox",             team:"SAC",color:"#5A2D81",bg:"#63727A"},
-  {id:1628991,slug:"1628991-jaren-jackson-jr",         name:"Jaren Jackson Jr.",        team:"MEM",color:"#5D76A9",bg:"#12173F"},
-  {id:1629028,slug:"1629028-deandre-ayton",            name:"Deandre Ayton",            team:"POR",color:"#E03A3E",bg:"#000000"},
-  {id:201142, slug:"201142-kevin-durant",              name:"Kevin Durant",             team:"PHX",color:"#E56020",bg:"#1D1160"},
-  {id:203081, slug:"203081-damian-lillard",            name:"Damian Lillard",           team:"MIL",color:"#00471B",bg:"#EEE1C6"},
-  {id:203076, slug:"203076-anthony-davis",             name:"Anthony Davis",            team:"LAL",color:"#FDB927",bg:"#552583"},
-  {id:1629630,slug:"1629630-ja-morant",                name:"Ja Morant",                team:"MEM",color:"#5D76A9",bg:"#12173F"},
-  {id:1630163,slug:"1630163-lamelo-ball",              name:"LaMelo Ball",              team:"CHA",color:"#00788C",bg:"#1D1160"},
-  {id:1629627,slug:"1629627-zion-williamson",          name:"Zion Williamson",          team:"NOP",color:"#0C2340",bg:"#C8102E"},
-  {id:1628384,slug:"1628384-og-anunoby",               name:"OG Anunoby",               team:"NYK",color:"#006BB6",bg:"#F58426"},
-  {id:1627750,slug:"1627750-jamal-murray",             name:"Jamal Murray",             team:"DEN",color:"#FEC524",bg:"#0E2240"},
-  {id:1627783,slug:"1627783-pascal-siakam",            name:"Pascal Siakam",            team:"IND",color:"#002D62",bg:"#FDBB30"},
-  {id:1627734,slug:"1627734-domantas-sabonis",         name:"Domantas Sabonis",         team:"SAC",color:"#5A2D81",bg:"#63727A"},
+let PDATA = [
+  {id:203999, slug:"203999-nikola-jokic",              name:"Nikola Jokic",             team:"DEN",color:"#FEC524",bg:"#0E2240",icon:"🐴"},
+  {id:1628983,slug:"1628983-shai-gilgeous-alexander",  name:"Shai Gilgeous-Alexander",  team:"OKC",color:"#007AC1",bg:"#EF3B24",icon:"🌩️"},
+  {id:1630595,slug:"1630595-cade-cunningham",          name:"Cade Cunningham",          team:"DET",color:"#C8102E",bg:"#1D428A",icon:"🏎️"},
+  {id:1641705,slug:"1641705-victor-wembanyama",        name:"Victor Wembanyama",        team:"SAS",color:"#C4CED4",bg:"#061922",icon:"🗼"},
+  {id:1627759,slug:"1627759-jaylen-brown",             name:"Jaylen Brown",             team:"BOS",color:"#007A33",bg:"#BA9653",icon:"🦅"},
+  {id:2544,   slug:"2544-lebron-james",                name:"LeBron James",             team:"LAL",color:"#FDB927",bg:"#552583",icon:"👑"},
+  {id:201939, slug:"201939-stephen-curry",             name:"Stephen Curry",            team:"GSW",color:"#FFC72C",bg:"#1D428A",icon:"⚡"},
+  {id:203507, slug:"203507-giannis-antetokounmpo",     name:"Giannis Antetokounmpo",    team:"MIL",color:"#00471B",bg:"#EEE1C6",icon:"🦌"},
+  {id:1629029,slug:"1629029-luka-doni",                name:"Luka Doncic",              team:"DAL",color:"#00538C",bg:"#002B5E",icon:"🇸🇮"},
+  {id:1628369,slug:"1628369-jayson-tatum",             name:"Jayson Tatum",             team:"BOS",color:"#007A33",bg:"#BA9653",icon:"☘️"},
+  {id:203954, slug:"203954-joel-embiid",               name:"Joel Embiid",              team:"PHI",color:"#006BB6",bg:"#ED174C",icon:""},
+  {id:1628378,slug:"1628378-donovan-mitchell",         name:"Donovan Mitchell",         team:"CLE",color:"#860038",bg:"#FDBB30",icon:""},
+  {id:1629027,slug:"1629027-trae-young",               name:"Trae Young",               team:"ATL",color:"#E03A3E",bg:"#C1D32F",icon:""},
+  {id:1626164,slug:"1626164-devin-booker",             name:"Devin Booker",             team:"PHX",color:"#E56020",bg:"#1D1160",icon:""},
+  {id:1626157,slug:"1626157-karl-anthony-towns",       name:"Karl-Anthony Towns",       team:"NYK",color:"#006BB6",bg:"#F58426",icon:""},
+  {id:1628389,slug:"1628389-bam-adebayo",              name:"Bam Adebayo",              team:"MIA",color:"#98002E",bg:"#F9A01B",icon:""},
+  {id:1628973,slug:"1628973-jalen-brunson",            name:"Jalen Brunson",            team:"NYK",color:"#006BB6",bg:"#F58426",icon:""},
+  {id:1628368,slug:"1628368-deaaron-fox",              name:"De'Aaron Fox",             team:"SAC",color:"#5A2D81",bg:"#63727A",icon:""},
+  {id:1628991,slug:"1628991-jaren-jackson-jr",         name:"Jaren Jackson Jr.",        team:"MEM",color:"#5D76A9",bg:"#12173F",icon:""},
+  {id:1629028,slug:"1629028-deandre-ayton",            name:"Deandre Ayton",            team:"POR",color:"#E03A3E",bg:"#000000",icon:""},
+  {id:201142, slug:"201142-kevin-durant",              name:"Kevin Durant",             team:"PHX",color:"#E56020",bg:"#1D1160",icon:"🐍"},
+  {id:203081, slug:"203081-damian-lillard",            name:"Damian Lillard",           team:"MIL",color:"#00471B",bg:"#EEE1C6",icon:""},
+  {id:203076, slug:"203076-anthony-davis",             name:"Anthony Davis",            team:"LAL",color:"#FDB927",bg:"#552583",icon:""},
+  {id:1629630,slug:"1629630-ja-morant",                name:"Ja Morant",                team:"MEM",color:"#5D76A9",bg:"#12173F",icon:"🦘"},
+  {id:1630163,slug:"1630163-lamelo-ball",              name:"LaMelo Ball",              team:"CHA",color:"#00788C",bg:"#1D1160",icon:"🎱"},
+  {id:1629627,slug:"1629627-zion-williamson",          name:"Zion Williamson",          team:"NOP",color:"#0C2340",bg:"#C8102E",icon:"🌋"},
+  {id:1628384,slug:"1628384-og-anunoby",               name:"OG Anunoby",               team:"NYK",color:"#006BB6",bg:"#F58426",icon:""},
+  {id:1627750,slug:"1627750-jamal-murray",             name:"Jamal Murray",             team:"DEN",color:"#FEC524",bg:"#0E2240",icon:""},
+  {id:1627783,slug:"1627783-pascal-siakam",            name:"Pascal Siakam",            team:"IND",color:"#002D62",bg:"#FDBB30",icon:""},
+  {id:1627734,slug:"1627734-domantas-sabonis",         name:"Domantas Sabonis",         team:"SAC",color:"#5A2D81",bg:"#63727A",icon:""},
 ];
 
 // Weapons: name, emoji, drawFn
@@ -144,14 +144,35 @@ const WEAPONS = [
   {id:'star',   emoji:'⭐',  label:'Star'},
 ];
 
+// ════════════════════════════ FULL PLAYER DB FETCH ════════════════════════════
+const PLAYERS_JSON_URL = 'https://jsierrahoopshype.github.io/nba-headshots/metadata/players.json';
+let FULL_DB = PDATA; // start with hardcoded fallback
+let FULL_DB_LOADED = false;
+
+fetch(PLAYERS_JSON_URL)
+  .then(r=>{ if(!r.ok) throw new Error(r.status); return r.json(); })
+  .then(data=>{
+    if(Array.isArray(data)&&data.length>0){
+      // Merge: keep PDATA entries (they have color/bg/icon), add fetched ones for the rest
+      const pdataById = new Map(PDATA.map(p=>[p.id,p]));
+      FULL_DB = data.map(p=>{
+        const existing = pdataById.get(p.id);
+        if(existing) return existing; // preserve color, bg, icon from hardcoded
+        return { id:p.id, slug:p.slug||'', name:p.name, team:p.team||'', color:'#4488cc', bg:'#0d1b2a', icon:'' };
+      });
+      FULL_DB_LOADED = true;
+    }
+  })
+  .catch(()=>{}); // silent fallback to PDATA
+
 // ════════════════════════════ CONFIG ════════════════════════════
 let CFG = {
   roster: [
-    {...PDATA[0], winPct:35, weapon:'sword'},
-    {...PDATA[1], winPct:30, weapon:'axe'},
-    {...PDATA[2], winPct:10, weapon:'hammer'},
-    {...PDATA[3], winPct:15, weapon:'spear'},
-    {...PDATA[4], winPct:10, weapon:'bomb'},
+    {...PDATA[0], winPct:35, icon:PDATA[0].icon, iconUrl:'', customImg:''},
+    {...PDATA[1], winPct:30, icon:PDATA[1].icon, iconUrl:'', customImg:''},
+    {...PDATA[2], winPct:10, icon:PDATA[2].icon, iconUrl:'', customImg:''},
+    {...PDATA[3], winPct:15, icon:PDATA[3].icon, iconUrl:'', customImg:''},
+    {...PDATA[4], winPct:10, icon:PDATA[4].icon, iconUrl:'', customImg:''},
   ],
   roundMinSec: 45,
   roundMaxSec: 90,
@@ -161,6 +182,7 @@ let CFG = {
   winnerMsg:   "WINS!",
   robbed:      "Who got ROBBED? 👇",
   watermark:   "HoopsHype.com",
+  arenaShape:  "circle",
 };
 
 // ════════════════════════════ CANVAS ════════════════════════════
@@ -183,6 +205,8 @@ function loadImages(roster, cb){
   if(pending===0){ cb(); return; }
   roster.forEach(p=>{
     if(IMGS[p.id]){ pending--; if(pending===0) cb(); return; }
+    // Skip NBA headshot load for custom players (no slug) — they use customImg or bg fallback
+    if(!p.slug){ IMGS[p.id]=null; pending--; if(pending===0) cb(); return; }
     const img = new Image();
     img.onload = ()=>{ IMGS[p.id]=img; pending--; if(pending===0) cb(); };
     img.onerror = ()=>{
@@ -199,26 +223,54 @@ function loadImages(roster, cb){
 // Pre-render circular face to offscreen canvas (avoids CORS taint issues on repeated draws)
 const FACE_CACHE = {};
 function getFace(p, r){
-  const key = p.id+'_'+Math.round(r);
-  if(FACE_CACHE[key]) return FACE_CACHE[key];
+  const ckey = p.customImg ? 'c_'+p.customImg+'_'+Math.round(r) : p.id+'_'+Math.round(r);
+  if(FACE_CACHE[ckey]) return FACE_CACHE[ckey];
   const sz = r*2;
   const oc = document.createElement('canvas'); oc.width=sz; oc.height=sz;
   const c = oc.getContext('2d');
   c.beginPath(); c.arc(r,r,r,0,Math.PI*2); c.clip();
   c.fillStyle = p.bg; c.fillRect(0,0,sz,sz);
-  const img = IMGS[p.id];
+  // Use custom image if available, otherwise NBA headshot
+  const img = (p.customImg && CUSTOM_IMGS[p.customImg] && CUSTOM_IMGS[p.customImg]!=='loading')
+    ? CUSTOM_IMGS[p.customImg] : IMGS[p.id];
   if(img){
     try{
       const aw=img.naturalWidth, ah=img.naturalHeight;
       const scale = (sz*1.05)/Math.min(aw,ah);
       const dw=aw*scale, dh=ah*scale;
-      c.drawImage(img, (sz-dw)/2, sz*0.04-dh*0.18, dw, dh);
+      c.drawImage(img, (sz-dw)/2, (sz-dh)/2, dw, dh);
     }catch(e){}
   }
-  FACE_CACHE[key] = oc;
+  FACE_CACHE[ckey] = oc;
   return oc;
 }
 function clearFaceCache(){ Object.keys(FACE_CACHE).forEach(k=>delete FACE_CACHE[k]); }
+
+// Icon URL image cache
+const ICON_IMGS = {};
+function loadIconImg(url){
+  if(ICON_IMGS[url]) return ICON_IMGS[url];
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = ()=>{ ICON_IMGS[url] = img; };
+  img.onerror = ()=>{ ICON_IMGS[url] = null; };
+  ICON_IMGS[url] = 'loading';
+  img.src = url;
+  return null;
+}
+
+// Custom ball image cache
+const CUSTOM_IMGS = {};
+function loadCustomImg(url, cb){
+  if(!url) return;
+  if(CUSTOM_IMGS[url] && CUSTOM_IMGS[url]!=='loading') { if(cb) cb(); return; }
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = ()=>{ CUSTOM_IMGS[url]=img; if(cb) cb(); };
+  img.onerror = ()=>{ CUSTOM_IMGS[url]=null; if(cb) cb(); };
+  CUSTOM_IMGS[url] = 'loading';
+  img.src = url;
+}
 
 // ════════════════════════════ HELPERS ════════════════════════════
 function hex3(h){const n=parseInt(h.replace('#',''),16);return[(n>>16)&255,(n>>8)&255,n&255];}
@@ -236,111 +288,102 @@ function rrect(x,y,w,h,r){
   ctx.closePath();
 }
 
-// ════════════════════════════ WEAPON DRAW ════════════════════════════
-// Each weapon is drawn centered at 0,0 pointing right, then rotated
-function drawWeaponShape(id, size, color){
-  const s = size;
-  ctx.save();
-  ctx.strokeStyle = '#ddd'; ctx.fillStyle = color;
-  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-
-  if(id==='sword'){
-    // Blade
-    ctx.fillStyle='#d0e8ff';
-    ctx.beginPath();ctx.moveTo(s*.1,s*.06);ctx.lineTo(s*.9,0);ctx.lineTo(s*.1,-s*.06);ctx.closePath();ctx.fill();
-    ctx.strokeStyle='#88aacc';ctx.lineWidth=1;ctx.stroke();
-    // Guard
-    ctx.fillStyle='#c8a020';
-    ctx.beginPath();ctx.rect(-s*.05,-s*.2,s*.1,s*.4);ctx.fill();
-    // Handle
-    ctx.strokeStyle='#8B4513';ctx.lineWidth=s*.14;
-    ctx.beginPath();ctx.moveTo(-s*.05,0);ctx.lineTo(-s*.5,0);ctx.stroke();
-    // Pommel
-    ctx.fillStyle='#c8a020';
-    ctx.beginPath();ctx.arc(-s*.5,0,s*.1,0,Math.PI*2);ctx.fill();
+// ════════════════════════════ ARENA SHAPES ════════════════════════════
+// Returns vertices for polygon shapes (equal area to circle with radius AR)
+function getArenaVerts(shape){
+  const circleArea = Math.PI*AR*AR;
+  if(shape==='square'){
+    const half = Math.sqrt(circleArea)/2;
+    return [{x:CX-half,y:CY-half},{x:CX+half,y:CY-half},{x:CX+half,y:CY+half},{x:CX-half,y:CY+half}];
   }
-  else if(id==='axe'){
-    // Handle
-    ctx.strokeStyle='#8B4513';ctx.lineWidth=s*.12;
-    ctx.beginPath();ctx.moveTo(-s*.5,0);ctx.lineTo(s*.3,0);ctx.stroke();
-    // Axe head
-    ctx.fillStyle='#aaaacc';
-    ctx.beginPath();ctx.moveTo(s*.15,s*.5);ctx.lineTo(s*.55,s*.2);ctx.lineTo(s*.55,-s*.4);ctx.lineTo(s*.15,-s*.1);ctx.closePath();ctx.fill();
-    ctx.strokeStyle='#7788aa';ctx.lineWidth=1.5;ctx.stroke();
-    // Edge shine
-    ctx.strokeStyle='#eeeeff';ctx.lineWidth=2;
-    ctx.beginPath();ctx.moveTo(s*.55,s*.2);ctx.lineTo(s*.55,-s*.4);ctx.stroke();
+  if(shape==='triangle'){
+    const triSide = Math.sqrt(circleArea*4/Math.sqrt(3));
+    const h = triSide*Math.sqrt(3)/2;
+    const cy2 = CY+h/6; // shift down so visually centered
+    return [{x:CX,y:cy2-h*2/3},{x:CX+triSide/2,y:cy2+h/3},{x:CX-triSide/2,y:cy2+h/3}];
   }
-  else if(id==='hammer'){
-    // Handle
-    ctx.strokeStyle='#8B4513';ctx.lineWidth=s*.12;
-    ctx.beginPath();ctx.moveTo(-s*.5,0);ctx.lineTo(s*.2,0);ctx.stroke();
-    // Head
-    ctx.fillStyle='#888899';
-    ctx.beginPath();ctx.rect(s*.15,-s*.35,s*.4,s*.7);ctx.fill();
-    ctx.strokeStyle='#aaaacc';ctx.lineWidth=1.5;ctx.stroke();
-    // Face shine
-    ctx.strokeStyle='#cccce0';ctx.lineWidth=2;
-    ctx.beginPath();ctx.moveTo(s*.55,-s*.3);ctx.lineTo(s*.55,s*.3);ctx.stroke();
-  }
-  else if(id==='spear'){
-    // Shaft
-    ctx.strokeStyle='#8B4513';ctx.lineWidth=s*.1;
-    ctx.beginPath();ctx.moveTo(-s*.7,0);ctx.lineTo(s*.4,0);ctx.stroke();
-    // Tip
-    ctx.fillStyle='#cce0ff';
-    ctx.beginPath();ctx.moveTo(s*.4,-s*.15);ctx.lineTo(s*.9,0);ctx.lineTo(s*.4,s*.15);ctx.closePath();ctx.fill();
-    ctx.strokeStyle='#88aadd';ctx.lineWidth=1.2;ctx.stroke();
-  }
-  else if(id==='bomb'){
-    // Body
-    ctx.fillStyle='#222'; ctx.strokeStyle='#555';ctx.lineWidth=2;
-    ctx.beginPath();ctx.arc(0,0,s*.42,0,Math.PI*2);ctx.fill();ctx.stroke();
-    // Fuse
-    ctx.strokeStyle='#aaa';ctx.lineWidth=s*.07;
-    ctx.beginPath();ctx.moveTo(s*.35,-s*.15);ctx.quadraticCurveTo(s*.5,-s*.4,s*.55,-s*.5);ctx.stroke();
-    // Spark
-    ctx.fillStyle='#ffdd00';
-    ctx.beginPath();ctx.arc(s*.55,-s*.5,s*.09,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle='#ff8800';
-    ctx.beginPath();ctx.arc(s*.55,-s*.5,s*.05,0,Math.PI*2);ctx.fill();
-    // Shine
-    ctx.fillStyle='rgba(255,255,255,.18)';
-    ctx.beginPath();ctx.arc(-s*.12,-s*.12,s*.14,0,Math.PI*2);ctx.fill();
-  }
-  else if(id==='knife'){
-    // Handle
-    ctx.strokeStyle='#5a3010';ctx.lineWidth=s*.18;
-    ctx.beginPath();ctx.moveTo(-s*.45,0);ctx.lineTo(s*.05,0);ctx.stroke();
-    // Blade
-    ctx.fillStyle='#ddeeff';
-    ctx.beginPath();ctx.moveTo(s*.05,s*.06);ctx.lineTo(s*.7,0);ctx.lineTo(s*.05,-s*.06);ctx.closePath();ctx.fill();
-    ctx.strokeStyle='#99aacc';ctx.lineWidth=1;ctx.stroke();
-  }
-  else if(id==='sickle'){
-    // Handle
-    ctx.strokeStyle='#8B4513';ctx.lineWidth=s*.12;
-    ctx.beginPath();ctx.moveTo(-s*.4,s*.2);ctx.lineTo(s*.1,s*.1);ctx.stroke();
-    // Curved blade
-    ctx.strokeStyle='#cceeff';ctx.lineWidth=s*.1;
-    ctx.beginPath();ctx.arc(s*.1,-s*.15,s*.4,Math.PI*.3,Math.PI*1.3,false);ctx.stroke();
-    // Tip
-    ctx.fillStyle='#aaccff';
-    ctx.beginPath();ctx.arc(s*.1+s*.4*Math.cos(Math.PI*1.3),s*.1+s*.4*Math.sin(Math.PI*1.3)*-1,s*.08,0,Math.PI*2);ctx.fill();
-  }
-  else{ // star / default
-    ctx.fillStyle='#ffdd00'; ctx.strokeStyle='#ff8800';ctx.lineWidth=1.5;
-    const pts=5, inner=s*.22, outer=s*.48;
-    ctx.beginPath();
-    for(let i=0;i<pts*2;i++){
-      const angle=(i*Math.PI/pts)-Math.PI/2;
-      const rad=i%2===0?outer:inner;
-      i===0?ctx.moveTo(Math.cos(angle)*rad,Math.sin(angle)*rad)
-           :ctx.lineTo(Math.cos(angle)*rad,Math.sin(angle)*rad);
+  if(shape==='hexagon'){
+    const hexR = Math.sqrt(circleArea*2/(3*Math.sqrt(3)));
+    const verts=[];
+    for(let i=0;i<6;i++){
+      const a = Math.PI/6+i*Math.PI/3; // flat-top hexagon
+      verts.push({x:CX+Math.cos(a)*hexR, y:CY+Math.sin(a)*hexR});
     }
-    ctx.closePath();ctx.fill();ctx.stroke();
+    return verts;
   }
-  ctx.restore();
+  return null; // circle
+}
+
+// Trace arena shape path on ctx
+function traceArenaPath(shape, inset){
+  const ins = inset||0;
+  if(shape==='circle'||!shape){
+    ctx.beginPath();ctx.arc(CX,CY,AR-ins,0,Math.PI*2);
+    return;
+  }
+  const verts = getArenaVerts(shape);
+  if(!verts) return;
+  // Inset vertices toward center
+  const iv = verts.map(v=>{
+    const dx=v.x-CX, dy=v.y-CY, d=Math.hypot(dx,dy);
+    return d>0?{x:v.x-dx/d*ins, y:v.y-dy/d*ins}:{...v};
+  });
+  ctx.beginPath();
+  if(shape==='square'){
+    const cr = Math.max(0,20-ins);
+    const x0=iv[0].x, y0=iv[0].y, x1=iv[2].x, y1=iv[2].y;
+    const w=x1-x0, h=y1-y0;
+    rrect(x0,y0,w,h,cr);
+    return;
+  }
+  ctx.moveTo(iv[0].x,iv[0].y);
+  for(let i=1;i<iv.length;i++) ctx.lineTo(iv[i].x,iv[i].y);
+  ctx.closePath();
+}
+
+// Polygon wall collision: reflect ball off nearest edge if outside
+// Precompute edge normals for a shape (cached per shape string)
+const EDGE_NORMALS = {};
+function getEdgeNormals(shape, verts){
+  if(EDGE_NORMALS[shape]) return EDGE_NORMALS[shape];
+  const n=verts.length, edges=[];
+  for(let i=0;i<n;i++){
+    const v1=verts[i], v2=verts[(i+1)%n];
+    let nx=-(v2.y-v1.y), ny=v2.x-v1.x;
+    const nl=Math.hypot(nx,ny);
+    nx/=nl; ny/=nl;
+    const mx=(v1.x+v2.x)/2, my=(v1.y+v2.y)/2;
+    if(nx*(CX-mx)+ny*(CY-my)<0){nx=-nx;ny=-ny;}
+    edges.push({v1,v2,nx,ny});
+  }
+  EDGE_NORMALS[shape]=edges;
+  return edges;
+}
+
+function polyWallCollide(ball, verts){
+  const shape=CFG.arenaShape||'circle';
+  const edges=getEdgeNormals(shape,verts);
+  const br=ball.r;
+  // Multiple passes to handle corners and high-speed overshoots
+  for(let pass=0;pass<3;pass++){
+    let pushed=false;
+    for(let i=0;i<edges.length;i++){
+      const {v1,nx,ny}=edges[i];
+      // Use live ball position each iteration
+      const dist=(ball.x-v1.x)*nx+(ball.y-v1.y)*ny;
+      if(dist<br){
+        const dot=ball.vx*nx+ball.vy*ny;
+        if(dot<0){
+          ball.vx-=2*dot*nx;
+          ball.vy-=2*dot*ny;
+        }
+        ball.x+=nx*(br-dist);
+        ball.y+=ny*(br-dist);
+        pushed=true;
+      }
+    }
+    if(!pushed) break;
+  }
 }
 
 // ════════════════════════════ GAME STATE ════════════════════════════
@@ -351,6 +394,8 @@ let phase; // 'loading'|'intro'|'fight'|'end'
 let phaseT;
 let flash, particles, dmgNums, screenShake;
 let endWinner;
+let speedMultiplier;
+let endgameBoost; // speed multiplier based on alive count: 1, 1.5, or 2
 
 function pickRoundDur(){
   return CFG.roundMinSec + Math.random()*(CFG.roundMaxSec-CFG.roundMinSec);
@@ -359,31 +404,48 @@ function pickRoundDur(){
 function startGame(){
   phase = 'loading';
   clearFaceCache();
-  loadImages(CFG.roster, ()=>{
-    clearFaceCache();
-    initGame();
-    phase = 'intro';
-    phaseT = performance.now();
-  });
+  // Preload any icon URL images
+  CFG.roster.forEach(p=>{ if(p.iconUrl) loadIconImg(p.iconUrl); });
+  // Preload custom ball images
+  const customUrls = CFG.roster.filter(p=>p.customImg).map(p=>p.customImg);
+  let customPending = customUrls.length;
+  const onCustomDone = ()=>{
+    loadImages(CFG.roster, ()=>{
+      clearFaceCache();
+      initGame();
+      phase = 'intro';
+      phaseT = performance.now();
+    });
+  };
+  if(customPending===0){ onCustomDone(); return; }
+  customUrls.forEach(url=>loadCustomImg(url, ()=>{ customPending--; if(customPending===0) onCustomDone(); }));
 }
 
 function initGame(){
   N = CFG.roster.length;
-  CX = W/2; CY = H*0.468; AR = 218;
-  BR = Math.max(24, Math.min(46, Math.floor(AR/(N*1.28))));
+  CX = W/2; CY = H*0.468; AR = 260;
+  BR = Math.max(18, Math.min(36, Math.floor(AR/(N*1.5))));
+  // Clear cached edge normals (depend on CX/CY/AR)
+  Object.keys(EDGE_NORMALS).forEach(k=>delete EDGE_NORMALS[k]);
   eliminated = Array(N).fill(false);
   aliveCnt = N;
   flash = null; particles = []; dmgNums = [];
   screenShake = {x:0, y:0, mag:0};
   endWinner = -1;
+  speedMultiplier = 1.0;
+  endgameBoost = 1.0;
   roundDur = pickRoundDur();
   timerAcc = 0;
   roundTimer = roundDur;
 
-  const totalPct = CFG.roster.reduce((s,p)=>s+(p.winPct||10),0);
+  // Compress strength factor: max/min ratio capped at 1.6x
+  const pcts = CFG.roster.map(p=>p.winPct||10);
+  const minPct = Math.min(...pcts), maxPct = Math.max(...pcts);
   balls = CFG.roster.map((p,i)=>{
-    const norm = (p.winPct||10)/totalPct*N;
-    return new Ball(i, norm);
+    const pct = p.winPct||10;
+    const t = maxPct>minPct ? (pct-minPct)/(maxPct-minPct) : 0.5;
+    const sf = 0.75 + t*0.45; // range [0.75, 1.2], ratio = 1.6
+    return new Ball(i, sf);
   });
 }
 
@@ -393,7 +455,7 @@ class Ball {
     this.idx = idx;
     this.p   = CFG.roster[idx];
     this.sf  = sf; // strength factor
-    this.maxHP = Math.round(82*(0.6+sf*0.4));
+    this.maxHP = 82;
     this.hp    = this.maxHP;
     this.r     = BR; this.baseR = BR;
 
@@ -402,7 +464,7 @@ class Ball {
     this.x = CX+Math.cos(a)*d;
     this.y = CY+Math.sin(a)*d;
 
-    const spd = (1.3+Math.random()*1.1)*(0.8+sf*0.2);
+    const spd = (2.5+Math.random()*1.5)*(0.8+sf*0.2);
     const va  = a+Math.PI+(Math.random()-.5)*1.0;
     this.vx = Math.cos(va)*spd;
     this.vy = Math.sin(va)*spd;
@@ -412,14 +474,16 @@ class Ball {
     this.dead  = false; this.deadT = 0;
     this.hitF  = 0; // hit flash frames
     this.atkF  = 0; // attack flash frames
-    this.wAngle = Math.atan2(this.vy, this.vx); // weapon rotation angle
+    this.bladeAngle = Math.random()*Math.PI*2; // saw blade rotation
+    this.sawBoostF = 0; // frames of 3x spin boost after collision
+    this.nudgeTimer = 2.0+Math.random()*1.0; // momentum nudge every 2-3s
   }
 
   get alive(){ return !this.dead && this.hp>0; }
 
   hit(dmg){
     if(!this.alive) return 0;
-    const taken = dmg*(1/(0.5+this.sf*0.5));
+    const taken = dmg*Math.max(0.7, 1/(0.5+this.sf*0.5));
     this.hp = Math.max(0, this.hp-taken);
     this.hitF = 10;
     if(this.hp<=0){ this.die(); }
@@ -431,6 +495,8 @@ class Ball {
     this.dead = true; this.deadT = performance.now();
     eliminated[this.idx] = true;
     aliveCnt--;
+    // Update endgame boost once per elimination
+    endgameBoost = aliveCnt<=2 ? 2.0 : aliveCnt<=3 ? 1.5 : 1.0;
     shake(14);
     spawnExplosion(this.x, this.y, this.p.color);
     if(aliveCnt<=1) setTimeout(()=>triggerEnd(), 400);
@@ -446,20 +512,36 @@ class Ball {
     }
     if(this.hitF>0) this.hitF--;
     if(this.atkF>0) this.atkF--;
-    // Weapon angle follows velocity
-    const spd=Math.hypot(this.vx,this.vy);
-    if(spd>0.2) this.wAngle = Math.atan2(this.vy,this.vx);
+    if(this.sawBoostF>0) this.sawBoostF--;
+    // Saw blade spin (all players have saw blade now)
+    const sawBase = endgameBoost>1 ? 0.14 : 0.06;
+    this.bladeAngle += this.sawBoostF>0 ? sawBase*3 : sawBase;
+
+    // Momentum nudge: random velocity bump every 2-3 seconds
+    this.nudgeTimer -= 1/60;
+    if(this.nudgeTimer<=0){
+      this.vx += (Math.random()-0.5)*0.8; // ±0.4
+      this.vy += (Math.random()-0.5)*0.8;
+      this.nudgeTimer = 2.0+Math.random()*1.0;
+    }
 
     this.trail.push({x:this.x,y:this.y});
     if(this.trail.length>14) this.trail.shift();
-    this.x+=this.vx; this.y+=this.vy;
+    const sm=speedMultiplier*endgameBoost;
+    this.x+=this.vx*sm; this.y+=this.vy*sm;
 
     // Arena wall
-    const dx=this.x-CX,dy=this.y-CY,dist=Math.hypot(dx,dy),wall=AR-this.r;
-    if(dist>wall&&dist>0){
-      const nx=dx/dist,ny=dy/dist,dot=this.vx*nx+this.vy*ny;
-      this.vx-=2*dot*nx; this.vy-=2*dot*ny;
-      this.x=CX+nx*wall; this.y=CY+ny*wall;
+    const shape = CFG.arenaShape||'circle';
+    if(shape==='circle'){
+      const dx=this.x-CX,dy=this.y-CY,dist=Math.hypot(dx,dy),wall=AR-this.r;
+      if(dist>wall&&dist>0){
+        const nx=dx/dist,ny=dy/dist,dot=this.vx*nx+this.vy*ny;
+        this.vx-=2*dot*nx; this.vy-=2*dot*ny;
+        this.x=CX+nx*wall; this.y=CY+ny*wall;
+      }
+    } else {
+      const verts = getArenaVerts(shape);
+      if(verts) polyWallCollide(this, verts);
     }
   }
 
@@ -482,7 +564,57 @@ class Ball {
     ctx.beginPath();ctx.arc(this.x,this.y,this.r*2.1,0,Math.PI*2);
     ctx.fillStyle=grd;ctx.fill();
 
-    // Face
+    // SAW BLADE — centered on ball, teeth extend beyond ball rim (all players)
+    if(!this.dead){
+      const discR = this.r; // disc matches ball radius
+      const toothLen = this.r*0.28; // teeth extend beyond disc
+      const teethN = 24;
+      const toothW = this.r*0.06; // half-width of tooth base
+      const sx = this.x, sy = this.y;
+      const isHit = this.atkF>0;
+
+      ctx.save();
+      if(isHit){
+        ctx.shadowColor='#ff8800';ctx.shadowBlur=18;
+      } else {
+        ctx.shadowColor='rgba(170,200,255,.4)';ctx.shadowBlur=6;
+      }
+
+      // Disc body — radial gradient gunmetal to chrome
+      const dg=ctx.createRadialGradient(sx,sy,0,sx,sy,discR);
+      if(isHit){
+        dg.addColorStop(0,'#ff8800');dg.addColorStop(0.5,'#ffaa44');dg.addColorStop(1,'#ffe0aa');
+      } else {
+        dg.addColorStop(0,'#1a1a1a');dg.addColorStop(0.6,'#666666');dg.addColorStop(1,'#cccccc');
+      }
+      ctx.beginPath();ctx.arc(sx,sy,discR,0,Math.PI*2);
+      ctx.fillStyle=dg;ctx.fill();
+      ctx.shadowBlur=0;
+
+      // Teeth + gullets
+      for(let k=0;k<teethN;k++){
+        const ta = this.bladeAngle+(k/teethN)*Math.PI*2;
+        const taNext = this.bladeAngle+((k+0.5)/teethN)*Math.PI*2;
+        const tipX=sx+Math.cos(ta)*(discR+toothLen);
+        const tipY=sy+Math.sin(ta)*(discR+toothLen);
+        const perpX=-Math.sin(ta)*toothW, perpY=Math.cos(ta)*toothW;
+        const bx1=sx+Math.cos(ta)*discR+perpX, by1=sy+Math.sin(ta)*discR+perpY;
+        const bx2=sx+Math.cos(ta)*discR-perpX, by2=sy+Math.sin(ta)*discR-perpY;
+        ctx.beginPath();
+        ctx.moveTo(bx1,by1);ctx.lineTo(tipX,tipY);ctx.lineTo(bx2,by2);
+        ctx.closePath();
+        ctx.fillStyle=isHit?'#ffcc66':'#aaaaaa';
+        ctx.fill();
+
+        const gx=sx+Math.cos(taNext)*discR*0.92;
+        const gy=sy+Math.sin(taNext)*discR*0.92;
+        ctx.beginPath();ctx.arc(gx,gy,toothW*0.8,0,Math.PI*2);
+        ctx.fillStyle=isHit?'#aa4400':'#0a0a0a';ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    // Face (on top of saw disc)
     try{
       const face=getFace(p,this.r);
       ctx.save();
@@ -508,7 +640,7 @@ class Ball {
     ctx.shadowBlur=this.atkF>0?24:10;
     ctx.stroke();ctx.shadowBlur=0;
 
-    // HP arc
+    // Energy arc
     if(!this.dead){
       const hf=this.hp/this.maxHP;
       const rOut=this.r+6;
@@ -523,15 +655,33 @@ class Ball {
       }
     }
 
-    // WEAPON — drawn at edge of ball, pointing in direction of travel
+    // Orbiting icon companion (only if player has icon/iconUrl set)
     if(!this.dead){
-      ctx.save();
-      ctx.translate(this.x, this.y);
-      ctx.rotate(this.wAngle);
-      ctx.translate(this.r*.85, 0);
-      const wsz = this.r*.9;
-      drawWeaponShape(p.weapon||'sword', wsz, p.color);
-      ctx.restore();
+      const pIcon = this.p.icon;
+      const pIconUrl = this.p.iconUrl;
+      if(pIconUrl && ICON_IMGS[pIconUrl] && ICON_IMGS[pIconUrl]!=='loading'){
+        const orbitR = this.r*1.8;
+        const imgSz = this.r*0.9;
+        const ix = this.x+Math.cos(this.bladeAngle)*orbitR;
+        const iy = this.y+Math.sin(this.bladeAngle)*orbitR;
+        ctx.save();
+        ctx.beginPath();ctx.arc(ix,iy,imgSz,0,Math.PI*2);ctx.clip();
+        ctx.drawImage(ICON_IMGS[pIconUrl],ix-imgSz,iy-imgSz,imgSz*2,imgSz*2);
+        ctx.restore();
+        if(this.atkF>0){ctx.beginPath();ctx.arc(ix,iy,imgSz,0,Math.PI*2);ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.shadowColor='#fff';ctx.shadowBlur=14;ctx.stroke();ctx.shadowBlur=0;}
+      } else if(pIcon){
+        const orbitR = this.r*1.5;
+        const fontSize = this.r*0.55;
+        const ix = this.x+Math.cos(this.bladeAngle)*orbitR;
+        const iy = this.y+Math.sin(this.bladeAngle)*orbitR;
+        ctx.save();
+        ctx.font = `${fontSize}px sans-serif`;
+        ctx.textAlign='center';ctx.textBaseline='middle';
+        if(this.atkF>0){ctx.shadowColor='#fff';ctx.shadowBlur=14;}
+        ctx.fillText(pIcon,ix,iy);
+        ctx.shadowBlur=0;
+        ctx.restore();
+      }
     }
 
     ctx.restore();
@@ -559,14 +709,14 @@ function physicsStep(){
             const spdI=Math.hypot(bi.vx,bi.vy), spdJ=Math.hypot(bj.vx,bj.vy);
             // Attacker is the faster ball
             if(spdI>=spdJ-0.3){
-              const dmg=relV*bi.sf*2.2;
+              const dmg=relV*bi.sf*0.88;
               const taken=bj.hit(dmg);
-              if(taken>0){ bi.atkF=14; spawnClash(bj.x,bj.y,bi.p.color); spawnDmg(bj.x,bj.y,Math.round(taken),bi.p.color); shake(Math.min(9,relV*1.8)); }
+              if(taken>0){ bi.atkF=6; spawnClash(bj.x,bj.y,bi.p.color); spawnBladeSparks(bi); spawnDmg(bj.x,bj.y,Math.round(taken),bi.p.color); shake(Math.min(9,relV*1.8)); }
             }
             if(spdJ>=spdI-0.3){
-              const dmg=relV*bj.sf*2.2;
+              const dmg=relV*bj.sf*0.88;
               const taken=bi.hit(dmg);
-              if(taken>0){ bj.atkF=14; spawnClash(bi.x,bi.y,bj.p.color); spawnDmg(bi.x,bi.y,Math.round(taken),bj.p.color); shake(Math.min(9,relV*1.8)); }
+              if(taken>0){ bj.atkF=6; spawnClash(bi.x,bi.y,bj.p.color); spawnBladeSparks(bj); spawnDmg(bi.x,bi.y,Math.round(taken),bj.p.color); shake(Math.min(9,relV*1.8)); }
             }
           }
         }
@@ -578,19 +728,32 @@ function physicsStep(){
 }
 
 // ════════════════════════════ EFFECTS ════════════════════════════
-function shake(mag){ screenShake.mag=Math.max(screenShake.mag,mag); }
+function shake(mag){ screenShake.mag=Math.max(screenShake.mag, mag*(endgameBoost>1?1.5:1)); }
 
 function spawnClash(x,y,col){
-  for(let i=0;i<10;i++){
+  const n=endgameBoost>1?20:10;
+  for(let i=0;i<n;i++){
     const a=Math.random()*Math.PI*2, spd=2+Math.random()*6;
     particles.push({x,y,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,size:1.5+Math.random()*3.5,color:col,life:1,spark:true});
   }
-  // Sparks
   particles.push({x,y,vx:0,vy:0,size:18,color:col,life:1,ring:true});
 }
 
+function spawnBladeSparks(ball){
+  ball.sawBoostF=8; // all players have saw blade
+  const sparkColors=['#ff8800','#ffaa33','#ffffff','#ffcc44'];
+  for(let k=0;k<12;k++){
+    const sa=Math.random()*Math.PI*2, sp=3+Math.random()*5;
+    for(let j=0;j<8;j++){
+      const a2=sa+(Math.random()-.5)*1.2, sp2=sp*(0.6+Math.random()*0.8);
+      particles.push({x:ball.x,y:ball.y,vx:Math.cos(a2)*sp2,vy:Math.sin(a2)*sp2,size:1+Math.random()*2.5,color:sparkColors[~~(Math.random()*sparkColors.length)],life:1,spark:true});
+    }
+  }
+}
+
 function spawnExplosion(x,y,col){
-  for(let i=0;i<24;i++){
+  const n=endgameBoost>1?48:24;
+  for(let i=0;i<n;i++){
     const a=Math.random()*Math.PI*2, spd=1.5+Math.random()*8;
     particles.push({x,y,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,size:2+Math.random()*5,color:[col,'#fff','#ffdd44'][~~(Math.random()*3)],life:1,spark:true});
   }
@@ -633,18 +796,6 @@ function triggerEnd(){
          color:endWinner>=0?CFG.roster[endWinner].color:'#fff',t:performance.now()};
 }
 
-// Timer elimination
-function timerElim(){
-  const alive=balls.map((b,i)=>({b,i})).filter(({b,i})=>!eliminated[i]&&b.alive);
-  if(alive.length<=1) return;
-  alive.sort((a,z)=>(a.b.hp/a.b.maxHP)-(z.b.hp/z.b.maxHP));
-  const loser=alive[0];
-  flash={text:`TIME! ${CFG.roster[loser.i].team} ${CFG.elimMsg}`,color:CFG.roster[loser.i].color,t:performance.now()};
-  loser.b.die();
-  // Reset timer for next interval
-  roundDur=pickRoundDur();
-  timerAcc=0; roundTimer=roundDur;
-}
 
 // ════════════════════════════ MAIN LOOP ════════════════════════════
 let lastT=performance.now();
@@ -666,7 +817,12 @@ function loop(now){
   if(phase==='fight'){
     timerAcc+=dt;
     roundTimer=Math.max(0,roundDur-timerAcc);
-    if(roundTimer<=0) timerElim();
+    // When timer expires, ramp up speed and reset timer
+    if(roundTimer<=0){
+      speedMultiplier=Math.min(speedMultiplier+0.25, 2.0);
+      roundDur=pickRoundDur();
+      timerAcc=0; roundTimer=roundDur;
+    }
     balls.forEach(b=>b.update());
     physicsStep();
     updateFX(dt);
@@ -709,7 +865,12 @@ function drawBg(){
 }
 
 function drawArenaFloor(){
-  ctx.save();ctx.beginPath();ctx.arc(CX,CY,AR-1,0,Math.PI*2);ctx.clip();
+  const shape=CFG.arenaShape||'circle';
+  ctx.save();
+  traceArenaPath(shape,1);
+  ctx.clip();
+  // Re-trace to fill (clip may consume the path in some browsers)
+  traceArenaPath(shape,1);
   ctx.fillStyle='#040416';ctx.fill();
   ctx.strokeStyle='rgba(255,255,255,.02)';ctx.lineWidth=1;
   [.28,.56,.84].forEach(t=>{ctx.beginPath();ctx.arc(CX,CY,AR*t,0,Math.PI*2);ctx.stroke();});
@@ -719,14 +880,17 @@ function drawArenaFloor(){
 }
 
 function drawBallsClipped(){
-  ctx.save();ctx.beginPath();ctx.arc(CX,CY,AR-2,0,Math.PI*2);ctx.clip();
+  ctx.save();
+  traceArenaPath(CFG.arenaShape||'circle',2);
+  ctx.clip();
   balls.forEach(b=>b.draw());
   ctx.restore();
 }
 
 function drawArenaRing(){
+  const shape=CFG.arenaShape||'circle';
   [{w:28,a:.04},{w:14,a:.09},{w:5,a:.38},{w:2,a:.9}].forEach(({w,a})=>{
-    ctx.beginPath();ctx.arc(CX,CY,AR,0,Math.PI*2);
+    traceArenaPath(shape,0);
     ctx.strokeStyle=`rgba(100,165,255,${a})`;ctx.lineWidth=w;ctx.stroke();
   });
 }
@@ -745,26 +909,6 @@ function drawHUD(now){
   ctx.fillStyle='rgba(165,200,255,.7)';
   ctx.fillText(CFG.subtitle,CX,ty+CFG.title.length*lh+3);
   ctx.restore();
-
-  // Countdown timer
-  if(phase==='fight'){
-    const secs=Math.ceil(roundTimer);
-    const urgent=secs<=10;
-    const pulse=urgent?(0.65+Math.sin(now/130)*.35):1;
-    ctx.save();
-    ctx.font=`900 ${W*.11}px 'Bebas Neue',sans-serif`;
-    ctx.textAlign='center';ctx.textBaseline='middle';
-    // Background circle
-    ctx.beginPath();ctx.arc(CX,CY-AR-48,W*.072,0,Math.PI*2);
-    ctx.fillStyle=urgent?`rgba(80,0,0,${pulse*.7})`:'rgba(0,0,20,.7)';ctx.fill();
-    ctx.strokeStyle=urgent?`rgba(255,60,60,${pulse})`:'rgba(80,120,220,.5)';
-    ctx.lineWidth=2;ctx.stroke();
-    // Number
-    ctx.fillStyle=urgent?`rgba(255,60,60,${pulse})`:'rgba(200,220,255,.85)';
-    ctx.shadowColor=urgent?'#ff3333':'rgba(100,150,255,.5)';ctx.shadowBlur=urgent?30:12;
-    ctx.fillText(secs,CX,CY-AR-47);
-    ctx.shadowBlur=0;ctx.restore();
-  }
 
   // Score panel
   drawPanel();
@@ -787,7 +931,8 @@ function drawPanel(){
     // Thumb
     const tr=14, ty=py+16;
     ctx.save();ctx.beginPath();ctx.arc(sx,ty,tr,0,Math.PI*2);ctx.clip();
-    const img=IMGS[p.id];
+    const cimg=(p.customImg&&CUSTOM_IMGS[p.customImg]&&CUSTOM_IMGS[p.customImg]!=='loading')?CUSTOM_IMGS[p.customImg]:null;
+    const img=cimg||IMGS[p.id];
     if(img){
       try{
         const asp=img.naturalWidth/img.naturalHeight,dw=tr*2.1,dh=dw/asp;
@@ -798,13 +943,15 @@ function drawPanel(){
     ctx.beginPath();ctx.arc(sx,ty,tr,0,Math.PI*2);
     ctx.strokeStyle=dead?'#1a1a1a':p.color;ctx.lineWidth=1.8;ctx.stroke();
 
-    // Weapon emoji label
-    const wObj=WEAPONS.find(w=>w.id===(p.weapon||'sword'));
-    ctx.font=`${Math.max(9,sw*.19)}px sans-serif`;
-    ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.fillText(wObj?wObj.emoji:'⚔️',sx,ty+tr+9);
+    // Weapon icon label (only if player has one)
+    const pIcon = p.icon||'';
+    if(pIcon){
+      ctx.font=`${Math.max(9,sw*.19)}px sans-serif`;
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(pIcon,sx,ty+tr+9);
+    }
 
-    // HP bar
+    // Energy bar
     const bw=sw*.76,bh=5,bx=sx-bw/2,bby=py+36+Math.max(9,sw*.19)+5;
     if(!dead){
       const hf=b.hp/b.maxHP;
@@ -866,11 +1013,11 @@ function drawEndScreen(now){
   if(t>.2&&endWinner>=0){
     const t2=(t-.2)/.8, p=CFG.roster[endWinner];
     ctx.globalAlpha=t2;
-    const bigR=105, img=IMGS[p.id];
+    const bigR=105, cImg=(p.customImg&&CUSTOM_IMGS[p.customImg]&&CUSTOM_IMGS[p.customImg]!=='loading')?CUSTOM_IMGS[p.customImg]:null, img=cImg||IMGS[p.id];
     ctx.save();ctx.beginPath();ctx.arc(CX,H/2-85,bigR,0,Math.PI*2);
     ctx.fillStyle=p.bg;ctx.fill();ctx.clip();
     if(img){
-      try{const a=img.naturalWidth/img.naturalHeight,dw=bigR*2.2,dh=dw/a;ctx.drawImage(img,CX-dw/2,H/2-85-dh*.9,dw,dh);}catch(e){}
+      try{const a=img.naturalWidth/img.naturalHeight,dw=bigR*2.2,dh=dw/a;ctx.drawImage(img,CX-dw/2,H/2-85-dh/2,dw,dh);}catch(e){}
     } ctx.restore();
     ctx.beginPath();ctx.arc(CX,H/2-85,bigR,0,Math.PI*2);
     ctx.strokeStyle=p.color;ctx.lineWidth=6;ctx.shadowColor=p.color;ctx.shadowBlur=55;ctx.stroke();ctx.shadowBlur=0;
@@ -967,6 +1114,7 @@ function openModal(tab){
     title:[...CFG.title], subtitle:CFG.subtitle,
     elimMsg:CFG.elimMsg, winnerMsg:CFG.winnerMsg,
     robbed:CFG.robbed, watermark:CFG.watermark,
+    arenaShape:CFG.arenaShape||'circle',
   };
   document.getElementById('modal').classList.add('open');
   switchTab(tab||'players');
@@ -989,14 +1137,19 @@ function renderTab(t){
 
 // ── PLAYERS ──
 function buildPlayersTab(){
-  let html=`<div style="font-size:11px;color:#334;margin-bottom:10px;line-height:1.5;">Win % sets strength, HP, speed, and damage. Higher % = stronger fighter. Weapon is cosmetic.</div>`;
+  let html=`<div style="font-size:11px;color:#334;margin-bottom:10px;line-height:1.5;">Win % sets strength, speed, and damage. Higher % = stronger fighter. All players start with 82 energy. Set an emoji or image URL as weapon — leave blank for razor ring.</div>`;
   DRAFT.roster.forEach((p,i)=>{
-    const wObj=WEAPONS.find(w=>w.id===p.weapon)||WEAPONS[0];
+    const isCustom = p._custom;
+    const faceSrc = p.customImg || (p.slug ? `${BASE}${p.slug}.png` : '');
+    const faceErr = p.slug ? `this.src='${NBA_CDN}${p.id}.png'` : `this.style.display='none'`;
     html+=`<div class="pcard">
       <button class="del" onclick="removeP(${i})">✕</button>
       <div class="prow">
-        <div class="pface"><img src="${BASE}${p.slug}.png" onerror="this.src='${NBA_CDN}${p.id}.png'"></div>
-        <div class="pinfo"><div class="pname">${p.name}</div><div class="psub">${p.team}</div></div>
+        <div class="pface">${faceSrc?`<img src="${faceSrc}" onerror="${faceErr}">`:`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:18px;color:#334;">?</div>`}</div>
+        <div class="pinfo">${isCustom
+          ?`<input class="fi" style="margin:0 0 3px;padding:4px 6px;font-size:13px;font-weight:700;" value="${p.name}" oninput="DRAFT.roster[${i}].name=this.value" placeholder="Name">
+            <input class="fi" style="margin:0;padding:3px 6px;font-size:11px;" value="${p.team}" oninput="DRAFT.roster[${i}].team=this.value" placeholder="Team / label (optional)">`
+          :`<div class="pname">${p.name}</div><div class="psub">${p.team}</div>`}</div>
         <div style="text-align:right;"><div style="font-size:9px;color:#334;text-transform:uppercase;letter-spacing:.8px;">Win %</div>
         <div class="pct-val" id="pv${i}">${p.winPct||10}%</div></div>
       </div>
@@ -1009,52 +1162,135 @@ function buildPlayersTab(){
         <div><label>BG</label><input type="color" class="sw" value="${p.bg}" oninput="DRAFT.roster[${i}].bg=this.value"></div>
       </div>
       <div style="margin-top:8px;">
-        <label class="lbl">Weapon</label>
-        <div class="weapon-sel">
-          ${WEAPONS.map(w=>`<div class="wp${w.id===p.weapon?' on':''}" title="${w.label}" onclick="setWeapon(${i},'${w.id}',this)">${w.emoji}</div>`).join('')}
+        <label class="lbl">Weapon (emoji or image URL — leave blank for saw blade)</label>
+        <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
+          <input class="fi" style="width:60px;margin:0;text-align:center;font-size:18px;" value="${p.icon||''}" oninput="DRAFT.roster[${i}].icon=this.value" placeholder="🔪">
+          <button style="background:#1a1a30;color:#778;border:1px solid #2a2a44;border-radius:4px;padding:4px 8px;cursor:pointer;font-size:11px;" onclick="DRAFT.roster[${i}].icon='';this.previousElementSibling.value=''">✕</button>
+          <input class="fi" style="flex:1;margin:0;font-size:11px;" value="${p.iconUrl||''}" oninput="DRAFT.roster[${i}].iconUrl=this.value" placeholder="Weapon image URL (optional)">
+        </div>
+      </div>
+      <div style="margin-top:6px;">
+        <label class="lbl">Custom Ball Image (overrides headshot)</label>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <div id="cimgpv${i}" style="width:30px;height:30px;border-radius:50%;overflow:hidden;flex-shrink:0;border:2px solid ${p.customImg?p.color:'#1a1a30'};background:${p.bg};">${p.customImg?`<img src="${p.customImg}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'">`:''}
+          </div>
+          <input type="file" id="cimgfile${i}" accept="image/png,image/jpeg,image/gif,image/webp" style="display:none" onchange="handleFileUpload(${i},this)">
+          <button style="background:#1a1a30;color:#8af;border:1px solid #2a2a44;border-radius:4px;padding:4px 8px;cursor:pointer;font-size:11px;white-space:nowrap;" onclick="document.getElementById('cimgfile${i}').click()">Upload</button>
+          <input class="fi" id="cimgurl${i}" style="flex:1;margin:0;font-size:11px;" value="${p.customImg&&!p.customImg.startsWith('data:')?p.customImg:''}" oninput="previewCustomImg(${i},this.value)" placeholder="Image URL…">
+          <button style="background:#1a1a30;color:#778;border:1px solid #2a2a44;border-radius:4px;padding:4px 8px;cursor:pointer;font-size:11px;" onclick="clearCustomImg(${i})">✕</button>
         </div>
       </div>
     </div>`;
   });
 
   if(DRAFT.roster.length<10){
-    html+=`<div class="shd">Add Player</div>
-    <input class="fi" id="psearch" placeholder="Search player…" oninput="filterPP()" style="margin-bottom:6px">
-    <div class="pplist" id="pplist">${buildPPList('')}</div>`;
+    const dbCount = FULL_DB.length;
+    const countLabel = FULL_DB_LOADED ? `<span style="font-size:10px;color:#3366aa;font-weight:400;margin-left:6px;">${dbCount} players available</span>` : '';
+    html+=`<div class="shd">Add Player${countLabel}</div>
+    <input class="fi" id="psearch" placeholder="Search by name or team…" oninput="filterPP()" style="margin-bottom:6px">
+    <div class="pplist" id="pplist">${buildPPList('')}</div>
+    <button class="addbtn" style="margin-top:8px;" onclick="addCustomP()">+ ADD CUSTOM PLAYER</button>`;
   }
   return html;
 }
 
 function buildPPList(q){
   const used=new Set(DRAFT.roster.map(p=>p.id));
-  const list=PDATA.filter(p=>!used.has(p.id)&&(!q||p.name.toLowerCase().includes(q.toLowerCase())));
-  return list.slice(0,12).map(p=>`
+  const ql=q?q.toLowerCase():'';
+  const list=FULL_DB.filter(p=>!used.has(p.id)&&(!ql||p.name.toLowerCase().includes(ql)||(p.team&&p.team.toLowerCase().includes(ql))));
+  return list.slice(0,20).map(p=>`
     <div class="ppi" onclick="addP(${p.id})">
       <div class="ppi-face"><img src="${BASE}${p.slug}.png" onerror="this.src='${NBA_CDN}${p.id}.png'"></div>
       <div><div class="ppi-name">${p.name}</div><div class="ppi-team">${p.team}</div></div>
-    </div>`).join('')||'<div style="padding:10px;color:#223;font-size:11px;">No more players</div>';
+    </div>`).join('')||'<div style="padding:10px;color:#223;font-size:11px;">No matches</div>';
 }
 
 function filterPP(){const q=document.getElementById('psearch')?.value||'';const el=document.getElementById('pplist');if(el)el.innerHTML=buildPPList(q);}
 function setPct(i,v){DRAFT.roster[i].winPct=+v;const el=document.getElementById('pv'+i);if(el)el.textContent=v+'%';}
-function setWeapon(i,id,el){
-  DRAFT.roster[i].weapon=id;
-  el.closest('.weapon-sel').querySelectorAll('.wp').forEach(w=>w.classList.remove('on'));
-  el.classList.add('on');
-}
 function removeP(i){if(DRAFT.roster.length<=2){alert('Minimum 2 players');return;}DRAFT.roster.splice(i,1);renderTab('players');}
-function addP(id){if(DRAFT.roster.length>=10)return;const p=PDATA.find(p=>p.id===id);if(!p)return;DRAFT.roster.push({...p,winPct:20,weapon:WEAPONS[~~(Math.random()*WEAPONS.length)].id});renderTab('players');}
+function addP(id){if(DRAFT.roster.length>=10)return;const p=FULL_DB.find(p=>p.id===id);if(!p)return;DRAFT.roster.push({...p,winPct:20,icon:p.icon||'',iconUrl:'',customImg:''});renderTab('players');}
+
+let _customIdCounter=Date.now();
+function addCustomP(){
+  if(DRAFT.roster.length>=10)return;
+  DRAFT.roster.push({id:'custom_'+(++_customIdCounter),slug:'',name:'Custom Player',team:'',color:'#ff6644',bg:'#222244',winPct:20,icon:'',iconUrl:'',customImg:'',_custom:true});
+  renderTab('players');
+}
+
+function previewCustomImg(i,url){
+  DRAFT.roster[i].customImg=url;
+  const pv=document.getElementById('cimgpv'+i);
+  if(!pv)return;
+  if(url){
+    pv.style.borderColor=DRAFT.roster[i].color;
+    pv.innerHTML=`<img src="${url}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'">`;
+    // Also update pface header
+    const pface=pv.closest('.pcard')?.querySelector('.pface');
+    if(pface) pface.innerHTML=`<img src="${url}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'">`;
+  } else {
+    pv.style.borderColor='#1a1a30';
+    pv.innerHTML='';
+  }
+  // Clear file input since URL takes priority
+  const fileInput=document.getElementById('cimgfile'+i);
+  if(fileInput) fileInput.value='';
+}
+
+function clearCustomImg(i){
+  DRAFT.roster[i].customImg='';
+  const pv=document.getElementById('cimgpv'+i);
+  if(pv){pv.style.borderColor='#1a1a30';pv.innerHTML='';}
+  const urlInput=document.getElementById('cimgurl'+i);
+  if(urlInput) urlInput.value='';
+  const fileInput=document.getElementById('cimgfile'+i);
+  if(fileInput) fileInput.value='';
+}
+
+function handleFileUpload(i,input){
+  const file=input.files&&input.files[0];
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const dataUrl=e.target.result;
+    DRAFT.roster[i].customImg=dataUrl;
+    // Update preview circle
+    const pv=document.getElementById('cimgpv'+i);
+    if(pv){
+      pv.style.borderColor=DRAFT.roster[i].color;
+      pv.innerHTML=`<img src="${dataUrl}" style="width:100%;height:100%;object-fit:cover;">`;
+    }
+    // Clear URL field since file upload takes priority
+    const urlInput=document.getElementById('cimgurl'+i);
+    if(urlInput) urlInput.value='';
+    // Also update the pface header image
+    const pface=pv?.closest('.pcard')?.querySelector('.pface');
+    if(pface) pface.innerHTML=`<img src="${dataUrl}" style="width:100%;height:100%;object-fit:cover;">`;
+  };
+  reader.readAsDataURL(file);
+}
 
 // ── GAME ──
 function buildGameTab(){
+  const shapes=[{id:'circle',emoji:'⭕',label:'Circle'},{id:'square',emoji:'⬛',label:'Square'},{id:'triangle',emoji:'🔺',label:'Triangle'},{id:'hexagon',emoji:'⬡',label:'Hexagon'}];
+  const cur=DRAFT.arenaShape||'circle';
   return`
+    <div class="shd">Arena Shape</div>
+    <div class="weapon-sel" style="grid-template-columns:repeat(4,1fr);margin-bottom:14px;">
+      ${shapes.map(s=>`<div class="wp${s.id===cur?' on':''}" title="${s.label}" onclick="setShape('${s.id}',this)">${s.emoji}<div style="font-size:9px;margin-top:2px;color:#778;">${s.label}</div></div>`).join('')}
+    </div>
     <div class="shd">Round Timer</div>
-    <p style="font-size:11px;color:#336;line-height:1.5;margin-bottom:10px;">Each round lasts a random time between Min and Max. When the timer hits 0, the player with the lowest HP is eliminated. This repeats until only one player stands.</p>
+    <p style="font-size:11px;color:#336;line-height:1.5;margin-bottom:10px;">Ball speed gradually ramps up over time. Each phase lasts a random time between Min and Max seconds before the next speed increase. Players are eliminated only when their energy reaches 0.</p>
     <div class="r2">
       <div><label class="lbl">Min seconds (10–80)</label><input id="gtmin" class="fi" type="number" min="10" max="80" value="${DRAFT.roundMinSec}"></div>
       <div><label class="lbl">Max seconds (20–90)</label><input id="gtmax" class="fi" type="number" min="20" max="90" value="${DRAFT.roundMaxSec}"></div>
     </div>
   `;
+}
+
+function setShape(id,el){
+  DRAFT.arenaShape=id;
+  el.closest('.weapon-sel').querySelectorAll('.wp').forEach(w=>w.classList.remove('on'));
+  el.classList.add('on');
 }
 
 // ── TEXT ──
@@ -1081,6 +1317,7 @@ function applyClose(){
   const tmax=+document.getElementById('gtmax')?.value;
   if(tmin) DRAFT.roundMinSec=Math.min(80,Math.max(10,tmin));
   if(tmax) DRAFT.roundMaxSec=Math.min(90,Math.max(20,tmax));
+  // arenaShape is already set via setShape()
   // Text
   const v=id=>document.getElementById(id)?.value;
   const t0=v('tt0'),t1=v('tt1');
