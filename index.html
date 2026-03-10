@@ -100,16 +100,16 @@ const BASE = "/players/headshots/face/";
 const NBA_CDN = "https://cdn.nba.com/headshots/nba/latest/260x190/";
 
 let PDATA = [
-  {id:203999, slug:"203999-nikola-jokic",              name:"Nikola Jokic",             team:"DEN",color:"#FEC524",bg:"#0E2240",icon:"🐴"},
-  {id:1628983,slug:"1628983-shai-gilgeous-alexander",  name:"Shai Gilgeous-Alexander",  team:"OKC",color:"#007AC1",bg:"#EF3B24",icon:"🌩️"},
-  {id:1630595,slug:"1630595-cade-cunningham",          name:"Cade Cunningham",          team:"DET",color:"#C8102E",bg:"#1D428A",icon:"🏎️"},
-  {id:1641705,slug:"1641705-victor-wembanyama",        name:"Victor Wembanyama",        team:"SAS",color:"#C4CED4",bg:"#061922",icon:"🗼"},
-  {id:1627759,slug:"1627759-jaylen-brown",             name:"Jaylen Brown",             team:"BOS",color:"#007A33",bg:"#BA9653",icon:"🦅"},
-  {id:2544,   slug:"2544-lebron-james",                name:"LeBron James",             team:"LAL",color:"#FDB927",bg:"#552583",icon:"👑"},
-  {id:201939, slug:"201939-stephen-curry",             name:"Stephen Curry",            team:"GSW",color:"#FFC72C",bg:"#1D428A",icon:"⚡"},
-  {id:203507, slug:"203507-giannis-antetokounmpo",     name:"Giannis Antetokounmpo",    team:"MIL",color:"#00471B",bg:"#EEE1C6",icon:"🦌"},
-  {id:1629029,slug:"1629029-luka-doni",                name:"Luka Doncic",              team:"DAL",color:"#00538C",bg:"#002B5E",icon:"🇸🇮"},
-  {id:1628369,slug:"1628369-jayson-tatum",             name:"Jayson Tatum",             team:"BOS",color:"#007A33",bg:"#BA9653",icon:"☘️"},
+  {id:203999, slug:"203999-nikola-jokic",              name:"Nikola Jokic",             team:"DEN",color:"#FEC524",bg:"#0E2240",icon:""},
+  {id:1628983,slug:"1628983-shai-gilgeous-alexander",  name:"Shai Gilgeous-Alexander",  team:"OKC",color:"#007AC1",bg:"#EF3B24",icon:""},
+  {id:1630595,slug:"1630595-cade-cunningham",          name:"Cade Cunningham",          team:"DET",color:"#C8102E",bg:"#1D428A",icon:""},
+  {id:1641705,slug:"1641705-victor-wembanyama",        name:"Victor Wembanyama",        team:"SAS",color:"#C4CED4",bg:"#061922",icon:""},
+  {id:1627759,slug:"1627759-jaylen-brown",             name:"Jaylen Brown",             team:"BOS",color:"#007A33",bg:"#BA9653",icon:""},
+  {id:2544,   slug:"2544-lebron-james",                name:"LeBron James",             team:"LAL",color:"#FDB927",bg:"#552583",icon:""},
+  {id:201939, slug:"201939-stephen-curry",             name:"Stephen Curry",            team:"GSW",color:"#FFC72C",bg:"#1D428A",icon:""},
+  {id:203507, slug:"203507-giannis-antetokounmpo",     name:"Giannis Antetokounmpo",    team:"MIL",color:"#00471B",bg:"#EEE1C6",icon:""},
+  {id:1629029,slug:"1629029-luka-doni",                name:"Luka Doncic",              team:"DAL",color:"#00538C",bg:"#002B5E",icon:""},
+  {id:1628369,slug:"1628369-jayson-tatum",             name:"Jayson Tatum",             team:"BOS",color:"#007A33",bg:"#BA9653",icon:""},
   {id:203954, slug:"203954-joel-embiid",               name:"Joel Embiid",              team:"PHI",color:"#006BB6",bg:"#ED174C",icon:""},
   {id:1628378,slug:"1628378-donovan-mitchell",         name:"Donovan Mitchell",         team:"CLE",color:"#860038",bg:"#FDBB30",icon:""},
   {id:1629027,slug:"1629027-trae-young",               name:"Trae Young",               team:"ATL",color:"#E03A3E",bg:"#C1D32F",icon:""},
@@ -120,12 +120,12 @@ let PDATA = [
   {id:1628368,slug:"1628368-deaaron-fox",              name:"De'Aaron Fox",             team:"SAC",color:"#5A2D81",bg:"#63727A",icon:""},
   {id:1628991,slug:"1628991-jaren-jackson-jr",         name:"Jaren Jackson Jr.",        team:"MEM",color:"#5D76A9",bg:"#12173F",icon:""},
   {id:1629028,slug:"1629028-deandre-ayton",            name:"Deandre Ayton",            team:"POR",color:"#E03A3E",bg:"#000000",icon:""},
-  {id:201142, slug:"201142-kevin-durant",              name:"Kevin Durant",             team:"PHX",color:"#E56020",bg:"#1D1160",icon:"🐍"},
+  {id:201142, slug:"201142-kevin-durant",              name:"Kevin Durant",             team:"PHX",color:"#E56020",bg:"#1D1160",icon:""},
   {id:203081, slug:"203081-damian-lillard",            name:"Damian Lillard",           team:"MIL",color:"#00471B",bg:"#EEE1C6",icon:""},
   {id:203076, slug:"203076-anthony-davis",             name:"Anthony Davis",            team:"LAL",color:"#FDB927",bg:"#552583",icon:""},
-  {id:1629630,slug:"1629630-ja-morant",                name:"Ja Morant",                team:"MEM",color:"#5D76A9",bg:"#12173F",icon:"🦘"},
-  {id:1630163,slug:"1630163-lamelo-ball",              name:"LaMelo Ball",              team:"CHA",color:"#00788C",bg:"#1D1160",icon:"🎱"},
-  {id:1629627,slug:"1629627-zion-williamson",          name:"Zion Williamson",          team:"NOP",color:"#0C2340",bg:"#C8102E",icon:"🌋"},
+  {id:1629630,slug:"1629630-ja-morant",                name:"Ja Morant",                team:"MEM",color:"#5D76A9",bg:"#12173F",icon:""},
+  {id:1630163,slug:"1630163-lamelo-ball",              name:"LaMelo Ball",              team:"CHA",color:"#00788C",bg:"#1D1160",icon:""},
+  {id:1629627,slug:"1629627-zion-williamson",          name:"Zion Williamson",          team:"NOP",color:"#0C2340",bg:"#C8102E",icon:""},
   {id:1628384,slug:"1628384-og-anunoby",               name:"OG Anunoby",               team:"NYK",color:"#006BB6",bg:"#F58426",icon:""},
   {id:1627750,slug:"1627750-jamal-murray",             name:"Jamal Murray",             team:"DEN",color:"#FEC524",bg:"#0E2240",icon:""},
   {id:1627783,slug:"1627783-pascal-siakam",            name:"Pascal Siakam",            team:"IND",color:"#002D62",bg:"#FDBB30",icon:""},
@@ -936,23 +936,15 @@ function drawPanel(){
     if(img){
       try{
         const asp=img.naturalWidth/img.naturalHeight,dw=tr*2.1,dh=dw/asp;
-        ctx.drawImage(img,sx-dw/2,ty-dh*.82,dw,dh);
+        ctx.drawImage(img,sx-dw/2,ty-dh/2,dw,dh);
       }catch(e){ctx.fillStyle=p.bg;ctx.fillRect(sx-tr,ty-tr,tr*2,tr*2);}
     } else { ctx.fillStyle=p.bg;ctx.fillRect(sx-tr,ty-tr,tr*2,tr*2); }
     ctx.restore();
     ctx.beginPath();ctx.arc(sx,ty,tr,0,Math.PI*2);
     ctx.strokeStyle=dead?'#1a1a1a':p.color;ctx.lineWidth=1.8;ctx.stroke();
 
-    // Weapon icon label (only if player has one)
-    const pIcon = p.icon||'';
-    if(pIcon){
-      ctx.font=`${Math.max(9,sw*.19)}px sans-serif`;
-      ctx.textAlign='center';ctx.textBaseline='middle';
-      ctx.fillText(pIcon,sx,ty+tr+9);
-    }
-
     // Energy bar
-    const bw=sw*.76,bh=5,bx=sx-bw/2,bby=py+36+Math.max(9,sw*.19)+5;
+    const bw=sw*.76,bh=5,bx=sx-bw/2,bby=py+38;
     if(!dead){
       const hf=b.hp/b.maxHP;
       ctx.fillStyle='rgba(0,0,0,.5)';rrect(bx,bby,bw,bh,2);ctx.fill();
