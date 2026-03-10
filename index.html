@@ -352,6 +352,7 @@ let phaseT;
 let flash, particles, dmgNums, screenShake;
 let endWinner;
 let speedMultiplier;
+let endgameBoost; // speed multiplier based on alive count: 1, 1.5, or 2
 
 function pickRoundDur(){
   return CFG.roundMinSec + Math.random()*(CFG.roundMaxSec-CFG.roundMinSec);
@@ -378,6 +379,7 @@ function initGame(){
   screenShake = {x:0, y:0, mag:0};
   endWinner = -1;
   speedMultiplier = 1.0;
+  endgameBoost = 1.0;
   roundDur = pickRoundDur();
   timerAcc = 0;
   roundTimer = roundDur;
@@ -433,6 +435,8 @@ class Ball {
     this.dead = true; this.deadT = performance.now();
     eliminated[this.idx] = true;
     aliveCnt--;
+    // Update endgame boost once per elimination
+    endgameBoost = aliveCnt<=2 ? 2.0 : aliveCnt<=3 ? 1.5 : 1.0;
     shake(14);
     spawnExplosion(this.x, this.y, this.p.color);
     if(aliveCnt<=1) setTimeout(()=>triggerEnd(), 400);
@@ -454,7 +458,8 @@ class Ball {
 
     this.trail.push({x:this.x,y:this.y});
     if(this.trail.length>14) this.trail.shift();
-    this.x+=this.vx*speedMultiplier; this.y+=this.vy*speedMultiplier;
+    const sm=speedMultiplier*endgameBoost;
+    this.x+=this.vx*sm; this.y+=this.vy*sm;
 
     // Arena wall
     const dx=this.x-CX,dy=this.y-CY,dist=Math.hypot(dx,dy),wall=AR-this.r;
@@ -580,19 +585,20 @@ function physicsStep(){
 }
 
 // ════════════════════════════ EFFECTS ════════════════════════════
-function shake(mag){ screenShake.mag=Math.max(screenShake.mag,mag); }
+function shake(mag){ screenShake.mag=Math.max(screenShake.mag, mag*(endgameBoost>1?1.5:1)); }
 
 function spawnClash(x,y,col){
-  for(let i=0;i<10;i++){
+  const n=endgameBoost>1?20:10;
+  for(let i=0;i<n;i++){
     const a=Math.random()*Math.PI*2, spd=2+Math.random()*6;
     particles.push({x,y,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,size:1.5+Math.random()*3.5,color:col,life:1,spark:true});
   }
-  // Sparks
   particles.push({x,y,vx:0,vy:0,size:18,color:col,life:1,ring:true});
 }
 
 function spawnExplosion(x,y,col){
-  for(let i=0;i<24;i++){
+  const n=endgameBoost>1?48:24;
+  for(let i=0;i<n;i++){
     const a=Math.random()*Math.PI*2, spd=1.5+Math.random()*8;
     particles.push({x,y,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,size:2+Math.random()*5,color:[col,'#fff','#ffdd44'][~~(Math.random()*3)],life:1,spark:true});
   }
