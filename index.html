@@ -161,6 +161,7 @@ fetch(PLAYERS_JSON_URL)
         return { id:p.id, slug:p.slug||'', name:p.name, team:p.team||'', color:'#4488cc', bg:'#0d1b2a', icon:'' };
       });
       FULL_DB_LOADED = true;
+      console.log(`Loaded ${FULL_DB.length} players from players.json`);
     }
   })
   .catch(()=>{}); // silent fallback to PDATA
