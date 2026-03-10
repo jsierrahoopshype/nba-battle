@@ -161,6 +161,7 @@ let CFG = {
   winnerMsg:   "WINS!",
   robbed:      "Who got ROBBED? 👇",
   watermark:   "HoopsHype.com",
+  arenaShape:  "circle",
 };
 
 // ════════════════════════════ CANVAS ════════════════════════════
@@ -247,6 +248,87 @@ function rrect(x,y,w,h,r){
   ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);
   ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);
   ctx.closePath();
+}
+
+// ════════════════════════════ ARENA SHAPES ════════════════════════════
+// Returns vertices for polygon shapes (equal area to circle with radius AR)
+function getArenaVerts(shape){
+  const circleArea = Math.PI*AR*AR;
+  if(shape==='square'){
+    const half = Math.sqrt(circleArea)/2;
+    return [{x:CX-half,y:CY-half},{x:CX+half,y:CY-half},{x:CX+half,y:CY+half},{x:CX-half,y:CY+half}];
+  }
+  if(shape==='triangle'){
+    const triSide = Math.sqrt(circleArea*4/Math.sqrt(3));
+    const h = triSide*Math.sqrt(3)/2;
+    const cy2 = CY+h/6; // shift down so visually centered
+    return [{x:CX,y:cy2-h*2/3},{x:CX+triSide/2,y:cy2+h/3},{x:CX-triSide/2,y:cy2+h/3}];
+  }
+  if(shape==='hexagon'){
+    const hexR = Math.sqrt(circleArea*2/(3*Math.sqrt(3)));
+    const verts=[];
+    for(let i=0;i<6;i++){
+      const a = Math.PI/6+i*Math.PI/3; // flat-top hexagon
+      verts.push({x:CX+Math.cos(a)*hexR, y:CY+Math.sin(a)*hexR});
+    }
+    return verts;
+  }
+  return null; // circle
+}
+
+// Trace arena shape path on ctx
+function traceArenaPath(shape, inset){
+  const ins = inset||0;
+  if(shape==='circle'||!shape){
+    ctx.beginPath();ctx.arc(CX,CY,AR-ins,0,Math.PI*2);
+    return;
+  }
+  const verts = getArenaVerts(shape);
+  if(!verts) return;
+  // Inset vertices toward center
+  const iv = verts.map(v=>{
+    const dx=v.x-CX, dy=v.y-CY, d=Math.hypot(dx,dy);
+    return d>0?{x:v.x-dx/d*ins, y:v.y-dy/d*ins}:{...v};
+  });
+  ctx.beginPath();
+  if(shape==='square'){
+    const cr = Math.max(0,20-ins);
+    const x0=iv[0].x, y0=iv[0].y, x1=iv[2].x, y1=iv[2].y;
+    const w=x1-x0, h=y1-y0;
+    rrect(x0,y0,w,h,cr);
+    return;
+  }
+  ctx.moveTo(iv[0].x,iv[0].y);
+  for(let i=1;i<iv.length;i++) ctx.lineTo(iv[i].x,iv[i].y);
+  ctx.closePath();
+}
+
+// Polygon wall collision: reflect ball off nearest edge if outside
+function polyWallCollide(ball, verts){
+  const n=verts.length, bx=ball.x, by=ball.y, br=ball.r;
+  for(let i=0;i<n;i++){
+    const v1=verts[i], v2=verts[(i+1)%n];
+    const ex=v2.x-v1.x, ey=v2.y-v1.y;
+    // Outward normal (pointing inward toward center)
+    let nx=-ey, ny=ex;
+    const nl=Math.hypot(nx,ny);
+    nx/=nl; ny/=nl;
+    // Ensure normal points inward (toward CX,CY)
+    const mx=(v1.x+v2.x)/2, my=(v1.y+v2.y)/2;
+    if(nx*(CX-mx)+ny*(CY-my)<0){nx=-nx;ny=-ny;}
+    // Distance from ball center to edge line
+    const dist = (bx-v1.x)*nx + (by-v1.y)*ny;
+    if(dist<br){
+      // Ball is too close to or past the edge
+      const dot = ball.vx*nx+ball.vy*ny;
+      if(dot<0){
+        ball.vx -= 2*dot*nx;
+        ball.vy -= 2*dot*ny;
+      }
+      ball.x += nx*(br-dist);
+      ball.y += ny*(br-dist);
+    }
+  }
 }
 
 // ════════════════════════════ GAME STATE ════════════════════════════
@@ -370,11 +452,17 @@ class Ball {
     this.x+=this.vx*sm; this.y+=this.vy*sm;
 
     // Arena wall
-    const dx=this.x-CX,dy=this.y-CY,dist=Math.hypot(dx,dy),wall=AR-this.r;
-    if(dist>wall&&dist>0){
-      const nx=dx/dist,ny=dy/dist,dot=this.vx*nx+this.vy*ny;
-      this.vx-=2*dot*nx; this.vy-=2*dot*ny;
-      this.x=CX+nx*wall; this.y=CY+ny*wall;
+    const shape = CFG.arenaShape||'circle';
+    if(shape==='circle'){
+      const dx=this.x-CX,dy=this.y-CY,dist=Math.hypot(dx,dy),wall=AR-this.r;
+      if(dist>wall&&dist>0){
+        const nx=dx/dist,ny=dy/dist,dot=this.vx*nx+this.vy*ny;
+        this.vx-=2*dot*nx; this.vy-=2*dot*ny;
+        this.x=CX+nx*wall; this.y=CY+ny*wall;
+      }
+    } else {
+      const verts = getArenaVerts(shape);
+      if(verts) polyWallCollide(this, verts);
     }
   }
 
@@ -679,7 +767,10 @@ function drawBg(){
 }
 
 function drawArenaFloor(){
-  ctx.save();ctx.beginPath();ctx.arc(CX,CY,AR-1,0,Math.PI*2);ctx.clip();
+  const shape=CFG.arenaShape||'circle';
+  ctx.save();
+  traceArenaPath(shape,1);
+  ctx.clip();
   ctx.fillStyle='#040416';ctx.fill();
   ctx.strokeStyle='rgba(255,255,255,.02)';ctx.lineWidth=1;
   [.28,.56,.84].forEach(t=>{ctx.beginPath();ctx.arc(CX,CY,AR*t,0,Math.PI*2);ctx.stroke();});
@@ -689,14 +780,17 @@ function drawArenaFloor(){
 }
 
 function drawBallsClipped(){
-  ctx.save();ctx.beginPath();ctx.arc(CX,CY,AR-2,0,Math.PI*2);ctx.clip();
+  ctx.save();
+  traceArenaPath(CFG.arenaShape||'circle',2);
+  ctx.clip();
   balls.forEach(b=>b.draw());
   ctx.restore();
 }
 
 function drawArenaRing(){
+  const shape=CFG.arenaShape||'circle';
   [{w:28,a:.04},{w:14,a:.09},{w:5,a:.38},{w:2,a:.9}].forEach(({w,a})=>{
-    ctx.beginPath();ctx.arc(CX,CY,AR,0,Math.PI*2);
+    traceArenaPath(shape,0);
     ctx.strokeStyle=`rgba(100,165,255,${a})`;ctx.lineWidth=w;ctx.stroke();
   });
 }
@@ -924,6 +1018,7 @@ function openModal(tab){
     title:[...CFG.title], subtitle:CFG.subtitle,
     elimMsg:CFG.elimMsg, winnerMsg:CFG.winnerMsg,
     robbed:CFG.robbed, watermark:CFG.watermark,
+    arenaShape:CFG.arenaShape||'circle',
   };
   document.getElementById('modal').classList.add('open');
   switchTab(tab||'players');
@@ -1000,7 +1095,13 @@ function addP(id){if(DRAFT.roster.length>=10)return;const p=PDATA.find(p=>p.id==
 
 // ── GAME ──
 function buildGameTab(){
+  const shapes=[{id:'circle',emoji:'⭕',label:'Circle'},{id:'square',emoji:'⬛',label:'Square'},{id:'triangle',emoji:'🔺',label:'Triangle'},{id:'hexagon',emoji:'⬡',label:'Hexagon'}];
+  const cur=DRAFT.arenaShape||'circle';
   return`
+    <div class="shd">Arena Shape</div>
+    <div class="weapon-sel" style="grid-template-columns:repeat(4,1fr);margin-bottom:14px;">
+      ${shapes.map(s=>`<div class="wp${s.id===cur?' on':''}" title="${s.label}" onclick="setShape('${s.id}',this)">${s.emoji}<div style="font-size:9px;margin-top:2px;color:#778;">${s.label}</div></div>`).join('')}
+    </div>
     <div class="shd">Round Timer</div>
     <p style="font-size:11px;color:#336;line-height:1.5;margin-bottom:10px;">Ball speed gradually ramps up over time. Each phase lasts a random time between Min and Max seconds before the next speed increase. Players are eliminated only when their energy reaches 0.</p>
     <div class="r2">
@@ -1008,6 +1109,12 @@ function buildGameTab(){
       <div><label class="lbl">Max seconds (20–90)</label><input id="gtmax" class="fi" type="number" min="20" max="90" value="${DRAFT.roundMaxSec}"></div>
     </div>
   `;
+}
+
+function setShape(id,el){
+  DRAFT.arenaShape=id;
+  el.closest('.weapon-sel').querySelectorAll('.wp').forEach(w=>w.classList.remove('on'));
+  el.classList.add('on');
 }
 
 // ── TEXT ──
@@ -1034,6 +1141,7 @@ function applyClose(){
   const tmax=+document.getElementById('gtmax')?.value;
   if(tmin) DRAFT.roundMinSec=Math.min(80,Math.max(10,tmin));
   if(tmax) DRAFT.roundMaxSec=Math.min(90,Math.max(20,tmax));
+  // arenaShape is already set via setShape()
   // Text
   const v=id=>document.getElementById(id)?.value;
   const t0=v('tt0'),t1=v('tt1');
