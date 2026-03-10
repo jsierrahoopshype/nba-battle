@@ -508,14 +508,9 @@ class Ball {
     if(this.hitF>0) this.hitF--;
     if(this.atkF>0) this.atkF--;
     if(this.sawBoostF>0) this.sawBoostF--;
-    // Weapon orbit spin (slower for emoji/image, saw blade for fallback)
-    const hasIcon = this.p.icon || this.p.iconUrl;
-    if(hasIcon){
-      this.bladeAngle += 0.02;
-    } else {
-      const sawBase = endgameBoost>1 ? 0.14 : 0.06;
-      this.bladeAngle += this.sawBoostF>0 ? sawBase*3 : sawBase;
-    }
+    // Saw blade spin (all players have saw blade now)
+    const sawBase = endgameBoost>1 ? 0.14 : 0.06;
+    this.bladeAngle += this.sawBoostF>0 ? sawBase*3 : sawBase;
 
     this.trail.push({x:this.x,y:this.y});
     if(this.trail.length>14) this.trail.shift();
@@ -556,7 +551,57 @@ class Ball {
     ctx.beginPath();ctx.arc(this.x,this.y,this.r*2.1,0,Math.PI*2);
     ctx.fillStyle=grd;ctx.fill();
 
-    // Face
+    // SAW BLADE — centered on ball, teeth extend beyond ball rim (all players)
+    if(!this.dead){
+      const discR = this.r; // disc matches ball radius
+      const toothLen = this.r*0.28; // teeth extend beyond disc
+      const teethN = 24;
+      const toothW = this.r*0.06; // half-width of tooth base
+      const sx = this.x, sy = this.y;
+      const isHit = this.atkF>0;
+
+      ctx.save();
+      if(isHit){
+        ctx.shadowColor='#ff8800';ctx.shadowBlur=18;
+      } else {
+        ctx.shadowColor='rgba(170,200,255,.4)';ctx.shadowBlur=6;
+      }
+
+      // Disc body — radial gradient gunmetal to chrome
+      const dg=ctx.createRadialGradient(sx,sy,0,sx,sy,discR);
+      if(isHit){
+        dg.addColorStop(0,'#ff8800');dg.addColorStop(0.5,'#ffaa44');dg.addColorStop(1,'#ffe0aa');
+      } else {
+        dg.addColorStop(0,'#1a1a1a');dg.addColorStop(0.6,'#666666');dg.addColorStop(1,'#cccccc');
+      }
+      ctx.beginPath();ctx.arc(sx,sy,discR,0,Math.PI*2);
+      ctx.fillStyle=dg;ctx.fill();
+      ctx.shadowBlur=0;
+
+      // Teeth + gullets
+      for(let k=0;k<teethN;k++){
+        const ta = this.bladeAngle+(k/teethN)*Math.PI*2;
+        const taNext = this.bladeAngle+((k+0.5)/teethN)*Math.PI*2;
+        const tipX=sx+Math.cos(ta)*(discR+toothLen);
+        const tipY=sy+Math.sin(ta)*(discR+toothLen);
+        const perpX=-Math.sin(ta)*toothW, perpY=Math.cos(ta)*toothW;
+        const bx1=sx+Math.cos(ta)*discR+perpX, by1=sy+Math.sin(ta)*discR+perpY;
+        const bx2=sx+Math.cos(ta)*discR-perpX, by2=sy+Math.sin(ta)*discR-perpY;
+        ctx.beginPath();
+        ctx.moveTo(bx1,by1);ctx.lineTo(tipX,tipY);ctx.lineTo(bx2,by2);
+        ctx.closePath();
+        ctx.fillStyle=isHit?'#ffcc66':'#aaaaaa';
+        ctx.fill();
+
+        const gx=sx+Math.cos(taNext)*discR*0.92;
+        const gy=sy+Math.sin(taNext)*discR*0.92;
+        ctx.beginPath();ctx.arc(gx,gy,toothW*0.8,0,Math.PI*2);
+        ctx.fillStyle=isHit?'#aa4400':'#0a0a0a';ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    // Face (on top of saw disc)
     try{
       const face=getFace(p,this.r);
       ctx.save();
@@ -597,12 +642,11 @@ class Ball {
       }
     }
 
-    // WEAPON: icon emoji, iconUrl image, or razor ring fallback
+    // Orbiting icon companion (only if player has icon/iconUrl set)
     if(!this.dead){
       const pIcon = this.p.icon;
       const pIconUrl = this.p.iconUrl;
       if(pIconUrl && ICON_IMGS[pIconUrl] && ICON_IMGS[pIconUrl]!=='loading'){
-        // Orbiting image circle
         const orbitR = this.r*1.8;
         const imgSz = this.r*0.9;
         const ix = this.x+Math.cos(this.bladeAngle)*orbitR;
@@ -613,7 +657,6 @@ class Ball {
         ctx.restore();
         if(this.atkF>0){ctx.beginPath();ctx.arc(ix,iy,imgSz,0,Math.PI*2);ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.shadowColor='#fff';ctx.shadowBlur=14;ctx.stroke();ctx.shadowBlur=0;}
       } else if(pIcon){
-        // Orbiting emoji
         const orbitR = this.r*1.5;
         const fontSize = this.r*0.55;
         const ix = this.x+Math.cos(this.bladeAngle)*orbitR;
@@ -624,73 +667,6 @@ class Ball {
         if(this.atkF>0){ctx.shadowColor='#fff';ctx.shadowBlur=14;}
         ctx.fillText(pIcon,ix,iy);
         ctx.shadowBlur=0;
-        ctx.restore();
-      } else {
-        // CIRCULAR SAW BLADE — mechanical sierra at ball edge
-        const sawR = this.r*0.55; // total radius including teeth
-        const discR = sawR*0.78; // inner disc radius
-        const teethN = 24;
-        const toothLen = sawR*0.22; // tooth length
-        const toothW = sawR*0.08; // half-width of tooth base
-        // Position: overlapping the ball rim
-        const sawDist = this.r - sawR*0.15;
-        const sx = this.x+Math.cos(this.bladeAngle)*sawDist;
-        const sy = this.y+Math.sin(this.bladeAngle)*sawDist;
-        const isHit = this.atkF>0;
-
-        ctx.save();
-        // Glow
-        if(isHit){
-          ctx.shadowColor='#ff8800';ctx.shadowBlur=18;
-        } else {
-          ctx.shadowColor='rgba(170,200,255,.4)';ctx.shadowBlur=6;
-        }
-
-        // Disc body — radial gradient gunmetal to chrome
-        const dg=ctx.createRadialGradient(sx,sy,0,sx,sy,discR);
-        if(isHit){
-          dg.addColorStop(0,'#ff8800');dg.addColorStop(0.5,'#ffaa44');dg.addColorStop(1,'#ffe0aa');
-        } else {
-          dg.addColorStop(0,'#1a1a1a');dg.addColorStop(0.6,'#666666');dg.addColorStop(1,'#cccccc');
-        }
-        ctx.beginPath();ctx.arc(sx,sy,discR,0,Math.PI*2);
-        ctx.fillStyle=dg;ctx.fill();
-        ctx.shadowBlur=0;
-
-        // Teeth + gullets
-        for(let k=0;k<teethN;k++){
-          const ta = this.bladeAngle+(k/teethN)*Math.PI*2;
-          const taNext = this.bladeAngle+((k+0.5)/teethN)*Math.PI*2;
-          // Tooth tip
-          const tipX=sx+Math.cos(ta)*(discR+toothLen);
-          const tipY=sy+Math.sin(ta)*(discR+toothLen);
-          // Tooth base points on disc edge
-          const perpX=-Math.sin(ta)*toothW, perpY=Math.cos(ta)*toothW;
-          const bx1=sx+Math.cos(ta)*discR+perpX, by1=sy+Math.sin(ta)*discR+perpY;
-          const bx2=sx+Math.cos(ta)*discR-perpX, by2=sy+Math.sin(ta)*discR-perpY;
-
-          // Draw tooth
-          ctx.beginPath();
-          ctx.moveTo(bx1,by1);ctx.lineTo(tipX,tipY);ctx.lineTo(bx2,by2);
-          ctx.closePath();
-          ctx.fillStyle=isHit?'#ffcc66':'#aaaaaa';
-          ctx.fill();
-
-          // Gullet (dark slot between teeth)
-          const gx=sx+Math.cos(taNext)*discR*0.92;
-          const gy=sy+Math.sin(taNext)*discR*0.92;
-          ctx.beginPath();ctx.arc(gx,gy,toothW*0.8,0,Math.PI*2);
-          ctx.fillStyle=isHit?'#aa4400':'#0a0a0a';ctx.fill();
-        }
-
-        // Center hole
-        const holeR=sawR*0.14;
-        ctx.beginPath();ctx.arc(sx,sy,holeR,0,Math.PI*2);
-        ctx.fillStyle=isHit?'#663300':'#333333';ctx.fill();
-        // Hole rim
-        ctx.beginPath();ctx.arc(sx,sy,holeR,0,Math.PI*2);
-        ctx.strokeStyle=isHit?'#ff8800':'#555555';ctx.lineWidth=1;ctx.stroke();
-
         ctx.restore();
       }
     }
@@ -751,20 +727,13 @@ function spawnClash(x,y,col){
 }
 
 function spawnBladeSparks(ball){
-  const hasIcon = ball.p.icon || ball.p.iconUrl;
-  // Trigger saw boost spin on collision (only for saw blade)
-  if(!hasIcon) ball.sawBoostF=8;
-  const sawR=ball.r*0.55, sawDist=ball.r-sawR*0.15;
-  const sx=ball.x+Math.cos(ball.bladeAngle)*sawDist;
-  const sy=ball.y+Math.sin(ball.bladeAngle)*sawDist;
-  const sparkColors=hasIcon?['#ffffff','#ccddff','#aabbcc']:['#ff8800','#ffaa33','#ffffff','#ffcc44'];
-  const n=hasIcon?6:8;
-  for(let k=0;k<(hasIcon?8:12);k++){
+  ball.sawBoostF=8; // all players have saw blade
+  const sparkColors=['#ff8800','#ffaa33','#ffffff','#ffcc44'];
+  for(let k=0;k<12;k++){
     const sa=Math.random()*Math.PI*2, sp=3+Math.random()*5;
-    const ox=hasIcon?ball.x:sx, oy=hasIcon?ball.y:sy;
-    for(let j=0;j<n;j++){
+    for(let j=0;j<8;j++){
       const a2=sa+(Math.random()-.5)*1.2, sp2=sp*(0.6+Math.random()*0.8);
-      particles.push({x:ox,y:oy,vx:Math.cos(a2)*sp2,vy:Math.sin(a2)*sp2,size:1+Math.random()*2.5,color:sparkColors[~~(Math.random()*sparkColors.length)],life:1,spark:true});
+      particles.push({x:ball.x,y:ball.y,vx:Math.cos(a2)*sp2,vy:Math.sin(a2)*sp2,size:1+Math.random()*2.5,color:sparkColors[~~(Math.random()*sparkColors.length)],life:1,spark:true});
     }
   }
 }
@@ -961,17 +930,12 @@ function drawPanel(){
     ctx.beginPath();ctx.arc(sx,ty,tr,0,Math.PI*2);
     ctx.strokeStyle=dead?'#1a1a1a':p.color;ctx.lineWidth=1.8;ctx.stroke();
 
-    // Weapon icon label
+    // Weapon icon label (only if player has one)
     const pIcon = p.icon||'';
     if(pIcon){
       ctx.font=`${Math.max(9,sw*.19)}px sans-serif`;
       ctx.textAlign='center';ctx.textBaseline='middle';
       ctx.fillText(pIcon,sx,ty+tr+9);
-    } else {
-      ctx.font=`${Math.max(9,sw*.19)}px sans-serif`;
-      ctx.textAlign='center';ctx.textBaseline='middle';
-      ctx.fillStyle='rgba(120,140,180,.5)';
-      ctx.fillText('⚔️',sx,ty+tr+9);
     }
 
     // Energy bar
