@@ -99,7 +99,7 @@ canvas{display:block}
 const BASE = "/players/headshots/face/";
 const NBA_CDN = "https://cdn.nba.com/headshots/nba/latest/260x190/";
 
-const PDATA = [
+let PDATA = [
   {id:203999, slug:"203999-nikola-jokic",              name:"Nikola Jokic",             team:"DEN",color:"#FEC524",bg:"#0E2240",icon:"🐴"},
   {id:1628983,slug:"1628983-shai-gilgeous-alexander",  name:"Shai Gilgeous-Alexander",  team:"OKC",color:"#007AC1",bg:"#EF3B24",icon:"🌩️"},
   {id:1630595,slug:"1630595-cade-cunningham",          name:"Cade Cunningham",          team:"DET",color:"#C8102E",bg:"#1D428A",icon:"🏎️"},
@@ -143,6 +143,27 @@ const WEAPONS = [
   {id:'sickle', emoji:'⚙️', label:'Sickle'},
   {id:'star',   emoji:'⭐',  label:'Star'},
 ];
+
+// ════════════════════════════ FULL PLAYER DB FETCH ════════════════════════════
+const PLAYERS_JSON_URL = 'https://jsierrahoopshype.github.io/nba-headshots/metadata/players.json';
+let FULL_DB = PDATA; // start with hardcoded fallback
+let FULL_DB_LOADED = false;
+
+fetch(PLAYERS_JSON_URL)
+  .then(r=>{ if(!r.ok) throw new Error(r.status); return r.json(); })
+  .then(data=>{
+    if(Array.isArray(data)&&data.length>0){
+      // Merge: keep PDATA entries (they have color/bg/icon), add fetched ones for the rest
+      const pdataById = new Map(PDATA.map(p=>[p.id,p]));
+      FULL_DB = data.map(p=>{
+        const existing = pdataById.get(p.id);
+        if(existing) return existing; // preserve color, bg, icon from hardcoded
+        return { id:p.id, slug:p.slug||'', name:p.name, team:p.team||'', color:'#4488cc', bg:'#0d1b2a', icon:'' };
+      });
+      FULL_DB_LOADED = true;
+    }
+  })
+  .catch(()=>{}); // silent fallback to PDATA
 
 // ════════════════════════════ CONFIG ════════════════════════════
 let CFG = {
@@ -1184,8 +1205,10 @@ function buildPlayersTab(){
   });
 
   if(DRAFT.roster.length<10){
-    html+=`<div class="shd">Add Player</div>
-    <input class="fi" id="psearch" placeholder="Search NBA player…" oninput="filterPP()" style="margin-bottom:6px">
+    const dbCount = FULL_DB.length;
+    const countLabel = FULL_DB_LOADED ? `<span style="font-size:10px;color:#3366aa;font-weight:400;margin-left:6px;">${dbCount} players available</span>` : '';
+    html+=`<div class="shd">Add Player${countLabel}</div>
+    <input class="fi" id="psearch" placeholder="Search by name or team…" oninput="filterPP()" style="margin-bottom:6px">
     <div class="pplist" id="pplist">${buildPPList('')}</div>
     <button class="addbtn" style="margin-top:8px;" onclick="addCustomP()">+ ADD CUSTOM PLAYER</button>`;
   }
@@ -1194,18 +1217,19 @@ function buildPlayersTab(){
 
 function buildPPList(q){
   const used=new Set(DRAFT.roster.map(p=>p.id));
-  const list=PDATA.filter(p=>!used.has(p.id)&&(!q||p.name.toLowerCase().includes(q.toLowerCase())));
-  return list.slice(0,12).map(p=>`
+  const ql=q?q.toLowerCase():'';
+  const list=FULL_DB.filter(p=>!used.has(p.id)&&(!ql||p.name.toLowerCase().includes(ql)||(p.team&&p.team.toLowerCase().includes(ql))));
+  return list.slice(0,20).map(p=>`
     <div class="ppi" onclick="addP(${p.id})">
       <div class="ppi-face"><img src="${BASE}${p.slug}.png" onerror="this.src='${NBA_CDN}${p.id}.png'"></div>
       <div><div class="ppi-name">${p.name}</div><div class="ppi-team">${p.team}</div></div>
-    </div>`).join('')||'<div style="padding:10px;color:#223;font-size:11px;">No more players</div>';
+    </div>`).join('')||'<div style="padding:10px;color:#223;font-size:11px;">No matches</div>';
 }
 
 function filterPP(){const q=document.getElementById('psearch')?.value||'';const el=document.getElementById('pplist');if(el)el.innerHTML=buildPPList(q);}
 function setPct(i,v){DRAFT.roster[i].winPct=+v;const el=document.getElementById('pv'+i);if(el)el.textContent=v+'%';}
 function removeP(i){if(DRAFT.roster.length<=2){alert('Minimum 2 players');return;}DRAFT.roster.splice(i,1);renderTab('players');}
-function addP(id){if(DRAFT.roster.length>=10)return;const p=PDATA.find(p=>p.id===id);if(!p)return;DRAFT.roster.push({...p,winPct:20,icon:p.icon||'',iconUrl:'',customImg:''});renderTab('players');}
+function addP(id){if(DRAFT.roster.length>=10)return;const p=FULL_DB.find(p=>p.id===id);if(!p)return;DRAFT.roster.push({...p,winPct:20,icon:p.icon||'',iconUrl:'',customImg:''});renderTab('players');}
 
 let _customIdCounter=Date.now();
 function addCustomP(){
