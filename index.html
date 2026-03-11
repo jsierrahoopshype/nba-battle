@@ -482,10 +482,12 @@ function loadImages(roster, cb){
     // Skip NBA headshot load for custom players (no slug) — they use customImg or bg fallback
     if(!p.slug){ IMGS[p.id]=null; pending--; if(pending===0) cb(); return; }
     const img = new Image();
+    img.crossOrigin = 'anonymous';
     img.onload = ()=>{ IMGS[p.id]=img; pending--; if(pending===0) cb(); };
     img.onerror = ()=>{
       // fallback to NBA CDN
       const img2 = new Image();
+      img2.crossOrigin = 'anonymous';
       img2.onload = ()=>{ IMGS[p.id]=img2; pending--; if(pending===0) cb(); };
       img2.onerror = ()=>{ IMGS[p.id]=null; pending--; if(pending===0) cb(); };
       img2.src = NBA_CDN + p.id + '.png';
@@ -539,7 +541,7 @@ function loadCustomImg(url, cb){
   if(!url) return;
   if(CUSTOM_IMGS[url] && CUSTOM_IMGS[url]!=='loading') { if(cb) cb(); return; }
   const img = new Image();
-  img.crossOrigin = 'anonymous';
+  if(!url.startsWith('data:')) img.crossOrigin = 'anonymous';
   img.onload = ()=>{ CUSTOM_IMGS[url]=img; if(cb) cb(); };
   img.onerror = ()=>{ CUSTOM_IMGS[url]=null; if(cb) cb(); };
   CUSTOM_IMGS[url] = 'loading';
@@ -1362,6 +1364,12 @@ function startRec(){
   let vidStream;
   try{ vidStream=canvas.captureStream(60); console.log('[REC] captureStream(60) OK'); }
   catch(e1){
+    if(e1.name==='SecurityError'||/origin-clean|tainted|security/i.test(e1.message)){
+      const tainted=Object.entries(IMGS).filter(([k,v])=>v&&!v._clean).map(([k])=>k);
+      console.error('[REC] Canvas tainted by cross-origin image(s). Likely culprits:',tainted.length?tainted:'(check CUSTOM_IMGS or ICON_IMGS)');
+      alert('Recording failed: canvas tainted by cross-origin images. Reload the page and try again — headshots must load with CORS headers.');
+      return;
+    }
     try{ vidStream=canvas.captureStream(30); console.log('[REC] captureStream(30) OK (60fps failed)'); }
     catch(e2){ alert('Canvas capture failed: '+e2.message); return; }
   }
