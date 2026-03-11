@@ -95,6 +95,85 @@ canvas{display:block}
 </div>
 
 <script>
+// ═══════════════════════════ AUDIO ENGINE ═══════════════════════════
+let _audioCtx=null;
+function getAudioCtx(){
+  if(!_audioCtx) _audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+  if(_audioCtx.state==='suspended') _audioCtx.resume();
+  return _audioCtx;
+}
+document.addEventListener('click',()=>getAudioCtx(),{once:true});
+
+function sndCollision(speed){
+  const ctx=getAudioCtx(), t=ctx.currentTime;
+  const gain=ctx.createGain();
+  gain.gain.setValueAtTime(Math.min(0.4,speed*0.06),t);
+  gain.gain.exponentialRampToValueAtTime(0.001,t+0.08);
+  gain.connect(ctx.destination);
+  const dist=ctx.createWaveShaper();
+  const curve=new Float32Array(256);
+  for(let i=0;i<256;i++){const x=i*2/255-1;curve[i]=Math.sign(x)*(1-Math.exp(-3*Math.abs(x)));}
+  dist.curve=curve;
+  dist.connect(gain);
+  const osc=ctx.createOscillator();
+  osc.type='square';
+  osc.frequency.setValueAtTime(800+Math.random()*400,t);
+  osc.frequency.exponentialRampToValueAtTime(300,t+0.08);
+  osc.connect(dist);
+  osc.start(t);osc.stop(t+0.08);
+}
+
+function sndSpark(){
+  const ctx=getAudioCtx(), t=ctx.currentTime;
+  const bufSz=ctx.sampleRate*0.05;
+  const buf=ctx.createBuffer(1,bufSz,ctx.sampleRate);
+  const d=buf.getChannelData(0);
+  for(let i=0;i<bufSz;i++) d[i]=(Math.random()*2-1);
+  const src=ctx.createBufferSource();
+  src.buffer=buf;
+  const filt=ctx.createBiquadFilter();
+  filt.type='highpass';filt.frequency.value=3000;
+  const gain=ctx.createGain();
+  gain.gain.setValueAtTime(0.15,t);
+  gain.gain.exponentialRampToValueAtTime(0.001,t+0.05);
+  src.connect(filt);filt.connect(gain);gain.connect(ctx.destination);
+  src.start(t);src.stop(t+0.05);
+}
+
+function sndElimination(){
+  const ctx=getAudioCtx(), t=ctx.currentTime;
+  // Deep bass thud
+  const g1=ctx.createGain();
+  g1.gain.setValueAtTime(0.5,t);
+  g1.gain.exponentialRampToValueAtTime(0.001,t+0.3);
+  g1.connect(ctx.destination);
+  const o1=ctx.createOscillator();
+  o1.type='sine';o1.frequency.setValueAtTime(80,t);
+  o1.connect(g1);o1.start(t);o1.stop(t+0.3);
+  // High metallic crash
+  const g2=ctx.createGain();
+  g2.gain.setValueAtTime(0.3,t);
+  g2.gain.exponentialRampToValueAtTime(0.001,t+0.2);
+  g2.connect(ctx.destination);
+  const o2=ctx.createOscillator();
+  o2.type='square';o2.frequency.setValueAtTime(1000,t);
+  o2.frequency.exponentialRampToValueAtTime(200,t+0.2);
+  o2.connect(g2);o2.start(t);o2.stop(t+0.2);
+}
+
+function sndVictory(){
+  const ctx=getAudioCtx(), t=ctx.currentTime;
+  [400,600,900].forEach((f,i)=>{
+    const g=ctx.createGain();
+    g.gain.setValueAtTime(0.25,t+i*0.15);
+    g.gain.exponentialRampToValueAtTime(0.001,t+i*0.15+0.15);
+    g.connect(ctx.destination);
+    const o=ctx.createOscillator();
+    o.type='sine';o.frequency.setValueAtTime(f,t+i*0.15);
+    o.connect(g);o.start(t+i*0.15);o.stop(t+i*0.15+0.15);
+  });
+}
+
 // ═══════════════════════════ PLAYER DB ═══════════════════════════
 const BASE = "/players/headshots/face/";
 const NBA_CDN = "https://cdn.nba.com/headshots/nba/latest/260x190/";
@@ -500,6 +579,7 @@ class Ball {
     endgameBoost = aliveCnt<=2 ? 2.0 : aliveCnt<=3 ? 1.5 : 1.0;
     shake(14);
     spawnExplosion(this.x, this.y, this.p.color);
+    sndElimination();
     if(aliveCnt<=1) setTimeout(()=>triggerEnd(), 400);
   }
 
@@ -712,12 +792,12 @@ function physicsStep(){
             if(spdI>=spdJ-0.3){
               const dmg=relV*bi.sf*0.88;
               const taken=bj.hit(dmg);
-              if(taken>0){ bi.atkF=6; spawnClash(bj.x,bj.y,bi.p.color); spawnBladeSparks(bi); spawnDmg(bj.x,bj.y,Math.round(taken),bi.p.color); shake(Math.min(9,relV*1.8)); }
+              if(taken>0){ bi.atkF=6; spawnClash(bj.x,bj.y,bi.p.color); spawnBladeSparks(bi); spawnDmg(bj.x,bj.y,Math.round(taken),bi.p.color); shake(Math.min(9,relV*1.8)); sndCollision(relV); sndSpark(); }
             }
             if(spdJ>=spdI-0.3){
               const dmg=relV*bj.sf*0.88;
               const taken=bi.hit(dmg);
-              if(taken>0){ bj.atkF=6; spawnClash(bi.x,bi.y,bj.p.color); spawnBladeSparks(bj); spawnDmg(bi.x,bi.y,Math.round(taken),bj.p.color); shake(Math.min(9,relV*1.8)); }
+              if(taken>0){ bj.atkF=6; spawnClash(bi.x,bi.y,bj.p.color); spawnBladeSparks(bj); spawnDmg(bi.x,bi.y,Math.round(taken),bj.p.color); shake(Math.min(9,relV*1.8)); sndCollision(relV); sndSpark(); }
             }
           }
         }
@@ -795,6 +875,7 @@ function triggerEnd(){
   phase='end'; phaseT=performance.now();
   flash={text:endWinner>=0?`${CFG.roster[endWinner].team} ${CFG.winnerMsg}`:'DRAW!',
          color:endWinner>=0?CFG.roster[endWinner].color:'#fff',t:performance.now()};
+  sndVictory();
 }
 
 
