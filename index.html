@@ -672,6 +672,7 @@ let flash, particles, dmgNums, screenShake;
 let endWinner;
 let speedMultiplier;
 let endgameBoost; // speed multiplier based on alive count: 1, 1.5, or 2
+let lastElimT; // timestamp of last elimination (for safety timeout)
 
 function pickRoundDur(){
   return CFG.roundMinSec + Math.random()*(CFG.roundMaxSec-CFG.roundMinSec);
@@ -710,6 +711,7 @@ function initGame(){
   endWinner = -1;
   speedMultiplier = 1.0;
   endgameBoost = 1.0;
+  lastElimT = 0;
   roundDur = pickRoundDur();
   timerAcc = 0;
   roundTimer = roundDur;
@@ -771,6 +773,7 @@ class Ball {
     this.dead = true; this.deadT = performance.now();
     eliminated[this.idx] = true;
     aliveCnt--;
+    lastElimT = performance.now();
     // Update endgame boost once per elimination
     endgameBoost = aliveCnt<=2 ? 2.0 : aliveCnt<=3 ? 1.5 : 1.0;
     shake(14);
@@ -823,7 +826,7 @@ class Ball {
   }
 
   draw(){
-    if(this.alpha<=0) return;
+    if(this.alpha<=0.01) return;
     ctx.save(); ctx.globalAlpha=this.alpha;
     const p=this.p;
 
@@ -1114,6 +1117,8 @@ function loop(now){
     balls.forEach(b=>b.update());
     physicsStep();
     updateFX(dt);
+    // Safety: force end if game is stuck with <=1 alive for 3+ seconds
+    if(aliveCnt<=1 && lastElimT>0 && now-lastElimT>3000) triggerEnd();
   }
   if(phase==='end'){
     updateFX(dt);
