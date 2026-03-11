@@ -975,13 +975,22 @@ function physicsStep(){
         const nx=dx/d, ny=dy/d;
         const dv=(bi.vx-bj.vx)*nx+(bi.vy-bj.vy)*ny;
         if(dv>0){
-          bi.vx-=dv*nx; bi.vy-=dv*ny;
-          bj.vx+=dv*nx; bj.vy+=dv*ny;
+          // 2.5x impulse for violent sword-clash bounces
+          const imp=dv*2.5;
+          bi.vx-=imp*nx; bi.vy-=imp*ny;
+          bj.vx+=imp*nx; bj.vy+=imp*ny;
+
+          // Enforce minimum bounce speed of 3.0
+          const minSpd=3.0;
+          let si=Math.hypot(bi.vx,bi.vy);
+          if(si>0.01&&si<minSpd){const s=minSpd/si;bi.vx*=s;bi.vy*=s;si=minSpd;}
+          let sj=Math.hypot(bj.vx,bj.vy);
+          if(sj>0.01&&sj<minSpd){const s=minSpd/sj;bj.vx*=s;bj.vy*=s;sj=minSpd;}
 
           // COMBAT
           const relV = Math.abs(dv);
           if(relV>.4){
-            const spdI=Math.hypot(bi.vx,bi.vy), spdJ=Math.hypot(bj.vx,bj.vy);
+            const spdI=si, spdJ=sj;
             // Attacker is the faster ball
             if(spdI>=spdJ-0.3){
               const dmg=relV*bi.sf*0.88;
@@ -995,7 +1004,8 @@ function physicsStep(){
             }
           }
         }
-        const push=(mn-d)/2;
+        // Push apart by full overlap + 3px extra to prevent sticking
+        const push=(mn-d)/2+1.5;
         bi.x-=nx*push; bi.y-=ny*push; bj.x+=nx*push; bj.y+=ny*push;
       }
     }
