@@ -123,77 +123,170 @@ function toggleMute(){
   document.getElementById('muteBtn').textContent=_muted?'🔇 UNMUTE':'🔊 MUTE';
 }
 
+function _makeNoise(ctx,dur){
+  const sz=ctx.sampleRate*dur,buf=ctx.createBuffer(1,sz,ctx.sampleRate),d=buf.getChannelData(0);
+  for(let i=0;i<sz;i++) d[i]=Math.random()*2-1;
+  const src=ctx.createBufferSource();src.buffer=buf;return src;
+}
+function _makeDistortion(ctx,amount){
+  const ws=ctx.createWaveShaper(),c=new Float32Array(256);
+  for(let i=0;i<256;i++){const x=i*2/255-1;c[i]=Math.sign(x)*Math.pow(Math.abs(x),1/amount);}
+  ws.curve=c;ws.oversample='4x';return ws;
+}
+
 function sndCollision(speed){
   if(_muted) return;
   const ctx=getAudioCtx(), out=getAudioOut(), t=ctx.currentTime;
-  const gain=ctx.createGain();
-  gain.gain.setValueAtTime(Math.min(0.4,speed*0.06),t);
-  gain.gain.exponentialRampToValueAtTime(0.001,t+0.08);
-  gain.connect(out);
-  const dist=ctx.createWaveShaper();
-  const curve=new Float32Array(256);
-  for(let i=0;i<256;i++){const x=i*2/255-1;curve[i]=Math.sign(x)*(1-Math.exp(-3*Math.abs(x)));}
-  dist.curve=curve;
-  dist.connect(gain);
-  const osc=ctx.createOscillator();
-  osc.type='square';
-  osc.frequency.setValueAtTime(800+Math.random()*400,t);
-  osc.frequency.exponentialRampToValueAtTime(300,t+0.08);
-  osc.connect(dist);
-  osc.start(t);osc.stop(t+0.08);
+  const vol=Math.min(0.6,speed*0.08);
+
+  // Layer 1: metallic CLANG — sawtooth 600hz, distortion, 0.4s decay
+  const g1=ctx.createGain();
+  g1.gain.setValueAtTime(vol*0.5,t+0.002);
+  g1.gain.exponentialRampToValueAtTime(0.001,t+0.4);
+  g1.connect(out);
+  const dist=_makeDistortion(ctx,4);
+  dist.connect(g1);
+  const o1=ctx.createOscillator();
+  o1.type='sawtooth';
+  o1.frequency.setValueAtTime(600+Math.random()*80,t);
+  o1.frequency.exponentialRampToValueAtTime(180,t+0.4);
+  o1.connect(dist);
+  o1.start(t);o1.stop(t+0.4);
+
+  // Layer 2: steel SCRAPE — bandpass noise at 2000hz, 0.15s
+  const g2=ctx.createGain();
+  g2.gain.setValueAtTime(vol*0.35,t);
+  g2.gain.exponentialRampToValueAtTime(0.001,t+0.15);
+  g2.connect(out);
+  const bp=ctx.createBiquadFilter();
+  bp.type='bandpass';bp.frequency.value=2000;bp.Q.value=2;
+  bp.connect(g2);
+  const noise=_makeNoise(ctx,0.15);
+  noise.connect(bp);
+  noise.start(t);noise.stop(t+0.15);
+
+  // Layer 3: low IMPACT thud — sine 120hz, 0.1s
+  const g3=ctx.createGain();
+  g3.gain.setValueAtTime(vol*0.7,t);
+  g3.gain.exponentialRampToValueAtTime(0.001,t+0.1);
+  g3.connect(out);
+  const o3=ctx.createOscillator();
+  o3.type='sine';o3.frequency.value=120;
+  o3.connect(g3);
+  o3.start(t);o3.stop(t+0.1);
 }
 
 function sndSpark(){
   if(_muted) return;
   const ctx=getAudioCtx(), out=getAudioOut(), t=ctx.currentTime;
-  const bufSz=ctx.sampleRate*0.05;
-  const buf=ctx.createBuffer(1,bufSz,ctx.sampleRate);
-  const d=buf.getChannelData(0);
-  for(let i=0;i<bufSz;i++) d[i]=(Math.random()*2-1);
-  const src=ctx.createBufferSource();
-  src.buffer=buf;
-  const filt=ctx.createBiquadFilter();
-  filt.type='highpass';filt.frequency.value=3000;
-  const gain=ctx.createGain();
-  gain.gain.setValueAtTime(0.15,t);
-  gain.gain.exponentialRampToValueAtTime(0.001,t+0.05);
-  src.connect(filt);filt.connect(gain);gain.connect(out);
-  src.start(t);src.stop(t+0.05);
+
+  // Electric sizzle: high-filtered noise with 30hz tremolo, 0.12s
+  const g=ctx.createGain();
+  g.gain.setValueAtTime(0.18,t);
+  g.gain.exponentialRampToValueAtTime(0.001,t+0.12);
+  g.connect(out);
+  // Tremolo via LFO modulating gain
+  const trem=ctx.createGain();
+  trem.gain.value=0.5;
+  trem.connect(g);
+  const lfo=ctx.createOscillator();
+  lfo.frequency.value=30;
+  const lfoG=ctx.createGain();
+  lfoG.gain.value=0.5;
+  lfo.connect(lfoG);
+  lfoG.connect(trem.gain);
+  lfo.start(t);lfo.stop(t+0.12);
+  const hp=ctx.createBiquadFilter();
+  hp.type='highpass';hp.frequency.value=4000;
+  hp.connect(trem);
+  const n=_makeNoise(ctx,0.12);
+  n.connect(hp);
+  n.start(t);n.stop(t+0.12);
 }
 
 function sndElimination(){
   if(_muted) return;
   const ctx=getAudioCtx(), out=getAudioOut(), t=ctx.currentTime;
-  // Deep bass thud
+
+  // Layer 1: deep explosion — sine 60hz, gain 1.5, 0.6s
   const g1=ctx.createGain();
-  g1.gain.setValueAtTime(0.5,t);
-  g1.gain.exponentialRampToValueAtTime(0.001,t+0.3);
+  g1.gain.setValueAtTime(1.5,t);
+  g1.gain.exponentialRampToValueAtTime(0.001,t+0.6);
   g1.connect(out);
   const o1=ctx.createOscillator();
-  o1.type='sine';o1.frequency.setValueAtTime(80,t);
-  o1.connect(g1);o1.start(t);o1.stop(t+0.3);
-  // High metallic crash
+  o1.type='sine';o1.frequency.setValueAtTime(60,t);
+  o1.frequency.exponentialRampToValueAtTime(30,t+0.6);
+  o1.connect(g1);o1.start(t);o1.stop(t+0.6);
+
+  // Layer 2: mid crunch — sawtooth 200hz with distortion, 0.3s
   const g2=ctx.createGain();
-  g2.gain.setValueAtTime(0.3,t);
-  g2.gain.exponentialRampToValueAtTime(0.001,t+0.2);
+  g2.gain.setValueAtTime(0.5,t);
+  g2.gain.exponentialRampToValueAtTime(0.001,t+0.3);
   g2.connect(out);
+  const dist=_makeDistortion(ctx,6);
+  dist.connect(g2);
   const o2=ctx.createOscillator();
-  o2.type='square';o2.frequency.setValueAtTime(1000,t);
-  o2.frequency.exponentialRampToValueAtTime(200,t+0.2);
-  o2.connect(g2);o2.start(t);o2.stop(t+0.2);
+  o2.type='sawtooth';o2.frequency.setValueAtTime(200,t);
+  o2.frequency.exponentialRampToValueAtTime(60,t+0.3);
+  o2.connect(dist);o2.start(t);o2.stop(t+0.3);
+
+  // Layer 3: high shatter — noise at 3000hz, 0.2s
+  const g3=ctx.createGain();
+  g3.gain.setValueAtTime(0.4,t);
+  g3.gain.exponentialRampToValueAtTime(0.001,t+0.2);
+  g3.connect(out);
+  const bp=ctx.createBiquadFilter();
+  bp.type='bandpass';bp.frequency.value=3000;bp.Q.value=1.5;
+  bp.connect(g3);
+  const n=_makeNoise(ctx,0.2);
+  n.connect(bp);n.start(t);n.stop(t+0.2);
 }
 
 function sndVictory(){
   if(_muted) return;
   const ctx=getAudioCtx(), out=getAudioOut(), t=ctx.currentTime;
-  [400,600,900].forEach((f,i)=>{
+
+  // 5 ascending tones with delay-based reverb
+  const tones=[300,450,600,800,1100];
+  tones.forEach((f,i)=>{
+    const start=t+i*0.18;
+    // Dry path
     const g=ctx.createGain();
-    g.gain.setValueAtTime(0.25,t+i*0.15);
-    g.gain.exponentialRampToValueAtTime(0.001,t+i*0.15+0.15);
+    g.gain.setValueAtTime(0.25,start);
+    g.gain.exponentialRampToValueAtTime(0.001,start+0.18);
     g.connect(out);
+    // Reverb echo (delay 0.08s, gain 0.3)
+    const del=ctx.createDelay(0.2);
+    del.delayTime.value=0.08;
+    const dg=ctx.createGain();
+    dg.gain.value=0.3;
+    del.connect(dg);dg.connect(out);
+    const merge=ctx.createGain();
+    merge.connect(g);merge.connect(del);
     const o=ctx.createOscillator();
-    o.type='sine';o.frequency.setValueAtTime(f,t+i*0.15);
-    o.connect(g);o.start(t+i*0.15);o.stop(t+i*0.15+0.15);
+    o.type='sine';o.frequency.value=f;
+    o.connect(merge);
+    o.start(start);o.stop(start+0.18);
+  });
+
+  // Sustained chord (300+450+600hz together, 0.4s fade)
+  const chordStart=t+tones.length*0.18;
+  [300,450,600].forEach(f=>{
+    const g=ctx.createGain();
+    g.gain.setValueAtTime(0.2,chordStart);
+    g.gain.exponentialRampToValueAtTime(0.001,chordStart+0.4);
+    g.connect(out);
+    const del=ctx.createDelay(0.2);
+    del.delayTime.value=0.08;
+    const dg=ctx.createGain();
+    dg.gain.value=0.3;
+    del.connect(dg);dg.connect(out);
+    const merge=ctx.createGain();
+    merge.connect(g);merge.connect(del);
+    const o=ctx.createOscillator();
+    o.type='sine';o.frequency.value=f;
+    o.connect(merge);
+    o.start(chordStart);o.stop(chordStart+0.4);
   });
 }
 
@@ -248,25 +341,103 @@ const WEAPONS = [
 
 // ════════════════════════════ FULL PLAYER DB FETCH ════════════════════════════
 const PLAYERS_JSON_URL = 'https://jsierrahoopshype.github.io/nba-headshots/metadata/players.json';
-let FULL_DB = PDATA; // start with hardcoded fallback
+const ACTIVE_JSON_URL = 'https://jsierrahoopshype.github.io/nba-headshots/metadata/active.json';
+const TREE_API_URL = 'https://api.github.com/repos/jsierrahoopshype/nba-headshots/git/trees/main?recursive=1';
+let FULL_DB = [...PDATA]; // start with hardcoded fallback
 let FULL_DB_LOADED = false;
 
-fetch(PLAYERS_JSON_URL)
-  .then(r=>{ if(!r.ok) throw new Error(r.status); return r.json(); })
-  .then(data=>{
-    if(Array.isArray(data)&&data.length>0){
-      // Merge: keep PDATA entries (they have color/bg/icon), add fetched ones for the rest
-      const pdataById = new Map(PDATA.map(p=>[p.id,p]));
-      FULL_DB = data.map(p=>{
-        const existing = pdataById.get(p.id);
-        if(existing) return existing; // preserve color, bg, icon from hardcoded
-        return { id:p.id, slug:p.slug||'', name:p.name, team:p.team||'', color:'#4488cc', bg:'#0d1b2a', icon:'' };
-      });
-      FULL_DB_LOADED = true;
-      console.log(`Loaded ${FULL_DB.length} players from players.json`);
+function _slugToName(slug){
+  // slug format: "firstname-lastname" or "firstname-middle-lastname"
+  return slug.split('-').map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' ');
+}
+
+function _mergeIntoDB(players, source){
+  const byId=new Map(FULL_DB.map(p=>[p.id,p]));
+  let added=0;
+  players.forEach(p=>{
+    if(!byId.has(p.id)){
+      byId.set(p.id,p);
+      added++;
     }
-  })
-  .catch(()=>{}); // silent fallback to PDATA
+  });
+  FULL_DB=Array.from(byId.values());
+  console.log(`Merged ${added} new players from ${source}, total now: ${FULL_DB.length}`);
+}
+
+(async function loadFullDB(){
+  const tried=[];
+
+  // Step 1a: Fetch players.json
+  try{
+    tried.push(PLAYERS_JSON_URL);
+    const r=await fetch(PLAYERS_JSON_URL);
+    if(!r.ok) throw new Error(`HTTP ${r.status}`);
+    const data=await r.json();
+    if(Array.isArray(data)&&data.length>0){
+      console.log(`players.json returned ${data.length} entries`);
+      const pdataById=new Map(PDATA.map(p=>[p.id,p]));
+      const mapped=data.map(p=>{
+        const existing=pdataById.get(p.id);
+        if(existing) return existing;
+        return {id:p.id,slug:p.slug||'',name:p.name,team:p.team||'',color:'#4488cc',bg:'#0d1b2a',icon:''};
+      });
+      FULL_DB=mapped;
+      // Re-add any PDATA entries that might be missing
+      const inDb=new Set(FULL_DB.map(p=>p.id));
+      PDATA.forEach(p=>{if(!inDb.has(p.id))FULL_DB.push(p);});
+    }
+  }catch(e){console.warn('players.json fetch failed:',e.message);}
+
+  // Step 1b: Fetch active.json
+  try{
+    tried.push(ACTIVE_JSON_URL);
+    const r=await fetch(ACTIVE_JSON_URL);
+    if(!r.ok) throw new Error(`HTTP ${r.status}`);
+    const data=await r.json();
+    if(Array.isArray(data)&&data.length>0){
+      console.log(`active.json returned ${data.length} entries`);
+      const mapped=data.map(p=>({id:p.id,slug:p.slug||'',name:p.name,team:p.team||'',color:'#4488cc',bg:'#0d1b2a',icon:''}));
+      _mergeIntoDB(mapped,'active.json');
+    }
+  }catch(e){console.warn('active.json fetch failed:',e.message);}
+
+  console.log(`After Step 1: ${FULL_DB.length} players`);
+
+  // Step 2: If under 500, fetch GitHub tree API for headshot filenames
+  if(FULL_DB.length<500){
+    try{
+      tried.push(TREE_API_URL);
+      const r=await fetch(TREE_API_URL);
+      if(!r.ok) throw new Error(`HTTP ${r.status}`);
+      const data=await r.json();
+      if(data.tree&&Array.isArray(data.tree)){
+        const pat=/^players\/headshots\/face\/(\d+)-(.+)\.png$/;
+        const parsed=[];
+        data.tree.forEach(f=>{
+          const m=f.path.match(pat);
+          if(m){
+            const id=+m[1], slug=m[1]+'-'+m[2], name=_slugToName(m[2]);
+            parsed.push({id,slug,name,team:'',color:'#4488cc',bg:'#0d1b2a',icon:''});
+          }
+        });
+        console.log(`GitHub tree API returned ${parsed.length} headshot files`);
+        _mergeIntoDB(parsed,'GitHub tree API');
+      }
+    }catch(e){console.warn('GitHub tree API fetch failed:',e.message);}
+  }
+
+  // Step 3: Final dedup (by id) and sort
+  const seen=new Map();
+  FULL_DB.forEach(p=>{if(!seen.has(p.id))seen.set(p.id,p);});
+  FULL_DB=Array.from(seen.values());
+
+  FULL_DB_LOADED=true;
+  console.log(`Total players available: ${FULL_DB.length}`);
+  if(FULL_DB.length<500){
+    console.warn(`WARNING: Only ${FULL_DB.length} players loaded (target was 500+). URLs tried:`);
+    tried.forEach(u=>console.warn('  -',u));
+  }
+})();
 
 // ════════════════════════════ CONFIG ════════════════════════════
 let CFG = {
@@ -804,13 +975,22 @@ function physicsStep(){
         const nx=dx/d, ny=dy/d;
         const dv=(bi.vx-bj.vx)*nx+(bi.vy-bj.vy)*ny;
         if(dv>0){
-          bi.vx-=dv*nx; bi.vy-=dv*ny;
-          bj.vx+=dv*nx; bj.vy+=dv*ny;
+          // 2.5x impulse for violent sword-clash bounces
+          const imp=dv*2.5;
+          bi.vx-=imp*nx; bi.vy-=imp*ny;
+          bj.vx+=imp*nx; bj.vy+=imp*ny;
+
+          // Enforce minimum bounce speed of 3.0
+          const minSpd=3.0;
+          let si=Math.hypot(bi.vx,bi.vy);
+          if(si>0.01&&si<minSpd){const s=minSpd/si;bi.vx*=s;bi.vy*=s;si=minSpd;}
+          let sj=Math.hypot(bj.vx,bj.vy);
+          if(sj>0.01&&sj<minSpd){const s=minSpd/sj;bj.vx*=s;bj.vy*=s;sj=minSpd;}
 
           // COMBAT
           const relV = Math.abs(dv);
           if(relV>.4){
-            const spdI=Math.hypot(bi.vx,bi.vy), spdJ=Math.hypot(bj.vx,bj.vy);
+            const spdI=si, spdJ=sj;
             // Attacker is the faster ball
             if(spdI>=spdJ-0.3){
               const dmg=relV*bi.sf*0.88;
@@ -824,7 +1004,8 @@ function physicsStep(){
             }
           }
         }
-        const push=(mn-d)/2;
+        // Push apart by full overlap + 3px extra to prevent sticking
+        const push=(mn-d)/2+1.5;
         bi.x-=nx*push; bi.y-=ny*push; bj.x+=nx*push; bj.y+=ny*push;
       }
     }
@@ -1152,32 +1333,85 @@ let mRec=null, rChunks=[], rActive=false, rStopT=null;
 
 function toggleRec(){ rActive?stopRec():startRec(); }
 
-function startRec(){
-  if(!canvas.captureStream){alert('Use Chrome or Edge for recording.');return;}
-  rChunks=[];
-  const vidStream=canvas.captureStream(60);
-  // Merge audio from Web Audio API into the recording
-  const audioStream=getAudioStream();
-  let stream;
-  if(audioStream&&audioStream.getAudioTracks().length>0){
-    stream=new MediaStream([...vidStream.getVideoTracks(),...audioStream.getAudioTracks()]);
-  } else {
-    stream=vidStream;
+function _pickMime(){
+  const candidates=['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm','video/mp4'];
+  for(const m of candidates){
+    if(MediaRecorder.isTypeSupported(m)){console.log('[REC] Using mimeType:',m);return m;}
   }
-  const mime=['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'].find(m=>MediaRecorder.isTypeSupported(m))||'';
-  try{mRec=new MediaRecorder(stream,mime?{mimeType:mime,videoBitsPerSecond:10_000_000}:{});}
-  catch(e){mRec=new MediaRecorder(stream);}
-  mRec.ondataavailable=e=>{if(e.data.size>0)rChunks.push(e.data);};
-  mRec.onstop=()=>downloadRec();
-  mRec.start(100); rActive=true; rStopT=null;
-  document.getElementById('recBtn').textContent='⏹ STOP';
-  document.getElementById('recBtn').style.color='#ff5566';
-  document.getElementById('recDot').style.display='block';
-  doRestart();
+  console.warn('[REC] No supported mimeType found, using browser default');
+  return '';
+}
+
+function _createRecorder(stream, mime){
+  try{
+    const opts=mime?{mimeType:mime,videoBitsPerSecond:10_000_000}:{};
+    const rec=new MediaRecorder(stream,opts);
+    console.log('[REC] MediaRecorder created with mimeType:',rec.mimeType);
+    return rec;
+  }catch(e){
+    console.warn('[REC] MediaRecorder constructor failed:',e.message);
+    return null;
+  }
+}
+
+function startRec(){
+  if(!canvas.captureStream){alert('Recording not supported in this browser.');return;}
+  rChunks=[];
+
+  // Capture canvas video stream
+  let vidStream;
+  try{ vidStream=canvas.captureStream(60); console.log('[REC] captureStream(60) OK'); }
+  catch(e1){
+    try{ vidStream=canvas.captureStream(30); console.log('[REC] captureStream(30) OK (60fps failed)'); }
+    catch(e2){ alert('Canvas capture failed: '+e2.message); return; }
+  }
+
+  const mime=_pickMime();
+
+  // Try with audio first, fall back to video-only
+  let rec=null;
+  const audioStream=getAudioStream();
+  if(audioStream&&audioStream.getAudioTracks().length>0){
+    console.log('[REC] Attempting video+audio recording');
+    const combined=new MediaStream([...vidStream.getVideoTracks(),...audioStream.getAudioTracks()]);
+    rec=_createRecorder(combined,mime);
+  }
+  if(!rec){
+    console.log('[REC] Falling back to video-only recording');
+    rec=_createRecorder(vidStream,mime);
+  }
+  if(!rec){
+    // Last resort: no options at all
+    try{rec=new MediaRecorder(vidStream);console.log('[REC] Bare MediaRecorder created');}
+    catch(e){alert('MediaRecorder failed: '+e.message);return;}
+  }
+
+  mRec=rec;
+  mRec.ondataavailable=e=>{
+    if(e.data&&e.data.size>0){rChunks.push(e.data);console.log('[REC] chunk:',e.data.size,'bytes');}
+  };
+  mRec.onerror=e=>console.error('[REC] error:',e);
+  mRec.onstop=()=>{console.log('[REC] stopped, chunks:',rChunks.length);downloadRec();};
+
+  try{
+    mRec.start(100);
+    rActive=true; rStopT=null;
+    console.log('[REC] Recording started, state:',mRec.state);
+    document.getElementById('recBtn').textContent='⏹ STOP';
+    document.getElementById('recBtn').style.color='#ff5566';
+    document.getElementById('recDot').style.display='block';
+    doRestart();
+  }catch(e){
+    console.error('[REC] start() failed:',e);
+    alert('Recording failed to start: '+e.message);
+  }
 }
 
 function stopRec(){
-  if(mRec&&mRec.state!=='inactive') mRec.stop();
+  if(mRec&&mRec.state==='recording'){
+    console.log('[REC] Stopping recorder…');
+    mRec.stop();
+  }
   rActive=false; rStopT=null;
   document.getElementById('recBtn').textContent='⏺ REC & DOWNLOAD';
   document.getElementById('recBtn').style.color='';
@@ -1185,13 +1419,19 @@ function stopRec(){
 }
 
 function downloadRec(){
-  const ext=(mRec.mimeType||'').includes('mp4')?'mp4':'webm';
-  const blob=new Blob(rChunks,{type:mRec.mimeType||'video/webm'});
+  if(rChunks.length===0){console.warn('[REC] No data to download');return;}
+  const mimeType=mRec?.mimeType||'video/webm';
+  const ext=mimeType.includes('mp4')?'mp4':'webm';
+  const blob=new Blob(rChunks,{type:mimeType});
+  console.log('[REC] Download: blob size',blob.size,'bytes, type',mimeType);
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
   a.href=url; a.download=`hoopshype-battle.${ext}`;
-  document.body.appendChild(a);a.click();document.body.removeChild(a);
-  setTimeout(()=>URL.revokeObjectURL(url),8000);
+  a.style.display='none';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(url);},8000);
+  console.log('[REC] Download triggered');
 }
 
 function checkAutoStop(now){
@@ -1301,9 +1541,9 @@ function buildPlayersTab(){
 
   if(DRAFT.roster.length<10){
     const dbCount = FULL_DB.length;
-    const countLabel = FULL_DB_LOADED ? `<span style="font-size:10px;color:#3366aa;font-weight:400;margin-left:6px;">${dbCount} players available</span>` : '';
+    const countLabel = FULL_DB_LOADED ? `<span style="font-size:10px;color:#3366aa;font-weight:400;margin-left:6px;">${dbCount} players available — type to search</span>` : '';
     html+=`<div class="shd">Add NBA Player${countLabel}</div>
-    <input class="fi" id="psearch" placeholder="Search by name or team…" oninput="filterPP()" style="margin-bottom:6px">
+    <input class="fi" id="psearch" placeholder="Search by name or team (2+ chars)…" oninput="filterPP()" style="margin-bottom:6px">
     <div class="pplist" id="pplist">${buildPPList('')}</div>
     <div class="shd" style="margin-top:16px;">Add Custom Character</div>
     <div class="pcard">
@@ -1326,15 +1566,24 @@ function buildPlayersTab(){
   return html;
 }
 
+function _lastName(name){const parts=name.trim().split(/\s+/);return(parts[parts.length-1]||'').toLowerCase();}
+
 function buildPPList(q){
   const used=new Set(DRAFT.roster.map(p=>p.id));
   const ql=q?q.toLowerCase():'';
-  const list=FULL_DB.filter(p=>!used.has(p.id)&&(!ql||p.name.toLowerCase().includes(ql)||(p.team&&p.team.toLowerCase().includes(ql))));
-  return list.slice(0,20).map(p=>`
-    <div class="ppi" onclick="addP(${p.id})">
-      <div class="ppi-face"><img src="${BASE}${p.slug}.png" onerror="this.src='${NBA_CDN}${p.id}.png'"></div>
-      <div><div class="ppi-name">${p.name}</div><div class="ppi-team">${p.team}</div></div>
-    </div>`).join('')||'<div style="padding:10px;color:#223;font-size:11px;">No matches</div>';
+  // Require 2+ chars to search
+  if(ql.length<2) return `<div style="padding:10px;color:#334;font-size:11px;">Type 2+ characters to search${FULL_DB_LOADED?' '+FULL_DB.length+' players':''}</div>`;
+  const list=FULL_DB.filter(p=>!used.has(p.id)&&(p.name.toLowerCase().includes(ql)||(p.team&&p.team.toLowerCase().includes(ql))));
+  // Sort by last name
+  list.sort((a,b)=>_lastName(a.name).localeCompare(_lastName(b.name)));
+  const total=list.length;
+  let html=list.slice(0,20).map(p=>`
+    <div class="ppi" onclick="addP(${typeof p.id==='number'?p.id:`'${p.id}'`})">
+      <div class="ppi-face"><img src="${p.slug?BASE+p.slug+'.png':NBA_CDN+p.id+'.png'}" onerror="this.src='${NBA_CDN}${p.id}.png'"></div>
+      <div><div class="ppi-name">${p.name}</div><div class="ppi-team">${p.team||''}</div></div>
+    </div>`).join('');
+  if(total>20) html+=`<div style="padding:8px 10px;color:#3366aa;font-size:11px;">${total-20} more — keep typing</div>`;
+  return html||'<div style="padding:10px;color:#223;font-size:11px;">No matches</div>';
 }
 
 function filterPP(){const q=document.getElementById('psearch')?.value||'';const el=document.getElementById('pplist');if(el)el.innerHTML=buildPPList(q);}
