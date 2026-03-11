@@ -751,7 +751,7 @@ class Ball {
     this.x = CX+Math.cos(a)*d;
     this.y = CY+Math.sin(a)*d;
 
-    const spd = (2.1+Math.random()*1.25)*(0.8+sf*0.2);
+    const spd = (1.4+Math.random()*0.8)*(0.8+sf*0.2);
     const va  = a+Math.PI+(Math.random()-.5)*1.0;
     this.vx = Math.cos(va)*spd;
     this.vy = Math.sin(va)*spd;
@@ -996,13 +996,13 @@ function physicsStep(){
         const nx=dx/d, ny=dy/d;
         const dv=(bi.vx-bj.vx)*nx+(bi.vy-bj.vy)*ny;
         if(dv>0){
-          // 1.5x impulse for punchy but survivable bounces
-          const imp=dv*1.5;
+          // 1.2x impulse for punchy but survivable bounces
+          const imp=dv*1.2;
           bi.vx-=imp*nx; bi.vy-=imp*ny;
           bj.vx+=imp*nx; bj.vy+=imp*ny;
 
-          // Enforce minimum bounce speed of 1.85
-          const minSpd=1.85;
+          // Enforce minimum bounce speed of 1.4
+          const minSpd=1.4;
           let si=Math.hypot(bi.vx,bi.vy);
           if(si>0.01&&si<minSpd){const s=minSpd/si;bi.vx*=s;bi.vy*=s;si=minSpd;}
           let sj=Math.hypot(bj.vx,bj.vy);
@@ -1014,12 +1014,12 @@ function physicsStep(){
             const spdI=si, spdJ=sj;
             // Attacker is the faster ball
             if(spdI>=spdJ-0.3){
-              const dmg=relV*bi.sf*0.42;
+              const dmg=relV*bi.sf*0.18;
               const taken=bj.hit(dmg);
               if(taken>0){ bi.atkF=6; spawnClash(bj.x,bj.y,bi.p.color); spawnBladeSparks(bi); spawnDmg(bj.x,bj.y,Math.round(taken),bi.p.color); shake(Math.min(9,relV*1.8)); sndCollision(relV); sndSpark(); }
             }
             if(spdJ>=spdI-0.3){
-              const dmg=relV*bj.sf*0.42;
+              const dmg=relV*bj.sf*0.18;
               const taken=bi.hit(dmg);
               if(taken>0){ bj.atkF=6; spawnClash(bi.x,bi.y,bj.p.color); spawnBladeSparks(bj); spawnDmg(bi.x,bi.y,Math.round(taken),bj.p.color); shake(Math.min(9,relV*1.8)); sndCollision(relV); sndSpark(); }
             }
@@ -1126,7 +1126,7 @@ function loop(now){
     roundTimer=Math.max(0,roundDur-timerAcc);
     // When timer expires, ramp up speed and reset timer
     if(roundTimer<=0){
-      speedMultiplier=Math.min(speedMultiplier+0.25, 2.0);
+      speedMultiplier=Math.min(speedMultiplier+0.12, 2.0);
       roundDur=pickRoundDur();
       timerAcc=0; roundTimer=roundDur;
     }
