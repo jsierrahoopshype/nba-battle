@@ -123,77 +123,170 @@ function toggleMute(){
   document.getElementById('muteBtn').textContent=_muted?'🔇 UNMUTE':'🔊 MUTE';
 }
 
+function _makeNoise(ctx,dur){
+  const sz=ctx.sampleRate*dur,buf=ctx.createBuffer(1,sz,ctx.sampleRate),d=buf.getChannelData(0);
+  for(let i=0;i<sz;i++) d[i]=Math.random()*2-1;
+  const src=ctx.createBufferSource();src.buffer=buf;return src;
+}
+function _makeDistortion(ctx,amount){
+  const ws=ctx.createWaveShaper(),c=new Float32Array(256);
+  for(let i=0;i<256;i++){const x=i*2/255-1;c[i]=Math.sign(x)*Math.pow(Math.abs(x),1/amount);}
+  ws.curve=c;ws.oversample='4x';return ws;
+}
+
 function sndCollision(speed){
   if(_muted) return;
   const ctx=getAudioCtx(), out=getAudioOut(), t=ctx.currentTime;
-  const gain=ctx.createGain();
-  gain.gain.setValueAtTime(Math.min(0.4,speed*0.06),t);
-  gain.gain.exponentialRampToValueAtTime(0.001,t+0.08);
-  gain.connect(out);
-  const dist=ctx.createWaveShaper();
-  const curve=new Float32Array(256);
-  for(let i=0;i<256;i++){const x=i*2/255-1;curve[i]=Math.sign(x)*(1-Math.exp(-3*Math.abs(x)));}
-  dist.curve=curve;
-  dist.connect(gain);
-  const osc=ctx.createOscillator();
-  osc.type='square';
-  osc.frequency.setValueAtTime(800+Math.random()*400,t);
-  osc.frequency.exponentialRampToValueAtTime(300,t+0.08);
-  osc.connect(dist);
-  osc.start(t);osc.stop(t+0.08);
+  const vol=Math.min(0.6,speed*0.08);
+
+  // Layer 1: metallic CLANG — sawtooth 600hz, distortion, 0.4s decay
+  const g1=ctx.createGain();
+  g1.gain.setValueAtTime(vol*0.5,t+0.002);
+  g1.gain.exponentialRampToValueAtTime(0.001,t+0.4);
+  g1.connect(out);
+  const dist=_makeDistortion(ctx,4);
+  dist.connect(g1);
+  const o1=ctx.createOscillator();
+  o1.type='sawtooth';
+  o1.frequency.setValueAtTime(600+Math.random()*80,t);
+  o1.frequency.exponentialRampToValueAtTime(180,t+0.4);
+  o1.connect(dist);
+  o1.start(t);o1.stop(t+0.4);
+
+  // Layer 2: steel SCRAPE — bandpass noise at 2000hz, 0.15s
+  const g2=ctx.createGain();
+  g2.gain.setValueAtTime(vol*0.35,t);
+  g2.gain.exponentialRampToValueAtTime(0.001,t+0.15);
+  g2.connect(out);
+  const bp=ctx.createBiquadFilter();
+  bp.type='bandpass';bp.frequency.value=2000;bp.Q.value=2;
+  bp.connect(g2);
+  const noise=_makeNoise(ctx,0.15);
+  noise.connect(bp);
+  noise.start(t);noise.stop(t+0.15);
+
+  // Layer 3: low IMPACT thud — sine 120hz, 0.1s
+  const g3=ctx.createGain();
+  g3.gain.setValueAtTime(vol*0.7,t);
+  g3.gain.exponentialRampToValueAtTime(0.001,t+0.1);
+  g3.connect(out);
+  const o3=ctx.createOscillator();
+  o3.type='sine';o3.frequency.value=120;
+  o3.connect(g3);
+  o3.start(t);o3.stop(t+0.1);
 }
 
 function sndSpark(){
   if(_muted) return;
   const ctx=getAudioCtx(), out=getAudioOut(), t=ctx.currentTime;
-  const bufSz=ctx.sampleRate*0.05;
-  const buf=ctx.createBuffer(1,bufSz,ctx.sampleRate);
-  const d=buf.getChannelData(0);
-  for(let i=0;i<bufSz;i++) d[i]=(Math.random()*2-1);
-  const src=ctx.createBufferSource();
-  src.buffer=buf;
-  const filt=ctx.createBiquadFilter();
-  filt.type='highpass';filt.frequency.value=3000;
-  const gain=ctx.createGain();
-  gain.gain.setValueAtTime(0.15,t);
-  gain.gain.exponentialRampToValueAtTime(0.001,t+0.05);
-  src.connect(filt);filt.connect(gain);gain.connect(out);
-  src.start(t);src.stop(t+0.05);
+
+  // Electric sizzle: high-filtered noise with 30hz tremolo, 0.12s
+  const g=ctx.createGain();
+  g.gain.setValueAtTime(0.18,t);
+  g.gain.exponentialRampToValueAtTime(0.001,t+0.12);
+  g.connect(out);
+  // Tremolo via LFO modulating gain
+  const trem=ctx.createGain();
+  trem.gain.value=0.5;
+  trem.connect(g);
+  const lfo=ctx.createOscillator();
+  lfo.frequency.value=30;
+  const lfoG=ctx.createGain();
+  lfoG.gain.value=0.5;
+  lfo.connect(lfoG);
+  lfoG.connect(trem.gain);
+  lfo.start(t);lfo.stop(t+0.12);
+  const hp=ctx.createBiquadFilter();
+  hp.type='highpass';hp.frequency.value=4000;
+  hp.connect(trem);
+  const n=_makeNoise(ctx,0.12);
+  n.connect(hp);
+  n.start(t);n.stop(t+0.12);
 }
 
 function sndElimination(){
   if(_muted) return;
   const ctx=getAudioCtx(), out=getAudioOut(), t=ctx.currentTime;
-  // Deep bass thud
+
+  // Layer 1: deep explosion — sine 60hz, gain 1.5, 0.6s
   const g1=ctx.createGain();
-  g1.gain.setValueAtTime(0.5,t);
-  g1.gain.exponentialRampToValueAtTime(0.001,t+0.3);
+  g1.gain.setValueAtTime(1.5,t);
+  g1.gain.exponentialRampToValueAtTime(0.001,t+0.6);
   g1.connect(out);
   const o1=ctx.createOscillator();
-  o1.type='sine';o1.frequency.setValueAtTime(80,t);
-  o1.connect(g1);o1.start(t);o1.stop(t+0.3);
-  // High metallic crash
+  o1.type='sine';o1.frequency.setValueAtTime(60,t);
+  o1.frequency.exponentialRampToValueAtTime(30,t+0.6);
+  o1.connect(g1);o1.start(t);o1.stop(t+0.6);
+
+  // Layer 2: mid crunch — sawtooth 200hz with distortion, 0.3s
   const g2=ctx.createGain();
-  g2.gain.setValueAtTime(0.3,t);
-  g2.gain.exponentialRampToValueAtTime(0.001,t+0.2);
+  g2.gain.setValueAtTime(0.5,t);
+  g2.gain.exponentialRampToValueAtTime(0.001,t+0.3);
   g2.connect(out);
+  const dist=_makeDistortion(ctx,6);
+  dist.connect(g2);
   const o2=ctx.createOscillator();
-  o2.type='square';o2.frequency.setValueAtTime(1000,t);
-  o2.frequency.exponentialRampToValueAtTime(200,t+0.2);
-  o2.connect(g2);o2.start(t);o2.stop(t+0.2);
+  o2.type='sawtooth';o2.frequency.setValueAtTime(200,t);
+  o2.frequency.exponentialRampToValueAtTime(60,t+0.3);
+  o2.connect(dist);o2.start(t);o2.stop(t+0.3);
+
+  // Layer 3: high shatter — noise at 3000hz, 0.2s
+  const g3=ctx.createGain();
+  g3.gain.setValueAtTime(0.4,t);
+  g3.gain.exponentialRampToValueAtTime(0.001,t+0.2);
+  g3.connect(out);
+  const bp=ctx.createBiquadFilter();
+  bp.type='bandpass';bp.frequency.value=3000;bp.Q.value=1.5;
+  bp.connect(g3);
+  const n=_makeNoise(ctx,0.2);
+  n.connect(bp);n.start(t);n.stop(t+0.2);
 }
 
 function sndVictory(){
   if(_muted) return;
   const ctx=getAudioCtx(), out=getAudioOut(), t=ctx.currentTime;
-  [400,600,900].forEach((f,i)=>{
+
+  // 5 ascending tones with delay-based reverb
+  const tones=[300,450,600,800,1100];
+  tones.forEach((f,i)=>{
+    const start=t+i*0.18;
+    // Dry path
     const g=ctx.createGain();
-    g.gain.setValueAtTime(0.25,t+i*0.15);
-    g.gain.exponentialRampToValueAtTime(0.001,t+i*0.15+0.15);
+    g.gain.setValueAtTime(0.25,start);
+    g.gain.exponentialRampToValueAtTime(0.001,start+0.18);
     g.connect(out);
+    // Reverb echo (delay 0.08s, gain 0.3)
+    const del=ctx.createDelay(0.2);
+    del.delayTime.value=0.08;
+    const dg=ctx.createGain();
+    dg.gain.value=0.3;
+    del.connect(dg);dg.connect(out);
+    const merge=ctx.createGain();
+    merge.connect(g);merge.connect(del);
     const o=ctx.createOscillator();
-    o.type='sine';o.frequency.setValueAtTime(f,t+i*0.15);
-    o.connect(g);o.start(t+i*0.15);o.stop(t+i*0.15+0.15);
+    o.type='sine';o.frequency.value=f;
+    o.connect(merge);
+    o.start(start);o.stop(start+0.18);
+  });
+
+  // Sustained chord (300+450+600hz together, 0.4s fade)
+  const chordStart=t+tones.length*0.18;
+  [300,450,600].forEach(f=>{
+    const g=ctx.createGain();
+    g.gain.setValueAtTime(0.2,chordStart);
+    g.gain.exponentialRampToValueAtTime(0.001,chordStart+0.4);
+    g.connect(out);
+    const del=ctx.createDelay(0.2);
+    del.delayTime.value=0.08;
+    const dg=ctx.createGain();
+    dg.gain.value=0.3;
+    del.connect(dg);dg.connect(out);
+    const merge=ctx.createGain();
+    merge.connect(g);merge.connect(del);
+    const o=ctx.createOscillator();
+    o.type='sine';o.frequency.value=f;
+    o.connect(merge);
+    o.start(chordStart);o.stop(chordStart+0.4);
   });
 }
 
