@@ -74,6 +74,7 @@ canvas{display:block}
   <button class="btn" onclick="openModal('players')">⚔ PLAYERS</button>
   <button class="btn" onclick="openModal('game')">🎮 GAME</button>
   <button class="btn" onclick="openModal('text')">✏ TEXT</button>
+  <button class="btn" id="muteBtn" onclick="toggleMute()">🔊 MUTE</button>
 </div>
 <div id="recDot">● RECORDING — auto-saves when last player stands</div>
 
@@ -96,20 +97,39 @@ canvas{display:block}
 
 <script>
 // ═══════════════════════════ AUDIO ENGINE ═══════════════════════════
-let _audioCtx=null;
+let _audioCtx=null, _masterGain=null, _audioDest=null, _muted=false;
+
 function getAudioCtx(){
-  if(!_audioCtx) _audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+  if(!_audioCtx){
+    _audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+    _masterGain=_audioCtx.createGain();
+    _masterGain.connect(_audioCtx.destination);
+    // MediaStreamDestination for recording audio
+    if(_audioCtx.createMediaStreamDestination){
+      _audioDest=_audioCtx.createMediaStreamDestination();
+      _masterGain.connect(_audioDest);
+    }
+  }
   if(_audioCtx.state==='suspended') _audioCtx.resume();
   return _audioCtx;
 }
+function getAudioOut(){ getAudioCtx(); return _masterGain; }
+function getAudioStream(){ getAudioCtx(); return _audioDest?_audioDest.stream:null; }
 document.addEventListener('click',()=>getAudioCtx(),{once:true});
 
+function toggleMute(){
+  _muted=!_muted;
+  if(_masterGain) _masterGain.gain.value=_muted?0:1;
+  document.getElementById('muteBtn').textContent=_muted?'🔇 UNMUTE':'🔊 MUTE';
+}
+
 function sndCollision(speed){
-  const ctx=getAudioCtx(), t=ctx.currentTime;
+  if(_muted) return;
+  const ctx=getAudioCtx(), out=getAudioOut(), t=ctx.currentTime;
   const gain=ctx.createGain();
   gain.gain.setValueAtTime(Math.min(0.4,speed*0.06),t);
   gain.gain.exponentialRampToValueAtTime(0.001,t+0.08);
-  gain.connect(ctx.destination);
+  gain.connect(out);
   const dist=ctx.createWaveShaper();
   const curve=new Float32Array(256);
   for(let i=0;i<256;i++){const x=i*2/255-1;curve[i]=Math.sign(x)*(1-Math.exp(-3*Math.abs(x)));}
@@ -124,7 +144,8 @@ function sndCollision(speed){
 }
 
 function sndSpark(){
-  const ctx=getAudioCtx(), t=ctx.currentTime;
+  if(_muted) return;
+  const ctx=getAudioCtx(), out=getAudioOut(), t=ctx.currentTime;
   const bufSz=ctx.sampleRate*0.05;
   const buf=ctx.createBuffer(1,bufSz,ctx.sampleRate);
   const d=buf.getChannelData(0);
@@ -136,17 +157,18 @@ function sndSpark(){
   const gain=ctx.createGain();
   gain.gain.setValueAtTime(0.15,t);
   gain.gain.exponentialRampToValueAtTime(0.001,t+0.05);
-  src.connect(filt);filt.connect(gain);gain.connect(ctx.destination);
+  src.connect(filt);filt.connect(gain);gain.connect(out);
   src.start(t);src.stop(t+0.05);
 }
 
 function sndElimination(){
-  const ctx=getAudioCtx(), t=ctx.currentTime;
+  if(_muted) return;
+  const ctx=getAudioCtx(), out=getAudioOut(), t=ctx.currentTime;
   // Deep bass thud
   const g1=ctx.createGain();
   g1.gain.setValueAtTime(0.5,t);
   g1.gain.exponentialRampToValueAtTime(0.001,t+0.3);
-  g1.connect(ctx.destination);
+  g1.connect(out);
   const o1=ctx.createOscillator();
   o1.type='sine';o1.frequency.setValueAtTime(80,t);
   o1.connect(g1);o1.start(t);o1.stop(t+0.3);
@@ -154,7 +176,7 @@ function sndElimination(){
   const g2=ctx.createGain();
   g2.gain.setValueAtTime(0.3,t);
   g2.gain.exponentialRampToValueAtTime(0.001,t+0.2);
-  g2.connect(ctx.destination);
+  g2.connect(out);
   const o2=ctx.createOscillator();
   o2.type='square';o2.frequency.setValueAtTime(1000,t);
   o2.frequency.exponentialRampToValueAtTime(200,t+0.2);
@@ -162,12 +184,13 @@ function sndElimination(){
 }
 
 function sndVictory(){
-  const ctx=getAudioCtx(), t=ctx.currentTime;
+  if(_muted) return;
+  const ctx=getAudioCtx(), out=getAudioOut(), t=ctx.currentTime;
   [400,600,900].forEach((f,i)=>{
     const g=ctx.createGain();
     g.gain.setValueAtTime(0.25,t+i*0.15);
     g.gain.exponentialRampToValueAtTime(0.001,t+i*0.15+0.15);
-    g.connect(ctx.destination);
+    g.connect(out);
     const o=ctx.createOscillator();
     o.type='sine';o.frequency.setValueAtTime(f,t+i*0.15);
     o.connect(g);o.start(t+i*0.15);o.stop(t+i*0.15+0.15);
@@ -1132,7 +1155,15 @@ function toggleRec(){ rActive?stopRec():startRec(); }
 function startRec(){
   if(!canvas.captureStream){alert('Use Chrome or Edge for recording.');return;}
   rChunks=[];
-  const stream=canvas.captureStream(60);
+  const vidStream=canvas.captureStream(60);
+  // Merge audio from Web Audio API into the recording
+  const audioStream=getAudioStream();
+  let stream;
+  if(audioStream&&audioStream.getAudioTracks().length>0){
+    stream=new MediaStream([...vidStream.getVideoTracks(),...audioStream.getAudioTracks()]);
+  } else {
+    stream=vidStream;
+  }
   const mime=['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'].find(m=>MediaRecorder.isTypeSupported(m))||'';
   try{mRec=new MediaRecorder(stream,mime?{mimeType:mime,videoBitsPerSecond:10_000_000}:{});}
   catch(e){mRec=new MediaRecorder(stream);}
