@@ -474,6 +474,13 @@ resize(); window.addEventListener('resize',resize);
 // ════════════════════════════ IMAGES ════════════════════════════
 const IMGS = {};
 
+function getInitials(name){
+  const parts=(name||'').trim().split(/\s+/);
+  if(parts.length===0) return '?';
+  if(parts.length===1) return parts[0][0].toUpperCase();
+  return (parts[0][0]+parts[parts.length-1][0]).toUpperCase();
+}
+
 function loadImages(roster, cb){
   let pending = roster.length;
   if(pending===0){ cb(); return; }
@@ -483,51 +490,51 @@ function loadImages(roster, cb){
     if(!p.slug){ IMGS[p.id]=null; pending--; if(pending===0) cb(); return; }
     const img = new Image();
     img.crossOrigin = 'anonymous';
-    img.onload = ()=>{ img._clean=true; IMGS[p.id]=img; console.log('Loaded headshot for '+p.name+' (primary)'); pending--; if(pending===0) cb(); };
+    img.onload = ()=>{ IMGS[p.id]=img; console.log('Loaded headshot for '+p.name+' (primary)'); pending--; if(pending===0) cb(); };
     img.onerror = ()=>{
-      // fallback to NBA CDN — try with CORS first, then without
+      // fallback to NBA CDN — always with CORS to keep canvas clean
       const img2 = new Image();
       img2.crossOrigin = 'anonymous';
-      img2.onload = ()=>{ img2._clean=true; IMGS[p.id]=img2; console.log('Loaded headshot for '+p.name+' (CDN+CORS)'); pending--; if(pending===0) cb(); };
-      img2.onerror = ()=>{
-        // CORS blocked — retry without crossOrigin so image at least displays
-        const img3 = new Image();
-        img3.onload = ()=>{ img3._clean=false; IMGS[p.id]=img3; console.log('Loaded headshot for '+p.name+' (CDN no-CORS)'); pending--; if(pending===0) cb(); };
-        img3.onerror = ()=>{ IMGS[p.id]=null; console.log('Failed to load headshot for '+p.name); pending--; if(pending===0) cb(); };
-        img3.src = NBA_CDN + p.id + '.png';
-      };
+      img2.onload = ()=>{ IMGS[p.id]=img2; console.log('Loaded headshot for '+p.name+' (CDN)'); pending--; if(pending===0) cb(); };
+      img2.onerror = ()=>{ IMGS[p.id]=null; console.log('CORS failed for '+p.name+' — using initials fallback'); pending--; if(pending===0) cb(); };
       img2.src = NBA_CDN + p.id + '.png';
     };
     img.src = BASE + p.slug + '.png';
   });
 }
 
-// Pre-render circular face to offscreen canvas (avoids CORS taint issues on repeated draws)
+// Pre-render circular face to offscreen canvas — all images are CORS-clean, never taints
 const FACE_CACHE = {};
 function getFace(p, r){
   const ckey = p.customImg ? 'c_'+p.customImg+'_'+Math.round(r) : p.id+'_'+Math.round(r);
   if(FACE_CACHE[ckey]) return FACE_CACHE[ckey];
   const sz = r*2;
-  const img = (p.customImg && CUSTOM_IMGS[p.customImg] && CUSTOM_IMGS[p.customImg]!=='loading')
-    ? CUSTOM_IMGS[p.customImg] : IMGS[p.id];
-  // If image is not CORS-clean, return it directly with a flag so draw() handles clipping
-  if(img && img._clean===false){
-    return {_directImg:img, _bg:p.bg};
-  }
   const oc = document.createElement('canvas'); oc.width=sz; oc.height=sz;
   const c = oc.getContext('2d');
   c.beginPath(); c.arc(r,r,r,0,Math.PI*2); c.clip();
   c.fillStyle = p.bg; c.fillRect(0,0,sz,sz);
+  const img = (p.customImg && CUSTOM_IMGS[p.customImg] && CUSTOM_IMGS[p.customImg]!=='loading')
+    ? CUSTOM_IMGS[p.customImg] : IMGS[p.id];
   if(img && img.naturalWidth>0 && img.naturalHeight>0){
     try{
       const aw=img.naturalWidth, ah=img.naturalHeight;
       const scale = (sz*1.05)/Math.min(aw,ah);
       const dw=aw*scale, dh=ah*scale;
       c.drawImage(img, (sz-dw)/2, (sz-dh)/2, dw, dh);
-    }catch(e){}
+    }catch(e){
+      drawInitials(c, p, r, sz);
+    }
+  } else {
+    drawInitials(c, p, r, sz);
   }
   FACE_CACHE[ckey] = oc;
   return oc;
+}
+function drawInitials(c, p, r, sz){
+  c.fillStyle = p.color;
+  c.font = `700 ${Math.round(r*.9)}px 'Bebas Neue','Barlow Condensed',sans-serif`;
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillText(getInitials(p.name), r, r*1.05);
 }
 function clearFaceCache(){ Object.keys(FACE_CACHE).forEach(k=>delete FACE_CACHE[k]); }
 
@@ -908,14 +915,7 @@ class Ball {
       const face=getFace(p,this.r);
       ctx.save();
       ctx.beginPath();ctx.arc(this.x,this.y,this.r-.5,0,Math.PI*2);ctx.clip();
-      if(face && face._directImg){
-        // Non-CORS image: draw bg then image directly (avoids offscreen canvas taint)
-        ctx.fillStyle=face._bg;ctx.fill();
-        const img=face._directImg, aw=img.naturalWidth, ah=img.naturalHeight;
-        if(aw>0&&ah>0){const sz=this.r*2,sc=(sz*1.05)/Math.min(aw,ah),dw=aw*sc,dh=ah*sc;ctx.drawImage(img,this.x-dw/2,this.y-dh/2,dw,dh);}
-      } else {
-        ctx.drawImage(face,this.x-this.r,this.y-this.r,this.r*2,this.r*2);
-      }
+      ctx.drawImage(face,this.x-this.r,this.y-this.r,this.r*2,this.r*2);
       ctx.restore();
     }catch(e){
       ctx.beginPath();ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
@@ -1240,14 +1240,9 @@ function drawPanel(){
     // Thumb
     const tr=14, ty=py+16;
     ctx.save();ctx.beginPath();ctx.arc(sx,ty,tr,0,Math.PI*2);ctx.clip();
-    const cimg=(p.customImg&&CUSTOM_IMGS[p.customImg]&&CUSTOM_IMGS[p.customImg]!=='loading')?CUSTOM_IMGS[p.customImg]:null;
-    const img=cimg||IMGS[p.id];
-    if(img){
-      try{
-        const asp=img.naturalWidth/img.naturalHeight,dw=tr*2.1,dh=dw/asp;
-        ctx.drawImage(img,sx-dw/2,ty-dh/2,dw,dh);
-      }catch(e){ctx.fillStyle=p.bg;ctx.fillRect(sx-tr,ty-tr,tr*2,tr*2);}
-    } else { ctx.fillStyle=p.bg;ctx.fillRect(sx-tr,ty-tr,tr*2,tr*2); }
+    const face=getFace(p,tr);
+    try{ ctx.drawImage(face,sx-tr,ty-tr,tr*2,tr*2); }
+    catch(e){ ctx.fillStyle=p.bg;ctx.fillRect(sx-tr,ty-tr,tr*2,tr*2); }
     ctx.restore();
     ctx.beginPath();ctx.arc(sx,ty,tr,0,Math.PI*2);
     ctx.strokeStyle=dead?'#1a1a1a':p.color;ctx.lineWidth=1.8;ctx.stroke();
@@ -1314,12 +1309,12 @@ function drawEndScreen(now){
   if(t>.2&&endWinner>=0){
     const t2=(t-.2)/.8, p=CFG.roster[endWinner];
     ctx.globalAlpha=t2;
-    const bigR=105, cImg=(p.customImg&&CUSTOM_IMGS[p.customImg]&&CUSTOM_IMGS[p.customImg]!=='loading')?CUSTOM_IMGS[p.customImg]:null, img=cImg||IMGS[p.id];
+    const bigR=105, face=getFace(p,bigR);
     ctx.save();ctx.beginPath();ctx.arc(CX,H/2-85,bigR,0,Math.PI*2);
-    ctx.fillStyle=p.bg;ctx.fill();ctx.clip();
-    if(img){
-      try{const a=img.naturalWidth/img.naturalHeight,dw=bigR*2.2,dh=dw/a;ctx.drawImage(img,CX-dw/2,H/2-85-dh/2,dw,dh);}catch(e){}
-    } ctx.restore();
+    ctx.clip();
+    try{ ctx.drawImage(face,CX-bigR,H/2-85-bigR,bigR*2,bigR*2); }
+    catch(e){ ctx.fillStyle=p.bg;ctx.fill(); }
+    ctx.restore();
     ctx.beginPath();ctx.arc(CX,H/2-85,bigR,0,Math.PI*2);
     ctx.strokeStyle=p.color;ctx.lineWidth=6;ctx.shadowColor=p.color;ctx.shadowBlur=55;ctx.stroke();ctx.shadowBlur=0;
 
@@ -1386,9 +1381,8 @@ function startRec(){
   try{ vidStream=canvas.captureStream(60); console.log('[REC] captureStream(60) OK'); }
   catch(e1){
     if(e1.name==='SecurityError'||/origin-clean|tainted|security/i.test(e1.message)){
-      const tainted=Object.entries(IMGS).filter(([k,v])=>v&&!v._clean).map(([k])=>k);
-      console.error('[REC] Canvas tainted by cross-origin image(s). Likely culprits:',tainted.length?tainted:'(check CUSTOM_IMGS or ICON_IMGS)');
-      alert('Recording failed: canvas tainted by cross-origin images. Reload the page and try again — headshots must load with CORS headers.');
+      console.error('[REC] Canvas tainted — this should not happen with CORS-only loading + initials fallback.');
+      alert('Recording failed: canvas tainted by cross-origin images. Reload the page and try again.');
       return;
     }
     try{ vidStream=canvas.captureStream(30); console.log('[REC] captureStream(30) OK (60fps failed)'); }
