@@ -1014,12 +1014,12 @@ function physicsStep(){
             const spdI=si, spdJ=sj;
             // Attacker is the faster ball
             if(spdI>=spdJ-0.3){
-              const dmg=relV*bi.sf*0.18;
+              const dmg=relV*bi.sf*0.10;
               const taken=bj.hit(dmg);
               if(taken>0){ bi.atkF=6; spawnClash(bj.x,bj.y,bi.p.color); spawnBladeSparks(bi); spawnDmg(bj.x,bj.y,Math.round(taken),bi.p.color); shake(Math.min(9,relV*1.8)); sndCollision(relV); sndSpark(); }
             }
             if(spdJ>=spdI-0.3){
-              const dmg=relV*bj.sf*0.18;
+              const dmg=relV*bj.sf*0.10;
               const taken=bi.hit(dmg);
               if(taken>0){ bj.atkF=6; spawnClash(bi.x,bi.y,bj.p.color); spawnBladeSparks(bj); spawnDmg(bi.x,bi.y,Math.round(taken),bj.p.color); shake(Math.min(9,relV*1.8)); sndCollision(relV); sndSpark(); }
             }
@@ -1126,15 +1126,15 @@ function loop(now){
     roundTimer=Math.max(0,roundDur-timerAcc);
     // When timer expires, ramp up speed and reset timer
     if(roundTimer<=0){
-      speedMultiplier=Math.min(speedMultiplier+0.12, 2.0);
+      speedMultiplier=Math.min(speedMultiplier+0.05, 1.4);
       roundDur=pickRoundDur();
       timerAcc=0; roundTimer=roundDur;
     }
     balls.forEach(b=>b.update());
     physicsStep();
     updateFX(dt);
-    // Safety: force end if game is stuck with <=1 alive for 3+ seconds
-    if(aliveCnt<=1 && lastElimT>0 && now-lastElimT>3000) triggerEnd();
+    // Safety: force end if game is stuck with <=1 alive for 1.5+ seconds
+    if(aliveCnt<=1 && lastElimT>0 && now-lastElimT>1500) triggerEnd();
   }
   if(phase==='end'){
     updateFX(dt);
