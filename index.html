@@ -341,25 +341,103 @@ const WEAPONS = [
 
 // ════════════════════════════ FULL PLAYER DB FETCH ════════════════════════════
 const PLAYERS_JSON_URL = 'https://jsierrahoopshype.github.io/nba-headshots/metadata/players.json';
-let FULL_DB = PDATA; // start with hardcoded fallback
+const ACTIVE_JSON_URL = 'https://jsierrahoopshype.github.io/nba-headshots/metadata/active.json';
+const TREE_API_URL = 'https://api.github.com/repos/jsierrahoopshype/nba-headshots/git/trees/main?recursive=1';
+let FULL_DB = [...PDATA]; // start with hardcoded fallback
 let FULL_DB_LOADED = false;
 
-fetch(PLAYERS_JSON_URL)
-  .then(r=>{ if(!r.ok) throw new Error(r.status); return r.json(); })
-  .then(data=>{
-    if(Array.isArray(data)&&data.length>0){
-      // Merge: keep PDATA entries (they have color/bg/icon), add fetched ones for the rest
-      const pdataById = new Map(PDATA.map(p=>[p.id,p]));
-      FULL_DB = data.map(p=>{
-        const existing = pdataById.get(p.id);
-        if(existing) return existing; // preserve color, bg, icon from hardcoded
-        return { id:p.id, slug:p.slug||'', name:p.name, team:p.team||'', color:'#4488cc', bg:'#0d1b2a', icon:'' };
-      });
-      FULL_DB_LOADED = true;
-      console.log(`Loaded ${FULL_DB.length} players from players.json`);
+function _slugToName(slug){
+  // slug format: "firstname-lastname" or "firstname-middle-lastname"
+  return slug.split('-').map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' ');
+}
+
+function _mergeIntoDB(players, source){
+  const byId=new Map(FULL_DB.map(p=>[p.id,p]));
+  let added=0;
+  players.forEach(p=>{
+    if(!byId.has(p.id)){
+      byId.set(p.id,p);
+      added++;
     }
-  })
-  .catch(()=>{}); // silent fallback to PDATA
+  });
+  FULL_DB=Array.from(byId.values());
+  console.log(`Merged ${added} new players from ${source}, total now: ${FULL_DB.length}`);
+}
+
+(async function loadFullDB(){
+  const tried=[];
+
+  // Step 1a: Fetch players.json
+  try{
+    tried.push(PLAYERS_JSON_URL);
+    const r=await fetch(PLAYERS_JSON_URL);
+    if(!r.ok) throw new Error(`HTTP ${r.status}`);
+    const data=await r.json();
+    if(Array.isArray(data)&&data.length>0){
+      console.log(`players.json returned ${data.length} entries`);
+      const pdataById=new Map(PDATA.map(p=>[p.id,p]));
+      const mapped=data.map(p=>{
+        const existing=pdataById.get(p.id);
+        if(existing) return existing;
+        return {id:p.id,slug:p.slug||'',name:p.name,team:p.team||'',color:'#4488cc',bg:'#0d1b2a',icon:''};
+      });
+      FULL_DB=mapped;
+      // Re-add any PDATA entries that might be missing
+      const inDb=new Set(FULL_DB.map(p=>p.id));
+      PDATA.forEach(p=>{if(!inDb.has(p.id))FULL_DB.push(p);});
+    }
+  }catch(e){console.warn('players.json fetch failed:',e.message);}
+
+  // Step 1b: Fetch active.json
+  try{
+    tried.push(ACTIVE_JSON_URL);
+    const r=await fetch(ACTIVE_JSON_URL);
+    if(!r.ok) throw new Error(`HTTP ${r.status}`);
+    const data=await r.json();
+    if(Array.isArray(data)&&data.length>0){
+      console.log(`active.json returned ${data.length} entries`);
+      const mapped=data.map(p=>({id:p.id,slug:p.slug||'',name:p.name,team:p.team||'',color:'#4488cc',bg:'#0d1b2a',icon:''}));
+      _mergeIntoDB(mapped,'active.json');
+    }
+  }catch(e){console.warn('active.json fetch failed:',e.message);}
+
+  console.log(`After Step 1: ${FULL_DB.length} players`);
+
+  // Step 2: If under 500, fetch GitHub tree API for headshot filenames
+  if(FULL_DB.length<500){
+    try{
+      tried.push(TREE_API_URL);
+      const r=await fetch(TREE_API_URL);
+      if(!r.ok) throw new Error(`HTTP ${r.status}`);
+      const data=await r.json();
+      if(data.tree&&Array.isArray(data.tree)){
+        const pat=/^players\/headshots\/face\/(\d+)-(.+)\.png$/;
+        const parsed=[];
+        data.tree.forEach(f=>{
+          const m=f.path.match(pat);
+          if(m){
+            const id=+m[1], slug=m[1]+'-'+m[2], name=_slugToName(m[2]);
+            parsed.push({id,slug,name,team:'',color:'#4488cc',bg:'#0d1b2a',icon:''});
+          }
+        });
+        console.log(`GitHub tree API returned ${parsed.length} headshot files`);
+        _mergeIntoDB(parsed,'GitHub tree API');
+      }
+    }catch(e){console.warn('GitHub tree API fetch failed:',e.message);}
+  }
+
+  // Step 3: Final dedup (by id) and sort
+  const seen=new Map();
+  FULL_DB.forEach(p=>{if(!seen.has(p.id))seen.set(p.id,p);});
+  FULL_DB=Array.from(seen.values());
+
+  FULL_DB_LOADED=true;
+  console.log(`Total players available: ${FULL_DB.length}`);
+  if(FULL_DB.length<500){
+    console.warn(`WARNING: Only ${FULL_DB.length} players loaded (target was 500+). URLs tried:`);
+    tried.forEach(u=>console.warn('  -',u));
+  }
+})();
 
 // ════════════════════════════ CONFIG ════════════════════════════
 let CFG = {
@@ -1394,9 +1472,9 @@ function buildPlayersTab(){
 
   if(DRAFT.roster.length<10){
     const dbCount = FULL_DB.length;
-    const countLabel = FULL_DB_LOADED ? `<span style="font-size:10px;color:#3366aa;font-weight:400;margin-left:6px;">${dbCount} players available</span>` : '';
+    const countLabel = FULL_DB_LOADED ? `<span style="font-size:10px;color:#3366aa;font-weight:400;margin-left:6px;">${dbCount} players available — type to search</span>` : '';
     html+=`<div class="shd">Add NBA Player${countLabel}</div>
-    <input class="fi" id="psearch" placeholder="Search by name or team…" oninput="filterPP()" style="margin-bottom:6px">
+    <input class="fi" id="psearch" placeholder="Search by name or team (2+ chars)…" oninput="filterPP()" style="margin-bottom:6px">
     <div class="pplist" id="pplist">${buildPPList('')}</div>
     <div class="shd" style="margin-top:16px;">Add Custom Character</div>
     <div class="pcard">
@@ -1419,15 +1497,24 @@ function buildPlayersTab(){
   return html;
 }
 
+function _lastName(name){const parts=name.trim().split(/\s+/);return(parts[parts.length-1]||'').toLowerCase();}
+
 function buildPPList(q){
   const used=new Set(DRAFT.roster.map(p=>p.id));
   const ql=q?q.toLowerCase():'';
-  const list=FULL_DB.filter(p=>!used.has(p.id)&&(!ql||p.name.toLowerCase().includes(ql)||(p.team&&p.team.toLowerCase().includes(ql))));
-  return list.slice(0,20).map(p=>`
-    <div class="ppi" onclick="addP(${p.id})">
-      <div class="ppi-face"><img src="${BASE}${p.slug}.png" onerror="this.src='${NBA_CDN}${p.id}.png'"></div>
-      <div><div class="ppi-name">${p.name}</div><div class="ppi-team">${p.team}</div></div>
-    </div>`).join('')||'<div style="padding:10px;color:#223;font-size:11px;">No matches</div>';
+  // Require 2+ chars to search
+  if(ql.length<2) return `<div style="padding:10px;color:#334;font-size:11px;">Type 2+ characters to search${FULL_DB_LOADED?' '+FULL_DB.length+' players':''}</div>`;
+  const list=FULL_DB.filter(p=>!used.has(p.id)&&(p.name.toLowerCase().includes(ql)||(p.team&&p.team.toLowerCase().includes(ql))));
+  // Sort by last name
+  list.sort((a,b)=>_lastName(a.name).localeCompare(_lastName(b.name)));
+  const total=list.length;
+  let html=list.slice(0,20).map(p=>`
+    <div class="ppi" onclick="addP(${typeof p.id==='number'?p.id:`'${p.id}'`})">
+      <div class="ppi-face"><img src="${p.slug?BASE+p.slug+'.png':NBA_CDN+p.id+'.png'}" onerror="this.src='${NBA_CDN}${p.id}.png'"></div>
+      <div><div class="ppi-name">${p.name}</div><div class="ppi-team">${p.team||''}</div></div>
+    </div>`).join('');
+  if(total>20) html+=`<div style="padding:8px 10px;color:#3366aa;font-size:11px;">${total-20} more — keep typing</div>`;
+  return html||'<div style="padding:10px;color:#223;font-size:11px;">No matches</div>';
 }
 
 function filterPP(){const q=document.getElementById('psearch')?.value||'';const el=document.getElementById('pplist');if(el)el.innerHTML=buildPPList(q);}
