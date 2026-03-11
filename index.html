@@ -1323,32 +1323,85 @@ let mRec=null, rChunks=[], rActive=false, rStopT=null;
 
 function toggleRec(){ rActive?stopRec():startRec(); }
 
-function startRec(){
-  if(!canvas.captureStream){alert('Use Chrome or Edge for recording.');return;}
-  rChunks=[];
-  const vidStream=canvas.captureStream(60);
-  // Merge audio from Web Audio API into the recording
-  const audioStream=getAudioStream();
-  let stream;
-  if(audioStream&&audioStream.getAudioTracks().length>0){
-    stream=new MediaStream([...vidStream.getVideoTracks(),...audioStream.getAudioTracks()]);
-  } else {
-    stream=vidStream;
+function _pickMime(){
+  const candidates=['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm','video/mp4'];
+  for(const m of candidates){
+    if(MediaRecorder.isTypeSupported(m)){console.log('[REC] Using mimeType:',m);return m;}
   }
-  const mime=['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'].find(m=>MediaRecorder.isTypeSupported(m))||'';
-  try{mRec=new MediaRecorder(stream,mime?{mimeType:mime,videoBitsPerSecond:10_000_000}:{});}
-  catch(e){mRec=new MediaRecorder(stream);}
-  mRec.ondataavailable=e=>{if(e.data.size>0)rChunks.push(e.data);};
-  mRec.onstop=()=>downloadRec();
-  mRec.start(100); rActive=true; rStopT=null;
-  document.getElementById('recBtn').textContent='⏹ STOP';
-  document.getElementById('recBtn').style.color='#ff5566';
-  document.getElementById('recDot').style.display='block';
-  doRestart();
+  console.warn('[REC] No supported mimeType found, using browser default');
+  return '';
+}
+
+function _createRecorder(stream, mime){
+  try{
+    const opts=mime?{mimeType:mime,videoBitsPerSecond:10_000_000}:{};
+    const rec=new MediaRecorder(stream,opts);
+    console.log('[REC] MediaRecorder created with mimeType:',rec.mimeType);
+    return rec;
+  }catch(e){
+    console.warn('[REC] MediaRecorder constructor failed:',e.message);
+    return null;
+  }
+}
+
+function startRec(){
+  if(!canvas.captureStream){alert('Recording not supported in this browser.');return;}
+  rChunks=[];
+
+  // Capture canvas video stream
+  let vidStream;
+  try{ vidStream=canvas.captureStream(60); console.log('[REC] captureStream(60) OK'); }
+  catch(e1){
+    try{ vidStream=canvas.captureStream(30); console.log('[REC] captureStream(30) OK (60fps failed)'); }
+    catch(e2){ alert('Canvas capture failed: '+e2.message); return; }
+  }
+
+  const mime=_pickMime();
+
+  // Try with audio first, fall back to video-only
+  let rec=null;
+  const audioStream=getAudioStream();
+  if(audioStream&&audioStream.getAudioTracks().length>0){
+    console.log('[REC] Attempting video+audio recording');
+    const combined=new MediaStream([...vidStream.getVideoTracks(),...audioStream.getAudioTracks()]);
+    rec=_createRecorder(combined,mime);
+  }
+  if(!rec){
+    console.log('[REC] Falling back to video-only recording');
+    rec=_createRecorder(vidStream,mime);
+  }
+  if(!rec){
+    // Last resort: no options at all
+    try{rec=new MediaRecorder(vidStream);console.log('[REC] Bare MediaRecorder created');}
+    catch(e){alert('MediaRecorder failed: '+e.message);return;}
+  }
+
+  mRec=rec;
+  mRec.ondataavailable=e=>{
+    if(e.data&&e.data.size>0){rChunks.push(e.data);console.log('[REC] chunk:',e.data.size,'bytes');}
+  };
+  mRec.onerror=e=>console.error('[REC] error:',e);
+  mRec.onstop=()=>{console.log('[REC] stopped, chunks:',rChunks.length);downloadRec();};
+
+  try{
+    mRec.start(100);
+    rActive=true; rStopT=null;
+    console.log('[REC] Recording started, state:',mRec.state);
+    document.getElementById('recBtn').textContent='⏹ STOP';
+    document.getElementById('recBtn').style.color='#ff5566';
+    document.getElementById('recDot').style.display='block';
+    doRestart();
+  }catch(e){
+    console.error('[REC] start() failed:',e);
+    alert('Recording failed to start: '+e.message);
+  }
 }
 
 function stopRec(){
-  if(mRec&&mRec.state!=='inactive') mRec.stop();
+  if(mRec&&mRec.state==='recording'){
+    console.log('[REC] Stopping recorder…');
+    mRec.stop();
+  }
   rActive=false; rStopT=null;
   document.getElementById('recBtn').textContent='⏺ REC & DOWNLOAD';
   document.getElementById('recBtn').style.color='';
@@ -1356,13 +1409,19 @@ function stopRec(){
 }
 
 function downloadRec(){
-  const ext=(mRec.mimeType||'').includes('mp4')?'mp4':'webm';
-  const blob=new Blob(rChunks,{type:mRec.mimeType||'video/webm'});
+  if(rChunks.length===0){console.warn('[REC] No data to download');return;}
+  const mimeType=mRec?.mimeType||'video/webm';
+  const ext=mimeType.includes('mp4')?'mp4':'webm';
+  const blob=new Blob(rChunks,{type:mimeType});
+  console.log('[REC] Download: blob size',blob.size,'bytes, type',mimeType);
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
   a.href=url; a.download=`hoopshype-battle.${ext}`;
-  document.body.appendChild(a);a.click();document.body.removeChild(a);
-  setTimeout(()=>URL.revokeObjectURL(url),8000);
+  a.style.display='none';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(url);},8000);
+  console.log('[REC] Download triggered');
 }
 
 function checkAutoStop(now){
