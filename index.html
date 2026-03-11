@@ -483,13 +483,19 @@ function loadImages(roster, cb){
     if(!p.slug){ IMGS[p.id]=null; pending--; if(pending===0) cb(); return; }
     const img = new Image();
     img.crossOrigin = 'anonymous';
-    img.onload = ()=>{ IMGS[p.id]=img; pending--; if(pending===0) cb(); };
+    img.onload = ()=>{ img._clean=true; IMGS[p.id]=img; console.log('Loaded headshot for '+p.name+' (primary)'); pending--; if(pending===0) cb(); };
     img.onerror = ()=>{
-      // fallback to NBA CDN
+      // fallback to NBA CDN — try with CORS first, then without
       const img2 = new Image();
       img2.crossOrigin = 'anonymous';
-      img2.onload = ()=>{ IMGS[p.id]=img2; pending--; if(pending===0) cb(); };
-      img2.onerror = ()=>{ IMGS[p.id]=null; pending--; if(pending===0) cb(); };
+      img2.onload = ()=>{ img2._clean=true; IMGS[p.id]=img2; console.log('Loaded headshot for '+p.name+' (CDN+CORS)'); pending--; if(pending===0) cb(); };
+      img2.onerror = ()=>{
+        // CORS blocked — retry without crossOrigin so image at least displays
+        const img3 = new Image();
+        img3.onload = ()=>{ img3._clean=false; IMGS[p.id]=img3; console.log('Loaded headshot for '+p.name+' (CDN no-CORS)'); pending--; if(pending===0) cb(); };
+        img3.onerror = ()=>{ IMGS[p.id]=null; console.log('Failed to load headshot for '+p.name); pending--; if(pending===0) cb(); };
+        img3.src = NBA_CDN + p.id + '.png';
+      };
       img2.src = NBA_CDN + p.id + '.png';
     };
     img.src = BASE + p.slug + '.png';
@@ -502,14 +508,17 @@ function getFace(p, r){
   const ckey = p.customImg ? 'c_'+p.customImg+'_'+Math.round(r) : p.id+'_'+Math.round(r);
   if(FACE_CACHE[ckey]) return FACE_CACHE[ckey];
   const sz = r*2;
+  const img = (p.customImg && CUSTOM_IMGS[p.customImg] && CUSTOM_IMGS[p.customImg]!=='loading')
+    ? CUSTOM_IMGS[p.customImg] : IMGS[p.id];
+  // If image is not CORS-clean, return it directly with a flag so draw() handles clipping
+  if(img && img._clean===false){
+    return {_directImg:img, _bg:p.bg};
+  }
   const oc = document.createElement('canvas'); oc.width=sz; oc.height=sz;
   const c = oc.getContext('2d');
   c.beginPath(); c.arc(r,r,r,0,Math.PI*2); c.clip();
   c.fillStyle = p.bg; c.fillRect(0,0,sz,sz);
-  // Use custom image if available, otherwise NBA headshot
-  const img = (p.customImg && CUSTOM_IMGS[p.customImg] && CUSTOM_IMGS[p.customImg]!=='loading')
-    ? CUSTOM_IMGS[p.customImg] : IMGS[p.id];
-  if(img){
+  if(img && img.naturalWidth>0 && img.naturalHeight>0){
     try{
       const aw=img.naturalWidth, ah=img.naturalHeight;
       const scale = (sz*1.05)/Math.min(aw,ah);
@@ -742,7 +751,7 @@ class Ball {
     this.x = CX+Math.cos(a)*d;
     this.y = CY+Math.sin(a)*d;
 
-    const spd = (2.5+Math.random()*1.5)*(0.8+sf*0.2);
+    const spd = (2.1+Math.random()*1.25)*(0.8+sf*0.2);
     const va  = a+Math.PI+(Math.random()-.5)*1.0;
     this.vx = Math.cos(va)*spd;
     this.vy = Math.sin(va)*spd;
@@ -899,7 +908,14 @@ class Ball {
       const face=getFace(p,this.r);
       ctx.save();
       ctx.beginPath();ctx.arc(this.x,this.y,this.r-.5,0,Math.PI*2);ctx.clip();
-      ctx.drawImage(face,this.x-this.r,this.y-this.r,this.r*2,this.r*2);
+      if(face && face._directImg){
+        // Non-CORS image: draw bg then image directly (avoids offscreen canvas taint)
+        ctx.fillStyle=face._bg;ctx.fill();
+        const img=face._directImg, aw=img.naturalWidth, ah=img.naturalHeight;
+        if(aw>0&&ah>0){const sz=this.r*2,sc=(sz*1.05)/Math.min(aw,ah),dw=aw*sc,dh=ah*sc;ctx.drawImage(img,this.x-dw/2,this.y-dh/2,dw,dh);}
+      } else {
+        ctx.drawImage(face,this.x-this.r,this.y-this.r,this.r*2,this.r*2);
+      }
       ctx.restore();
     }catch(e){
       ctx.beginPath();ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
@@ -980,13 +996,13 @@ function physicsStep(){
         const nx=dx/d, ny=dy/d;
         const dv=(bi.vx-bj.vx)*nx+(bi.vy-bj.vy)*ny;
         if(dv>0){
-          // 1.8x impulse for punchy but survivable bounces
-          const imp=dv*1.8;
+          // 1.5x impulse for punchy but survivable bounces
+          const imp=dv*1.5;
           bi.vx-=imp*nx; bi.vy-=imp*ny;
           bj.vx+=imp*nx; bj.vy+=imp*ny;
 
-          // Enforce minimum bounce speed of 2.2
-          const minSpd=2.2;
+          // Enforce minimum bounce speed of 1.85
+          const minSpd=1.85;
           let si=Math.hypot(bi.vx,bi.vy);
           if(si>0.01&&si<minSpd){const s=minSpd/si;bi.vx*=s;bi.vy*=s;si=minSpd;}
           let sj=Math.hypot(bj.vx,bj.vy);
@@ -998,12 +1014,12 @@ function physicsStep(){
             const spdI=si, spdJ=sj;
             // Attacker is the faster ball
             if(spdI>=spdJ-0.3){
-              const dmg=relV*bi.sf*0.5;
+              const dmg=relV*bi.sf*0.42;
               const taken=bj.hit(dmg);
               if(taken>0){ bi.atkF=6; spawnClash(bj.x,bj.y,bi.p.color); spawnBladeSparks(bi); spawnDmg(bj.x,bj.y,Math.round(taken),bi.p.color); shake(Math.min(9,relV*1.8)); sndCollision(relV); sndSpark(); }
             }
             if(spdJ>=spdI-0.3){
-              const dmg=relV*bj.sf*0.5;
+              const dmg=relV*bj.sf*0.42;
               const taken=bi.hit(dmg);
               if(taken>0){ bj.atkF=6; spawnClash(bi.x,bi.y,bj.p.color); spawnBladeSparks(bj); spawnDmg(bi.x,bi.y,Math.round(taken),bj.p.color); shake(Math.min(9,relV*1.8)); sndCollision(relV); sndSpark(); }
             }
