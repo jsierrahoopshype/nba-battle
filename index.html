@@ -977,13 +977,13 @@ function physicsStep(){
         const nx=dx/d, ny=dy/d;
         const dv=(bi.vx-bj.vx)*nx+(bi.vy-bj.vy)*ny;
         if(dv>0){
-          // 2.5x impulse for violent sword-clash bounces
-          const imp=dv*2.5;
+          // 1.8x impulse for punchy but survivable bounces
+          const imp=dv*1.8;
           bi.vx-=imp*nx; bi.vy-=imp*ny;
           bj.vx+=imp*nx; bj.vy+=imp*ny;
 
-          // Enforce minimum bounce speed of 3.0
-          const minSpd=3.0;
+          // Enforce minimum bounce speed of 2.2
+          const minSpd=2.2;
           let si=Math.hypot(bi.vx,bi.vy);
           if(si>0.01&&si<minSpd){const s=minSpd/si;bi.vx*=s;bi.vy*=s;si=minSpd;}
           let sj=Math.hypot(bj.vx,bj.vy);
@@ -995,12 +995,12 @@ function physicsStep(){
             const spdI=si, spdJ=sj;
             // Attacker is the faster ball
             if(spdI>=spdJ-0.3){
-              const dmg=relV*bi.sf*0.88;
+              const dmg=relV*bi.sf*0.5;
               const taken=bj.hit(dmg);
               if(taken>0){ bi.atkF=6; spawnClash(bj.x,bj.y,bi.p.color); spawnBladeSparks(bi); spawnDmg(bj.x,bj.y,Math.round(taken),bi.p.color); shake(Math.min(9,relV*1.8)); sndCollision(relV); sndSpark(); }
             }
             if(spdJ>=spdI-0.3){
-              const dmg=relV*bj.sf*0.88;
+              const dmg=relV*bj.sf*0.5;
               const taken=bi.hit(dmg);
               if(taken>0){ bj.atkF=6; spawnClash(bi.x,bi.y,bj.p.color); spawnBladeSparks(bj); spawnDmg(bi.x,bi.y,Math.round(taken),bj.p.color); shake(Math.min(9,relV*1.8)); sndCollision(relV); sndSpark(); }
             }
