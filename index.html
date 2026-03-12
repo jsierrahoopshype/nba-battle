@@ -1154,12 +1154,12 @@ function physicsStep(){
             const spdI=si, spdJ=sj;
             // Attacker is the faster ball
             if(spdI>=spdJ-0.3){
-              const dmg=relV*bi.sf*0.22;
+              const dmg=relV*bi.sf*0.55;
               const taken=bj.hit(dmg);
               if(taken>0){ bi.atkF=6; spawnClash(bj.x,bj.y,bi.p.color); spawnBladeSparks(bi); spawnDmg(bj.x,bj.y,Math.round(taken),bi.p.color); shake(Math.min(9,relV*1.8)); sndCollision(relV); sndSpark(); }
             }
             if(spdJ>=spdI-0.3){
-              const dmg=relV*bj.sf*0.22;
+              const dmg=relV*bj.sf*0.55;
               const taken=bi.hit(dmg);
               if(taken>0){ bj.atkF=6; spawnClash(bi.x,bi.y,bj.p.color); spawnBladeSparks(bj); spawnDmg(bi.x,bi.y,Math.round(taken),bj.p.color); shake(Math.min(9,relV*1.8)); sndCollision(relV); sndSpark(); }
             }
