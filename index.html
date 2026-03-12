@@ -864,7 +864,7 @@ function initGame(){
   balls = CFG.roster.map((p,i)=>{
     const pct = p.winPct||10;
     const t = maxPct>minPct ? (pct-minPct)/(maxPct-minPct) : 0.5;
-    const sf = 0.75 + t*0.45; // range [0.75, 1.2], ratio = 1.6
+    const sf = 0.88 + t*0.24; // range [0.88, 1.12], ratio = 1.27
     return new Ball(i, sf);
   });
 }
@@ -875,6 +875,7 @@ class Ball {
     this.idx = idx;
     this.p   = CFG.roster[idx];
     this.sf  = sf; // strength factor
+    this.form = 0.8 + Math.random()*0.4; // random "form" 0.8–1.2, resets each match
     this.maxHP = 82;
     this.hp    = this.maxHP;
     this.r     = BR; this.baseR = BR;
@@ -953,8 +954,8 @@ class Ball {
     // Momentum nudge: small random velocity bump every 2-3 seconds
     this.nudgeTimer -= 1/60;
     if(this.nudgeTimer<=0){
-      this.vx += (Math.random()-0.5)*0.3; // ±0.15
-      this.vy += (Math.random()-0.5)*0.3;
+      this.vx += (Math.random()-0.5)*0.5; // ±0.25
+      this.vy += (Math.random()-0.5)*0.5;
       this.clampSpeed();
       this.nudgeTimer = 2.0+Math.random()*1.0;
     }
@@ -1154,12 +1155,12 @@ function physicsStep(){
             const spdI=si, spdJ=sj;
             // Attacker is the faster ball
             if(spdI>=spdJ-0.3){
-              const dmg=relV*bi.sf*0.55;
+              const dmg=relV*bi.sf*bi.form*0.55;
               const taken=bj.hit(dmg);
               if(taken>0){ bi.atkF=6; spawnClash(bj.x,bj.y,bi.p.color); spawnBladeSparks(bi); spawnDmg(bj.x,bj.y,Math.round(taken),bi.p.color); shake(Math.min(9,relV*1.8)); sndCollision(relV); sndSpark(); }
             }
             if(spdJ>=spdI-0.3){
-              const dmg=relV*bj.sf*0.55;
+              const dmg=relV*bj.sf*bj.form*0.55;
               const taken=bi.hit(dmg);
               if(taken>0){ bj.atkF=6; spawnClash(bi.x,bi.y,bj.p.color); spawnBladeSparks(bj); spawnDmg(bi.x,bi.y,Math.round(taken),bj.p.color); shake(Math.min(9,relV*1.8)); sndCollision(relV); sndSpark(); }
             }
