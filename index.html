@@ -84,6 +84,7 @@ canvas{display:block}
   <div class="mhead"><h2 id="mtitle">Settings</h2><button class="mclose" onclick="closeModal()">✕</button></div>
   <div class="tabs" id="tabBar">
     <button class="tab" data-t="players" onclick="switchTab('players')">Players</button>
+    <button class="tab" data-t="teams"   onclick="switchTab('teams')">Teams</button>
     <button class="tab" data-t="game"    onclick="switchTab('game')">Game</button>
     <button class="tab" data-t="text"    onclick="switchTab('text')">Text</button>
   </div>
@@ -339,6 +340,41 @@ const WEAPONS = [
   {id:'star',   emoji:'⭐',  label:'Star'},
 ];
 
+// ═══════════════════════════ TEAM DB ═══════════════════════════
+const NBA_LOGO_CDN = 'https://cdn.nba.com/logos/nba/';
+const TEAM_DB = [
+  {teamId:1610612737, abbr:'ATL', name:'Atlanta Hawks',          color:'#E03A3E', bg:'#C1D32F'},
+  {teamId:1610612738, abbr:'BOS', name:'Boston Celtics',         color:'#007A33', bg:'#BA9653'},
+  {teamId:1610612751, abbr:'BKN', name:'Brooklyn Nets',          color:'#FFFFFF', bg:'#000000'},
+  {teamId:1610612766, abbr:'CHA', name:'Charlotte Hornets',      color:'#00788C', bg:'#1D1160'},
+  {teamId:1610612741, abbr:'CHI', name:'Chicago Bulls',          color:'#CE1141', bg:'#000000'},
+  {teamId:1610612739, abbr:'CLE', name:'Cleveland Cavaliers',    color:'#860038', bg:'#FDBB30'},
+  {teamId:1610612742, abbr:'DAL', name:'Dallas Mavericks',       color:'#00538C', bg:'#002B5E'},
+  {teamId:1610612743, abbr:'DEN', name:'Denver Nuggets',         color:'#FEC524', bg:'#0E2240'},
+  {teamId:1610612765, abbr:'DET', name:'Detroit Pistons',        color:'#C8102E', bg:'#1D428A'},
+  {teamId:1610612744, abbr:'GSW', name:'Golden State Warriors',  color:'#FFC72C', bg:'#1D428A'},
+  {teamId:1610612745, abbr:'HOU', name:'Houston Rockets',        color:'#CE1141', bg:'#000000'},
+  {teamId:1610612754, abbr:'IND', name:'Indiana Pacers',         color:'#002D62', bg:'#FDBB30'},
+  {teamId:1610612746, abbr:'LAC', name:'Los Angeles Clippers',   color:'#C8102E', bg:'#1D428A'},
+  {teamId:1610612747, abbr:'LAL', name:'Los Angeles Lakers',     color:'#FDB927', bg:'#552583'},
+  {teamId:1610612763, abbr:'MEM', name:'Memphis Grizzlies',      color:'#5D76A9', bg:'#12173F'},
+  {teamId:1610612748, abbr:'MIA', name:'Miami Heat',             color:'#98002E', bg:'#F9A01B'},
+  {teamId:1610612749, abbr:'MIL', name:'Milwaukee Bucks',        color:'#00471B', bg:'#EEE1C6'},
+  {teamId:1610612750, abbr:'MIN', name:'Minnesota Timberwolves', color:'#0C2340', bg:'#236192'},
+  {teamId:1610612740, abbr:'NOP', name:'New Orleans Pelicans',   color:'#0C2340', bg:'#C8102E'},
+  {teamId:1610612752, abbr:'NYK', name:'New York Knicks',        color:'#006BB6', bg:'#F58426'},
+  {teamId:1610612760, abbr:'OKC', name:'Oklahoma City Thunder',  color:'#007AC1', bg:'#EF3B24'},
+  {teamId:1610612753, abbr:'ORL', name:'Orlando Magic',          color:'#0077C0', bg:'#000000'},
+  {teamId:1610612755, abbr:'PHI', name:'Philadelphia 76ers',     color:'#006BB6', bg:'#ED174C'},
+  {teamId:1610612756, abbr:'PHX', name:'Phoenix Suns',           color:'#E56020', bg:'#1D1160'},
+  {teamId:1610612757, abbr:'POR', name:'Portland Trail Blazers', color:'#E03A3E', bg:'#000000'},
+  {teamId:1610612758, abbr:'SAC', name:'Sacramento Kings',       color:'#5A2D81', bg:'#63727A'},
+  {teamId:1610612759, abbr:'SAS', name:'San Antonio Spurs',      color:'#C4CED4', bg:'#061922'},
+  {teamId:1610612761, abbr:'TOR', name:'Toronto Raptors',        color:'#CE1141', bg:'#000000'},
+  {teamId:1610612762, abbr:'UTA', name:'Utah Jazz',              color:'#002B5C', bg:'#F9A01B'},
+  {teamId:1610612764, abbr:'WAS', name:'Washington Wizards',     color:'#002B5C', bg:'#E31837'},
+];
+
 // ════════════════════════════ FULL PLAYER DB FETCH ════════════════════════════
 const PLAYERS_JSON_URL = 'https://jsierrahoopshype.github.io/nba-headshots/metadata/players.json';
 const ACTIVE_JSON_URL = 'https://jsierrahoopshype.github.io/nba-headshots/metadata/active.json';
@@ -487,6 +523,15 @@ function loadImages(roster, cb){
   if(pending===0){ cb(); return; }
   roster.forEach(p=>{
     if(IMGS[p.id]){ pending--; if(pending===0) cb(); return; }
+    // Team entry — load logo from NBA CDN (cross-origin, needs CORS)
+    if(p._team && p._teamId){
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = ()=>{ IMGS[p.id]=img; console.log('Loaded logo for '+p.name); pending--; if(pending===0) cb(); };
+      img.onerror = ()=>{ IMGS[p.id]=null; console.log('CORS failed for '+p.name+' logo — using abbr fallback'); pending--; if(pending===0) cb(); };
+      img.src = NBA_LOGO_CDN + p._teamId + '/global/L/logo.svg';
+      return;
+    }
     // Skip NBA headshot load for custom players (no slug) — they use customImg or bg fallback
     if(!p.slug){ IMGS[p.id]=null; pending--; if(pending===0) cb(); return; }
     const img = new Image();
@@ -532,10 +577,12 @@ function getFace(p, r){
   return oc;
 }
 function drawInitials(c, p, r, sz){
+  const text = p._team && p.team ? p.team : getInitials(p.name);
+  const fontSize = text.length>2 ? Math.round(r*.65) : Math.round(r*.9);
   c.fillStyle = p.color;
-  c.font = `700 ${Math.round(r*.9)}px 'Bebas Neue','Barlow Condensed',sans-serif`;
+  c.font = `700 ${fontSize}px 'Bebas Neue','Barlow Condensed',sans-serif`;
   c.textAlign = 'center'; c.textBaseline = 'middle';
-  c.fillText(getInitials(p.name), r, r*1.05);
+  c.fillText(text, r, r*1.05);
 }
 function clearFaceCache(){ Object.keys(FACE_CACHE).forEach(k=>delete FACE_CACHE[k]); }
 
@@ -1649,13 +1696,15 @@ function switchTab(t){
 function renderTab(t){
   const body=document.getElementById('mbody');
   if(t==='players') body.innerHTML=buildPlayersTab();
+  if(t==='teams')   body.innerHTML=buildTeamsTab();
   if(t==='game')    body.innerHTML=buildGameTab();
   if(t==='text')    body.innerHTML=buildTextTab();
 }
 
 // ── PLAYERS ──
 function buildPlayersTab(){
-  let html=`<div style="font-size:11px;color:#334;margin-bottom:10px;line-height:1.5;">Win % sets strength, speed, and damage. Higher % = stronger fighter. All players start with 82 energy. Set an emoji or image URL as weapon — leave blank for razor ring.</div>`;
+  let html=`<div style="font-size:11px;color:#334;margin-bottom:10px;line-height:1.5;">Win % sets strength, speed, and damage. Higher % = stronger fighter. All players start with 82 energy. Set an emoji or image URL as weapon — leave blank for razor ring.</div>
+  <div style="margin-bottom:12px;"><button class="addbtn" onclick="teamBattleQuickFill();switchTab('teams')">🏀 TEAM BATTLE — Random 5 Teams</button></div>`;
   DRAFT.roster.forEach((p,i)=>{
     const isCustom = p._custom;
     const faceSrc = p.customImg || (p.slug ? `${BASE}${p.slug}.png` : '');
@@ -1834,6 +1883,85 @@ function handleFileUpload(i,input){
     if(pface) pface.innerHTML=`<img src="${dataUrl}" style="width:100%;height:100%;object-fit:cover;">`;
   };
   reader.readAsDataURL(file);
+}
+
+// ── TEAMS ──
+function _teamToRosterEntry(t){
+  return {id:'team_'+t.abbr, slug:'', name:t.name, team:t.abbr, color:t.color, bg:t.bg,
+    winPct:20, icon:'', iconUrl:'', customImg:'', _team:true, _teamId:t.teamId};
+}
+
+function buildTeamsTab(){
+  let html=`<div style="font-size:11px;color:#334;margin-bottom:10px;line-height:1.5;">Add NBA teams to battle. Teams use their official logo on the ball. Win %, weapons, series, and recording all work the same as players.</div>`;
+
+  // Show current team entries in roster
+  DRAFT.roster.forEach((p,i)=>{
+    const logoUrl = p._team && p._teamId ? NBA_LOGO_CDN+p._teamId+'/global/L/logo.svg' : '';
+    html+=`<div class="pcard">
+      <button class="del" onclick="removeP(${i});switchTab('teams')">✕</button>
+      <div class="prow">
+        <div class="pface" style="background:${p.bg};">${logoUrl?`<img src="${logoUrl}" style="width:80%;height:80%;object-fit:contain;margin:10%;" onerror="this.style.display='none'">`:`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:${p.color};">${p._team?p.team:getInitials(p.name)}</div>`}</div>
+        <div class="pinfo"><div class="pname">${p.name}</div><div class="psub">${p.team||''}</div></div>
+        <div style="text-align:right;"><div style="font-size:9px;color:#334;text-transform:uppercase;letter-spacing:.8px;">Win %</div>
+        <div class="pct-val" id="pv${i}">${p.winPct||10}%</div></div>
+      </div>
+      <div class="pctrls">
+        <div><label>Win % (1–99)</label><input type="range" min="1" max="99" value="${p.winPct||10}" oninput="setPct(${i},this.value)"></div>
+        <div><label>Primary</label><input type="color" class="sw" value="${p.color}" oninput="DRAFT.roster[${i}].color=this.value"></div>
+        <div><label>BG</label><input type="color" class="sw" value="${p.bg}" oninput="DRAFT.roster[${i}].bg=this.value"></div>
+      </div>
+      <div style="margin-top:8px;">
+        <label class="lbl">Weapon (emoji or image URL — leave blank for saw blade)</label>
+        <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
+          <input class="fi" style="width:60px;margin:0;text-align:center;font-size:18px;" value="${p.icon||''}" oninput="DRAFT.roster[${i}].icon=this.value" placeholder="🔪">
+          <button style="background:#1a1a30;color:#778;border:1px solid #2a2a44;border-radius:4px;padding:4px 8px;cursor:pointer;font-size:11px;" onclick="DRAFT.roster[${i}].icon='';this.previousElementSibling.value=''">✕</button>
+          <input class="fi" style="flex:1;margin:0;font-size:11px;" value="${p.iconUrl||''}" oninput="DRAFT.roster[${i}].iconUrl=this.value" placeholder="Weapon image URL (optional)">
+        </div>
+      </div>
+    </div>`;
+  });
+
+  if(DRAFT.roster.length<10){
+    html+=`<div class="shd">Add NBA Team</div>
+    <input class="fi" id="tsearch" placeholder="Search by team name or abbreviation…" oninput="filterTeams()" style="margin-bottom:6px">
+    <div class="pplist" id="tplist">${buildTeamList('')}</div>`;
+  }
+
+  // Quick-fill button
+  html+=`<div style="margin-top:14px;"><button class="addbtn" onclick="teamBattleQuickFill()">🏀 RANDOM 5-TEAM BATTLE</button></div>`;
+  return html;
+}
+
+function buildTeamList(q){
+  const used=new Set(DRAFT.roster.filter(p=>p._team).map(p=>p._teamId));
+  const ql=q?q.toLowerCase():'';
+  let list=TEAM_DB.filter(t=>!used.has(t.teamId));
+  if(ql.length>0) list=list.filter(t=>t.name.toLowerCase().includes(ql)||t.abbr.toLowerCase().includes(ql));
+  if(list.length===0) return '<div style="padding:10px;color:#223;font-size:11px;">No matches</div>';
+  return list.map(t=>`
+    <div class="ppi" onclick="addTeam(${t.teamId})">
+      <div class="ppi-face" style="background:${t.bg};display:flex;align-items:center;justify-content:center;">
+        <img src="${NBA_LOGO_CDN}${t.teamId}/global/L/logo.svg" style="width:80%;height:80%;object-fit:contain;" onerror="this.outerHTML='<span style=\\'font-size:11px;font-weight:700;color:${t.color}\\'>${t.abbr}</span>'">
+      </div>
+      <div><div class="ppi-name">${t.name}</div><div class="ppi-team">${t.abbr}</div></div>
+    </div>`).join('');
+}
+
+function filterTeams(){const q=document.getElementById('tsearch')?.value||'';const el=document.getElementById('tplist');if(el)el.innerHTML=buildTeamList(q);}
+
+function addTeam(teamId){
+  if(DRAFT.roster.length>=10) return;
+  const t=TEAM_DB.find(t=>t.teamId===teamId);
+  if(!t) return;
+  DRAFT.roster.push(_teamToRosterEntry(t));
+  renderTab('teams');
+}
+
+function teamBattleQuickFill(){
+  // Pick 5 random unique teams
+  const shuffled=[...TEAM_DB].sort(()=>Math.random()-.5);
+  DRAFT.roster=shuffled.slice(0,5).map(t=>_teamToRosterEntry(t));
+  renderTab('teams');
 }
 
 // ── GAME ──
