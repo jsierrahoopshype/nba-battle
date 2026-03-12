@@ -393,6 +393,8 @@ const ACTIVE_JSON_URL = 'https://jsierrahoopshype.github.io/nba-headshots/metada
 const TREE_API_URL = 'https://api.github.com/repos/jsierrahoopshype/nba-headshots/git/trees/main?recursive=1';
 let FULL_DB = [...PDATA]; // start with hardcoded fallback
 let FULL_DB_LOADED = false;
+// Lookup map: playerId → exact slug from GitHub tree API (guaranteed to match real filenames)
+const HEADSHOT_SLUGS = new Map();
 
 function _slugToName(slug){
   // slug format: "firstname-lastname" or "firstname-middle-lastname"
@@ -451,28 +453,27 @@ function _mergeIntoDB(players, source){
 
   console.log(`After Step 1: ${FULL_DB.length} players`);
 
-  // Step 2: If under 500, fetch GitHub tree API for headshot filenames
-  if(FULL_DB.length<500){
-    try{
-      tried.push(TREE_API_URL);
-      const r=await fetch(TREE_API_URL);
-      if(!r.ok) throw new Error(`HTTP ${r.status}`);
-      const data=await r.json();
-      if(data.tree&&Array.isArray(data.tree)){
-        const pat=/^players\/headshots\/face\/(\d+)-(.+)\.png$/;
-        const parsed=[];
-        data.tree.forEach(f=>{
-          const m=f.path.match(pat);
-          if(m){
-            const id=+m[1], slug=m[1]+'-'+m[2], name=_slugToName(m[2]);
-            parsed.push({id,slug,name,team:'',color:'#4488cc',bg:'#0d1b2a',icon:''});
-          }
-        });
-        console.log(`GitHub tree API returned ${parsed.length} headshot files`);
-        _mergeIntoDB(parsed,'GitHub tree API');
-      }
-    }catch(e){console.warn('GitHub tree API fetch failed:',e.message);}
-  }
+  // Step 2: Always fetch GitHub tree API for exact headshot filenames
+  try{
+    tried.push(TREE_API_URL);
+    const r=await fetch(TREE_API_URL);
+    if(!r.ok) throw new Error(`HTTP ${r.status}`);
+    const data=await r.json();
+    if(data.tree&&Array.isArray(data.tree)){
+      const pat=/^players\/headshots\/face\/(\d+)-(.+)\.png$/;
+      const parsed=[];
+      data.tree.forEach(f=>{
+        const m=f.path.match(pat);
+        if(m){
+          const id=+m[1], slug=m[1]+'-'+m[2], name=_slugToName(m[2]);
+          HEADSHOT_SLUGS.set(id, slug);
+          parsed.push({id,slug,name,team:'',color:'#4488cc',bg:'#0d1b2a',icon:''});
+        }
+      });
+      console.log(`GitHub tree API returned ${parsed.length} headshot files, built HEADSHOT_SLUGS map`);
+      _mergeIntoDB(parsed,'GitHub tree API');
+    }
+  }catch(e){console.warn('GitHub tree API fetch failed:',e.message);}
 
   // Step 3: Final dedup (by id) and sort
   const seen=new Map();
@@ -554,18 +555,29 @@ function loadImages(roster, cb){
     }
     // Skip NBA headshot load for custom players (no slug) — they use customImg or bg fallback
     if(!p.slug){ IMGS[p.id]=null; pending--; if(pending===0) cb(); return; }
-    const primaryUrl = BASE + p.slug + '.png';
-    const img = new Image();
-    // Full absolute URL to nba-headshots repo — no crossOrigin needed
-    img.onload = ()=>{ IMGS[p.id]=img; console.log('Loaded headshot for '+p.name+' (primary)'); pending--; if(pending===0) cb(); };
-    img.onerror = ()=>{
-      console.log('Primary headshot failed for '+p.name+', URL: '+primaryUrl+' — trying NBA CDN');
-      // fallback to NBA CDN (cross-origin) — needs CORS to keep canvas clean
+    // Use exact slug from tree API if available (guarantees match with actual filename)
+    const exactSlug = HEADSHOT_SLUGS.get(p.id);
+    if(!exactSlug){
+      // No file in repo for this player — skip straight to NBA CDN fallback
+      console.log('[headshot] '+p.name+' ('+p.id+'): no file in repo, trying NBA CDN');
       const cdnUrl = NBA_CDN + p.id + '.png';
       const img2 = new Image();
       img2.crossOrigin = 'anonymous';
-      img2.onload = ()=>{ IMGS[p.id]=img2; console.log('Loaded headshot for '+p.name+' (CDN)'); pending--; if(pending===0) cb(); };
-      img2.onerror = ()=>{ IMGS[p.id]=null; console.log('CDN headshot also failed for '+p.name+', URL: '+cdnUrl+' — using initials fallback'); pending--; if(pending===0) cb(); };
+      img2.onload = ()=>{ IMGS[p.id]=img2; console.log('[headshot] '+p.name+': loaded (CDN fallback)'); pending--; if(pending===0) cb(); };
+      img2.onerror = ()=>{ IMGS[p.id]=null; console.log('[headshot] '+p.name+': CDN also failed — using initials'); pending--; if(pending===0) cb(); };
+      img2.src = cdnUrl;
+      return;
+    }
+    const primaryUrl = BASE + exactSlug + '.png';
+    const img = new Image();
+    img.onload = ()=>{ IMGS[p.id]=img; console.log('[headshot] '+p.name+': loaded (repo: '+exactSlug+')'); pending--; if(pending===0) cb(); };
+    img.onerror = ()=>{
+      console.log('[headshot] '+p.name+': repo file failed ('+exactSlug+'), trying NBA CDN');
+      const cdnUrl = NBA_CDN + p.id + '.png';
+      const img2 = new Image();
+      img2.crossOrigin = 'anonymous';
+      img2.onload = ()=>{ IMGS[p.id]=img2; console.log('[headshot] '+p.name+': loaded (CDN fallback)'); pending--; if(pending===0) cb(); };
+      img2.onerror = ()=>{ IMGS[p.id]=null; console.log('[headshot] '+p.name+': all sources failed — using initials'); pending--; if(pending===0) cb(); };
       img2.src = cdnUrl;
     };
     img.src = primaryUrl;
@@ -1116,12 +1128,12 @@ function physicsStep(){
             const spdI=si, spdJ=sj;
             // Attacker is the faster ball
             if(spdI>=spdJ-0.3){
-              const dmg=relV*bi.sf*0.04;
+              const dmg=relV*bi.sf*0.22;
               const taken=bj.hit(dmg);
               if(taken>0){ bi.atkF=6; spawnClash(bj.x,bj.y,bi.p.color); spawnBladeSparks(bi); spawnDmg(bj.x,bj.y,Math.round(taken),bi.p.color); shake(Math.min(9,relV*1.8)); sndCollision(relV); sndSpark(); }
             }
             if(spdJ>=spdI-0.3){
-              const dmg=relV*bj.sf*0.04;
+              const dmg=relV*bj.sf*0.22;
               const taken=bi.hit(dmg);
               if(taken>0){ bj.atkF=6; spawnClash(bi.x,bi.y,bj.p.color); spawnBladeSparks(bj); spawnDmg(bi.x,bi.y,Math.round(taken),bj.p.color); shake(Math.min(9,relV*1.8)); sndCollision(relV); sndSpark(); }
             }
@@ -1748,8 +1760,9 @@ function buildPlayersTab(){
   <div style="margin-bottom:12px;"><button class="addbtn" onclick="teamBattleQuickFill();switchTab('teams')">🏀 TEAM BATTLE — Random 5 Teams</button></div>`;
   DRAFT.roster.forEach((p,i)=>{
     const isCustom = p._custom;
-    const faceSrc = p.customImg || (p.slug ? `${BASE}${p.slug}.png` : '');
-    const faceErr = p.slug ? `this.src='${NBA_CDN}${p.id}.png'` : `this.style.display='none'`;
+    const _eSlug = HEADSHOT_SLUGS.get(p.id) || p.slug;
+    const faceSrc = p.customImg || (_eSlug ? `${BASE}${_eSlug}.png` : '');
+    const faceErr = _eSlug ? `this.src='${NBA_CDN}${p.id}.png'` : `this.style.display='none'`;
     html+=`<div class="pcard">
       <button class="del" onclick="removeP(${i})">✕</button>
       <div class="prow">
@@ -1842,7 +1855,7 @@ function buildPPList(q){
   const total=list.length;
   let html=list.slice(0,20).map(p=>`
     <div class="ppi" onclick="addP(${typeof p.id==='number'?p.id:`'${p.id}'`})">
-      <div class="ppi-face"><img src="${p.slug?BASE+p.slug+'.png':NBA_CDN+p.id+'.png'}" onerror="this.src='${NBA_CDN}${p.id}.png'"></div>
+      <div class="ppi-face"><img src="${(HEADSHOT_SLUGS.get(p.id)||p.slug)?BASE+(HEADSHOT_SLUGS.get(p.id)||p.slug)+'.png':NBA_CDN+p.id+'.png'}" onerror="this.src='${NBA_CDN}${p.id}.png'"></div>
       <div><div class="ppi-name">${p.name}</div><div class="ppi-team">${p.team||''}</div></div>
     </div>`).join('');
   if(total>20) html+=`<div style="padding:8px 10px;color:#3366aa;font-size:11px;">${total-20} more — keep typing</div>`;
