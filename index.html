@@ -292,7 +292,7 @@ function sndVictory(){
 }
 
 // ═══════════════════════════ PLAYER DB ═══════════════════════════
-const BASE = "/players/headshots/face/";
+const BASE = "https://jsierrahoopshype.github.io/nba-headshots/players/headshots/face/";
 const NBA_CDN = "https://cdn.nba.com/headshots/nba/latest/260x190/";
 
 let PDATA = [
@@ -523,29 +523,40 @@ function loadImages(roster, cb){
   if(pending===0){ cb(); return; }
   roster.forEach(p=>{
     if(IMGS[p.id]){ pending--; if(pending===0) cb(); return; }
-    // Team entry — load logo from NBA CDN (cross-origin, needs CORS)
+    // Team entry — load logo from NBA CDN (cross-origin)
     if(p._team && p._teamId){
+      const logoUrl = NBA_LOGO_CDN + p._teamId + '/global/L/logo.svg';
       const img = new Image();
       img.crossOrigin = 'anonymous';
-      img.onload = ()=>{ IMGS[p.id]=img; console.log('Loaded logo for '+p.name); pending--; if(pending===0) cb(); };
-      img.onerror = ()=>{ IMGS[p.id]=null; console.log('CORS failed for '+p.name+' logo — using abbr fallback'); pending--; if(pending===0) cb(); };
-      img.src = NBA_LOGO_CDN + p._teamId + '/global/L/logo.svg';
+      img.onload = ()=>{ IMGS[p.id]=img; console.log('Loaded logo for '+p.name+' (CORS OK)'); pending--; if(pending===0) cb(); };
+      img.onerror = ()=>{
+        console.log('CORS logo failed for '+p.name+', URL: '+logoUrl+' — retrying without crossOrigin');
+        // Retry without crossOrigin — logo will display but may taint canvas
+        const img2 = new Image();
+        img2.onload = ()=>{ IMGS[p.id]=img2; console.log('Loaded logo for '+p.name+' (no-CORS)'); pending--; if(pending===0) cb(); };
+        img2.onerror = ()=>{ IMGS[p.id]=null; console.log('Logo load failed completely for '+p.name+', URL: '+logoUrl+' — using abbr fallback'); pending--; if(pending===0) cb(); };
+        img2.src = logoUrl;
+      };
+      img.src = logoUrl;
       return;
     }
     // Skip NBA headshot load for custom players (no slug) — they use customImg or bg fallback
     if(!p.slug){ IMGS[p.id]=null; pending--; if(pending===0) cb(); return; }
+    const primaryUrl = BASE + p.slug + '.png';
     const img = new Image();
-    // Same-origin relative path — no crossOrigin needed (and setting it can break loading)
+    // Full absolute URL to nba-headshots repo — no crossOrigin needed
     img.onload = ()=>{ IMGS[p.id]=img; console.log('Loaded headshot for '+p.name+' (primary)'); pending--; if(pending===0) cb(); };
     img.onerror = ()=>{
+      console.log('Primary headshot failed for '+p.name+', URL: '+primaryUrl+' — trying NBA CDN');
       // fallback to NBA CDN (cross-origin) — needs CORS to keep canvas clean
+      const cdnUrl = NBA_CDN + p.id + '.png';
       const img2 = new Image();
       img2.crossOrigin = 'anonymous';
       img2.onload = ()=>{ IMGS[p.id]=img2; console.log('Loaded headshot for '+p.name+' (CDN)'); pending--; if(pending===0) cb(); };
-      img2.onerror = ()=>{ IMGS[p.id]=null; console.log('CORS failed for '+p.name+' — using initials fallback'); pending--; if(pending===0) cb(); };
-      img2.src = NBA_CDN + p.id + '.png';
+      img2.onerror = ()=>{ IMGS[p.id]=null; console.log('CDN headshot also failed for '+p.name+', URL: '+cdnUrl+' — using initials fallback'); pending--; if(pending===0) cb(); };
+      img2.src = cdnUrl;
     };
-    img.src = BASE + p.slug + '.png';
+    img.src = primaryUrl;
   });
 }
 
