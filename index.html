@@ -489,10 +489,10 @@ function loadImages(roster, cb){
     // Skip NBA headshot load for custom players (no slug) — they use customImg or bg fallback
     if(!p.slug){ IMGS[p.id]=null; pending--; if(pending===0) cb(); return; }
     const img = new Image();
-    img.crossOrigin = 'anonymous';
+    // Same-origin relative path — no crossOrigin needed (and setting it can break loading)
     img.onload = ()=>{ IMGS[p.id]=img; console.log('Loaded headshot for '+p.name+' (primary)'); pending--; if(pending===0) cb(); };
     img.onerror = ()=>{
-      // fallback to NBA CDN — always with CORS to keep canvas clean
+      // fallback to NBA CDN (cross-origin) — needs CORS to keep canvas clean
       const img2 = new Image();
       img2.crossOrigin = 'anonymous';
       img2.onload = ()=>{ IMGS[p.id]=img2; console.log('Loaded headshot for '+p.name+' (CDN)'); pending--; if(pending===0) cb(); };
