@@ -97,6 +97,18 @@ canvas{display:block}
 </div>
 
 <script>
+// ═══════════════════════════ SPEED AUDIT ═══════════════════════════
+// Every place ball velocity is set or modified:
+//  1. Ball constructor (line ~834): initial spd = (1.6+random*0.7)*(0.8+sf*0.2) → ~1.4–2.5
+//  2. Momentum nudge (line ~892): vx/vy += (random-0.5)*0.3 → ±0.15 every 2-3s
+//  3. Endgame boost (line ~899): position += v * endgameBoost (lerped to 1.0/1.3/1.6)
+//  4. Circle wall bounce (line ~907): reflection, no speed gain (vx-=2*dot*nx)
+//  5. Polygon wall bounce (line ~728): reflection, no speed gain
+//  6. Collision impulse (line ~1072): imp = dv*1.2, applied to both balls
+//  7. Min bounce speed (line ~1077): clamp up to 1.4 after collision
+//  8. Max speed cap: clampSpeed() called after every velocity change, caps at 4.0
+// ═══════════════════════════════════════════════════════════════════
+
 // ═══════════════════════════ AUDIO ENGINE ═══════════════════════════
 let _audioCtx=null, _masterGain=null, _audioDest=null, _muted=false;
 
@@ -745,8 +757,10 @@ let phase; // 'loading'|'intro'|'fight'|'end'
 let phaseT;
 let flash, particles, dmgNums, screenShake;
 let endWinner;
-let endgameBoost; // speed multiplier based on alive count: 1, 1.3, or 1.6
+let endgameBoost; // current speed multiplier (lerps toward endgameBoostTarget)
+let endgameBoostTarget; // target speed multiplier based on alive count: 1, 1.3, or 1.6
 let lastElimT; // timestamp of last elimination (for safety timeout)
+const MAX_BALL_SPEED = 4.0;
 let seriesScores; // {playerId: wins}
 let seriesRound; // current round number (1-based)
 let seriesOver; // true when series champion decided
@@ -800,6 +814,7 @@ function initGame(){
   screenShake = {x:0, y:0, mag:0};
   endWinner = -1;
   endgameBoost = 1.0;
+  endgameBoostTarget = 1.0;
   lastElimT = 0;
   roundDur = pickRoundDur();
   timerAcc = 0;
@@ -846,6 +861,11 @@ class Ball {
     this.nudgeTimer = 2.0+Math.random()*1.0; // momentum nudge every 2-3s
   }
 
+  clampSpeed(){
+    const s=Math.hypot(this.vx,this.vy);
+    if(s>MAX_BALL_SPEED){const f=MAX_BALL_SPEED/s;this.vx*=f;this.vy*=f;}
+  }
+
   get alive(){ return !this.dead && this.hp>0; }
 
   hit(dmg){
@@ -863,8 +883,8 @@ class Ball {
     eliminated[this.idx] = true;
     aliveCnt--;
     lastElimT = performance.now();
-    // Update endgame boost once per elimination
-    endgameBoost = aliveCnt<=2 ? 1.6 : aliveCnt<=3 ? 1.3 : 1.0;
+    // Update endgame boost target — lerps gradually in update loop
+    endgameBoostTarget = aliveCnt<=2 ? 1.6 : aliveCnt<=3 ? 1.3 : 1.0;
     shake(14);
     spawnExplosion(this.x, this.y, this.p.color);
     sndElimination();
@@ -886,11 +906,18 @@ class Ball {
     const sawBase = endgameBoost>1 ? 0.14 : 0.06;
     this.bladeAngle += this.sawBoostF>0 ? sawBase*3 : sawBase;
 
-    // Momentum nudge: random velocity bump every 2-3 seconds
+    // Lerp endgameBoost toward target (~1 second transition at 60fps)
+    if(endgameBoost!==endgameBoostTarget){
+      endgameBoost += (endgameBoostTarget-endgameBoost)*0.02;
+      if(Math.abs(endgameBoost-endgameBoostTarget)<0.005) endgameBoost=endgameBoostTarget;
+    }
+
+    // Momentum nudge: small random velocity bump every 2-3 seconds
     this.nudgeTimer -= 1/60;
     if(this.nudgeTimer<=0){
-      this.vx += (Math.random()-0.5)*0.8; // ±0.4
-      this.vy += (Math.random()-0.5)*0.8;
+      this.vx += (Math.random()-0.5)*0.3; // ±0.15
+      this.vy += (Math.random()-0.5)*0.3;
+      this.clampSpeed();
       this.nudgeTimer = 2.0+Math.random()*1.0;
     }
 
@@ -906,10 +933,11 @@ class Ball {
         const nx=dx/dist,ny=dy/dist,dot=this.vx*nx+this.vy*ny;
         this.vx-=2*dot*nx; this.vy-=2*dot*ny;
         this.x=CX+nx*wall; this.y=CY+ny*wall;
+        this.clampSpeed();
       }
     } else {
       const verts = getArenaVerts(shape);
-      if(verts) polyWallCollide(this, verts);
+      if(verts){ polyWallCollide(this, verts); this.clampSpeed(); }
     }
   }
 
@@ -1073,12 +1101,14 @@ function physicsStep(){
           bi.vx-=imp*nx; bi.vy-=imp*ny;
           bj.vx+=imp*nx; bj.vy+=imp*ny;
 
-          // Enforce minimum bounce speed of 1.4
+          // Enforce minimum bounce speed of 1.4, max of MAX_BALL_SPEED
           const minSpd=1.4;
           let si=Math.hypot(bi.vx,bi.vy);
           if(si>0.01&&si<minSpd){const s=minSpd/si;bi.vx*=s;bi.vy*=s;si=minSpd;}
+          bi.clampSpeed(); si=Math.hypot(bi.vx,bi.vy);
           let sj=Math.hypot(bj.vx,bj.vy);
           if(sj>0.01&&sj<minSpd){const s=minSpd/sj;bj.vx*=s;bj.vy*=s;sj=minSpd;}
+          bj.clampSpeed(); sj=Math.hypot(bj.vx,bj.vy);
 
           // COMBAT
           const relV = Math.abs(dv);
@@ -1086,12 +1116,12 @@ function physicsStep(){
             const spdI=si, spdJ=sj;
             // Attacker is the faster ball
             if(spdI>=spdJ-0.3){
-              const dmg=relV*bi.sf*0.08;
+              const dmg=relV*bi.sf*0.04;
               const taken=bj.hit(dmg);
               if(taken>0){ bi.atkF=6; spawnClash(bj.x,bj.y,bi.p.color); spawnBladeSparks(bi); spawnDmg(bj.x,bj.y,Math.round(taken),bi.p.color); shake(Math.min(9,relV*1.8)); sndCollision(relV); sndSpark(); }
             }
             if(spdJ>=spdI-0.3){
-              const dmg=relV*bj.sf*0.08;
+              const dmg=relV*bj.sf*0.04;
               const taken=bi.hit(dmg);
               if(taken>0){ bj.atkF=6; spawnClash(bi.x,bi.y,bj.p.color); spawnBladeSparks(bj); spawnDmg(bi.x,bi.y,Math.round(taken),bj.p.color); shake(Math.min(9,relV*1.8)); sndCollision(relV); sndSpark(); }
             }
