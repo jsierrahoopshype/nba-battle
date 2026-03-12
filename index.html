@@ -457,6 +457,7 @@ let CFG = {
   robbed:      "Who got ROBBED? 👇",
   watermark:   "HoopsHype.com",
   arenaShape:  "circle",
+  seriesFormat: 1,
 };
 
 // ════════════════════════════ CANVAS ════════════════════════════
@@ -688,9 +689,25 @@ let flash, particles, dmgNums, screenShake;
 let endWinner;
 let endgameBoost; // speed multiplier based on alive count: 1, 1.3, or 1.6
 let lastElimT; // timestamp of last elimination (for safety timeout)
+let seriesScores; // {playerId: wins}
+let seriesRound; // current round number (1-based)
+let seriesOver; // true when series champion decided
+let seriesChampion; // index of champion in CFG.roster
+let seriesSplashT; // timestamp when inter-round splash started
+let seriesLosses; // total losses per player in series
 
 function pickRoundDur(){
   return CFG.roundMinSec + Math.random()*(CFG.roundMaxSec-CFG.roundMinSec);
+}
+
+function initSeries(){
+  seriesScores = {};
+  seriesLosses = {};
+  CFG.roster.forEach(p=>{ seriesScores[p.id]=0; seriesLosses[p.id]=0; });
+  seriesRound = 1;
+  seriesOver = false;
+  seriesChampion = -1;
+  seriesSplashT = 0;
 }
 
 function startGame(){
@@ -1094,6 +1111,34 @@ function triggerEnd(){
   if(phase!=='fight') return;
   const alive=balls.filter((b,i)=>!eliminated[i]&&b.alive);
   endWinner = alive.length===1 ? alive[0].idx : -1;
+
+  const sf = CFG.seriesFormat||1;
+  const winsNeeded = Math.ceil(sf/2);
+
+  // Series mode
+  if(sf>1 && endWinner>=0){
+    const wp = CFG.roster[endWinner];
+    seriesScores[wp.id] = (seriesScores[wp.id]||0)+1;
+    // Track losses for non-winners
+    CFG.roster.forEach((p,i)=>{ if(i!==endWinner) seriesLosses[p.id]=(seriesLosses[p.id]||0)+1; });
+
+    if(seriesScores[wp.id]>=winsNeeded){
+      // Series won
+      seriesOver = true;
+      seriesChampion = endWinner;
+      phase='end'; phaseT=performance.now();
+      flash={text:'SERIES CHAMPION!',color:wp.color,t:performance.now()};
+      sndVictory();
+      return;
+    }
+    // More rounds to play — show splash then auto-restart
+    phase='seriesSplash'; seriesSplashT=performance.now();
+    flash={text:`${wp.name.split(' ').pop()} ${CFG.winnerMsg}`,color:wp.color,t:performance.now()};
+    sndVictory();
+    return;
+  }
+
+  // Single match or draw
   phase='end'; phaseT=performance.now();
   flash={text:endWinner>=0?`${CFG.roster[endWinner].team} ${CFG.winnerMsg}`:'DRAW!',
          color:endWinner>=0?CFG.roster[endWinner].color:'#fff',t:performance.now()};
@@ -1131,6 +1176,14 @@ function loop(now){
     // Safety: force end if game is stuck with <=1 alive for 1.5+ seconds
     if(aliveCnt<=1 && lastElimT>0 && now-lastElimT>1500) triggerEnd();
   }
+  if(phase==='seriesSplash'){
+    updateFX(dt);
+    // After 3 seconds, start next round
+    if(performance.now()-seriesSplashT>3000){
+      seriesRound++;
+      startGame(); // starts loading/intro for next round
+    }
+  }
   if(phase==='end'){
     updateFX(dt);
     if(endWinner>=0){
@@ -1144,15 +1197,20 @@ function loop(now){
   if(screenShake.mag>.3) ctx.translate(screenShake.x,screenShake.y);
 
   drawBg();
-  drawArenaFloor();
-  drawBallsClipped();
-  drawArenaRing();
-  drawHUD(now);
-  drawFlashFX(now);
-  drawDmgNums();
-  drawParticles();
-  if(phase==='end')   drawEndScreen(now);
-  if(phase==='intro') drawIntroFade(now);
+  if(phase==='seriesSplash'){
+    drawSeriesSplash(now);
+  } else {
+    drawArenaFloor();
+    drawBallsClipped();
+    drawArenaRing();
+    drawHUD(now);
+    if((CFG.seriesFormat||1)>1 && phase!=='end') drawSeriesDots();
+    drawFlashFX(now);
+    drawDmgNums();
+    drawParticles();
+    if(phase==='end') drawEndScreen(now);
+    if(phase==='intro') drawIntroFade(now);
+  }
   drawWatermark();
 
   ctx.restore();
@@ -1304,6 +1362,7 @@ function drawEndScreen(now){
   if(t>.2&&endWinner>=0){
     const t2=(t-.2)/.8, p=CFG.roster[endWinner];
     ctx.globalAlpha=t2;
+    const isSeries=seriesOver&&(CFG.seriesFormat||1)>1;
     const bigR=105, face=getFace(p,bigR);
     ctx.save();ctx.beginPath();ctx.arc(CX,H/2-85,bigR,0,Math.PI*2);
     ctx.clip();
@@ -1316,14 +1375,108 @@ function drawEndScreen(now){
     ctx.font=`900 ${W*.2}px 'Bebas Neue',sans-serif`;
     ctx.textAlign='center';ctx.textBaseline='middle';
     ctx.fillStyle=p.color;ctx.shadowColor=p.color;ctx.shadowBlur=90;
-    ctx.fillText('WON!',CX,H/2+55);ctx.shadowBlur=0;
+    ctx.fillText(isSeries?'SERIES':'WON!',CX,H/2+(isSeries?35:55));ctx.shadowBlur=0;
+
+    if(isSeries){
+      ctx.font=`900 ${W*.16}px 'Bebas Neue',sans-serif`;
+      ctx.fillStyle=p.color;ctx.shadowColor=p.color;ctx.shadowBlur=70;
+      ctx.fillText('WINNER!',CX,H/2+80);ctx.shadowBlur=0;
+
+      // Series record
+      const pWins=seriesScores[p.id]||0;
+      const pLosses=seriesLosses[p.id]||0;
+      ctx.font=`700 ${W*.07}px 'Barlow Condensed',sans-serif`;
+      ctx.fillStyle='rgba(200,220,255,.85)';
+      ctx.fillText(`${pWins}-${pLosses}`,CX,H/2+118);
+    }
 
     ctx.font=`700 ${W*.05}px 'Barlow Condensed',sans-serif`;
     ctx.fillStyle='#fff';ctx.shadowBlur=20;ctx.shadowColor=p.color;
-    ctx.fillText(p.name.toUpperCase(),CX,H/2+115);ctx.shadowBlur=0;
+    ctx.fillText(p.name.toUpperCase(),CX,H/2+(isSeries?155:115));ctx.shadowBlur=0;
 
     ctx.font=`600 ${W*.044}px 'Barlow Condensed',sans-serif`;
-    ctx.fillStyle='rgba(175,210,255,.8)';ctx.fillText(CFG.robbed,CX,H/2+158);
+    ctx.fillStyle='rgba(175,210,255,.8)';ctx.fillText(CFG.robbed,CX,H/2+(isSeries?195:158));
+  }
+  ctx.restore();
+}
+
+function drawSeriesDots(){
+  const sf=CFG.seriesFormat||1;
+  if(sf<=1) return;
+  const winsNeeded=Math.ceil(sf/2);
+  const dotR=4, gap=12, padX=14, padY=10;
+  const totalW=winsNeeded*gap;
+  ctx.save();
+  ctx.textAlign='right';ctx.textBaseline='middle';
+  ctx.font=`600 11px 'Barlow Condensed',sans-serif`;
+  const startY=40;
+  CFG.roster.forEach((p,i)=>{
+    const wins=seriesScores[p.id]||0;
+    const lastName=p.name.split(' ').pop();
+    const y=startY+i*22;
+    ctx.fillStyle='rgba(180,200,255,.6)';
+    ctx.fillText(lastName,W-padX-totalW-6,y);
+    for(let d=0;d<winsNeeded;d++){
+      const x=W-padX-totalW+d*gap+dotR;
+      ctx.beginPath();ctx.arc(x,y,dotR,0,Math.PI*2);
+      if(d<wins){
+        ctx.fillStyle=p.color;ctx.fill();
+      } else {
+        ctx.strokeStyle='rgba(180,200,255,.3)';ctx.lineWidth=1;ctx.stroke();
+      }
+    }
+  });
+  // Round label
+  ctx.textAlign='right';ctx.textBaseline='top';
+  ctx.font=`700 10px 'Barlow Condensed',sans-serif`;
+  ctx.fillStyle='rgba(130,160,220,.5)';
+  ctx.fillText(`ROUND ${seriesRound} OF ${sf}`,W-padX,startY+CFG.roster.length*22+2);
+  ctx.restore();
+}
+
+function drawSeriesSplash(now){
+  const t=Math.min(1,(now-seriesSplashT)/600);
+  ctx.save();
+  ctx.fillStyle=`rgba(1,1,12,${.95*t})`;ctx.fillRect(0,0,W,H);
+  if(t>.15){
+    const t2=Math.min(1,(t-.15)/.85);
+    ctx.globalAlpha=t2;
+    // Round header
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.font=`700 ${W*.045}px 'Barlow Condensed',sans-serif`;
+    ctx.fillStyle='rgba(130,170,255,.7)';
+    ctx.fillText(`ROUND ${seriesRound} OF ${CFG.seriesFormat} COMPLETE`,CX,H/2-120);
+
+    // Series scores
+    const sf=CFG.seriesFormat||1;
+    const winsNeeded=Math.ceil(sf/2);
+    let y=H/2-50;
+    ctx.font=`700 ${W*.055}px 'Barlow Condensed',sans-serif`;
+    CFG.roster.forEach((p,i)=>{
+      const wins=seriesScores[p.id]||0;
+      ctx.fillStyle=wins>0?p.color:'rgba(180,200,255,.4)';
+      ctx.textAlign='left';
+      ctx.fillText(p.name,CX-180,y);
+      ctx.textAlign='right';
+      ctx.fillText(wins,CX+180,y);
+      // Dots
+      for(let d=0;d<winsNeeded;d++){
+        const dx=CX+100+d*14;
+        ctx.beginPath();ctx.arc(dx,y,4,0,Math.PI*2);
+        if(d<wins){ctx.fillStyle=p.color;ctx.fill();}
+        else{ctx.strokeStyle='rgba(180,200,255,.25)';ctx.lineWidth=1;ctx.stroke();}
+      }
+      y+=36;
+    });
+
+    // Next round message
+    const remaining=3-(now-seriesSplashT)/1000;
+    if(remaining>0){
+      ctx.textAlign='center';
+      ctx.font=`600 ${W*.038}px 'Barlow Condensed',sans-serif`;
+      ctx.fillStyle='rgba(165,200,255,.6)';
+      ctx.fillText(`Next round in ${Math.ceil(remaining)}...`,CX,y+30);
+    }
   }
   ctx.restore();
 }
@@ -1462,6 +1615,7 @@ function checkAutoStop(now){
 function doRestart(){
   // If recording, just reset game (don't stop recording)
   FACE_CACHE && clearFaceCache();
+  initSeries();
   startGame();
   lastT=performance.now();
 }
@@ -1478,6 +1632,7 @@ function openModal(tab){
     elimMsg:CFG.elimMsg, winnerMsg:CFG.winnerMsg,
     robbed:CFG.robbed, watermark:CFG.watermark,
     arenaShape:CFG.arenaShape||'circle',
+    seriesFormat:CFG.seriesFormat||1,
   };
   document.getElementById('modal').classList.add('open');
   switchTab(tab||'players');
@@ -1685,18 +1840,30 @@ function handleFileUpload(i,input){
 function buildGameTab(){
   const shapes=[{id:'circle',emoji:'⭕',label:'Circle'},{id:'square',emoji:'⬛',label:'Square'},{id:'triangle',emoji:'🔺',label:'Triangle'},{id:'hexagon',emoji:'⬡',label:'Hexagon'}];
   const cur=DRAFT.arenaShape||'circle';
+  const sf=DRAFT.seriesFormat||1;
+  const seriesOpts=[{v:1,label:'Single'},{v:3,label:'Best of 3'},{v:5,label:'Best of 5'},{v:7,label:'Best of 7'}];
   return`
     <div class="shd">Arena Shape</div>
     <div class="weapon-sel" style="grid-template-columns:repeat(4,1fr);margin-bottom:14px;">
       ${shapes.map(s=>`<div class="wp${s.id===cur?' on':''}" title="${s.label}" onclick="setShape('${s.id}',this)">${s.emoji}<div style="font-size:9px;margin-top:2px;color:#778;">${s.label}</div></div>`).join('')}
     </div>
+    <div class="shd">Series Format</div>
+    <div class="weapon-sel" style="grid-template-columns:repeat(4,1fr);margin-bottom:14px;">
+      ${seriesOpts.map(s=>`<div class="wp${s.v===sf?' on':''}" onclick="setSeriesFormat(${s.v},this)"><div style="font-size:12px;font-weight:700;color:#ccd;">${s.label}</div></div>`).join('')}
+    </div>
     <div class="shd">Round Timer</div>
-    <p style="font-size:11px;color:#336;line-height:1.5;margin-bottom:10px;">Ball speed gradually ramps up over time. Each phase lasts a random time between Min and Max seconds before the next speed increase. Players are eliminated only when their energy reaches 0.</p>
+    <p style="font-size:11px;color:#336;line-height:1.5;margin-bottom:10px;">Each phase lasts a random time between Min and Max seconds. Players are eliminated only when their energy reaches 0.</p>
     <div class="r2">
       <div><label class="lbl">Min seconds (10–80)</label><input id="gtmin" class="fi" type="number" min="10" max="80" value="${DRAFT.roundMinSec}"></div>
       <div><label class="lbl">Max seconds (20–90)</label><input id="gtmax" class="fi" type="number" min="20" max="90" value="${DRAFT.roundMaxSec}"></div>
     </div>
   `;
+}
+
+function setSeriesFormat(v,el){
+  DRAFT.seriesFormat=v;
+  el.closest('.weapon-sel').querySelectorAll('.wp').forEach(w=>w.classList.remove('on'));
+  el.classList.add('on');
 }
 
 function setShape(id,el){
@@ -1744,6 +1911,7 @@ function applyClose(){
 }
 
 // ════════════════════════════ BOOT ════════════════════════════
+initSeries();
 startGame();
 lastT=performance.now();
 requestAnimationFrame(loop);
