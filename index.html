@@ -84,6 +84,7 @@ canvas{display:block}
   <div class="mhead"><h2 id="mtitle">Settings</h2><button class="mclose" onclick="closeModal()">✕</button></div>
   <div class="tabs" id="tabBar">
     <button class="tab" data-t="players" onclick="switchTab('players')">Players</button>
+    <button class="tab" data-t="teams"   onclick="switchTab('teams')">Teams</button>
     <button class="tab" data-t="game"    onclick="switchTab('game')">Game</button>
     <button class="tab" data-t="text"    onclick="switchTab('text')">Text</button>
   </div>
@@ -339,6 +340,41 @@ const WEAPONS = [
   {id:'star',   emoji:'⭐',  label:'Star'},
 ];
 
+// ═══════════════════════════ TEAM DB ═══════════════════════════
+const NBA_LOGO_CDN = 'https://cdn.nba.com/logos/nba/';
+const TEAM_DB = [
+  {teamId:1610612737, abbr:'ATL', name:'Atlanta Hawks',          color:'#E03A3E', bg:'#C1D32F'},
+  {teamId:1610612738, abbr:'BOS', name:'Boston Celtics',         color:'#007A33', bg:'#BA9653'},
+  {teamId:1610612751, abbr:'BKN', name:'Brooklyn Nets',          color:'#FFFFFF', bg:'#000000'},
+  {teamId:1610612766, abbr:'CHA', name:'Charlotte Hornets',      color:'#00788C', bg:'#1D1160'},
+  {teamId:1610612741, abbr:'CHI', name:'Chicago Bulls',          color:'#CE1141', bg:'#000000'},
+  {teamId:1610612739, abbr:'CLE', name:'Cleveland Cavaliers',    color:'#860038', bg:'#FDBB30'},
+  {teamId:1610612742, abbr:'DAL', name:'Dallas Mavericks',       color:'#00538C', bg:'#002B5E'},
+  {teamId:1610612743, abbr:'DEN', name:'Denver Nuggets',         color:'#FEC524', bg:'#0E2240'},
+  {teamId:1610612765, abbr:'DET', name:'Detroit Pistons',        color:'#C8102E', bg:'#1D428A'},
+  {teamId:1610612744, abbr:'GSW', name:'Golden State Warriors',  color:'#FFC72C', bg:'#1D428A'},
+  {teamId:1610612745, abbr:'HOU', name:'Houston Rockets',        color:'#CE1141', bg:'#000000'},
+  {teamId:1610612754, abbr:'IND', name:'Indiana Pacers',         color:'#002D62', bg:'#FDBB30'},
+  {teamId:1610612746, abbr:'LAC', name:'Los Angeles Clippers',   color:'#C8102E', bg:'#1D428A'},
+  {teamId:1610612747, abbr:'LAL', name:'Los Angeles Lakers',     color:'#FDB927', bg:'#552583'},
+  {teamId:1610612763, abbr:'MEM', name:'Memphis Grizzlies',      color:'#5D76A9', bg:'#12173F'},
+  {teamId:1610612748, abbr:'MIA', name:'Miami Heat',             color:'#98002E', bg:'#F9A01B'},
+  {teamId:1610612749, abbr:'MIL', name:'Milwaukee Bucks',        color:'#00471B', bg:'#EEE1C6'},
+  {teamId:1610612750, abbr:'MIN', name:'Minnesota Timberwolves', color:'#0C2340', bg:'#236192'},
+  {teamId:1610612740, abbr:'NOP', name:'New Orleans Pelicans',   color:'#0C2340', bg:'#C8102E'},
+  {teamId:1610612752, abbr:'NYK', name:'New York Knicks',        color:'#006BB6', bg:'#F58426'},
+  {teamId:1610612760, abbr:'OKC', name:'Oklahoma City Thunder',  color:'#007AC1', bg:'#EF3B24'},
+  {teamId:1610612753, abbr:'ORL', name:'Orlando Magic',          color:'#0077C0', bg:'#000000'},
+  {teamId:1610612755, abbr:'PHI', name:'Philadelphia 76ers',     color:'#006BB6', bg:'#ED174C'},
+  {teamId:1610612756, abbr:'PHX', name:'Phoenix Suns',           color:'#E56020', bg:'#1D1160'},
+  {teamId:1610612757, abbr:'POR', name:'Portland Trail Blazers', color:'#E03A3E', bg:'#000000'},
+  {teamId:1610612758, abbr:'SAC', name:'Sacramento Kings',       color:'#5A2D81', bg:'#63727A'},
+  {teamId:1610612759, abbr:'SAS', name:'San Antonio Spurs',      color:'#C4CED4', bg:'#061922'},
+  {teamId:1610612761, abbr:'TOR', name:'Toronto Raptors',        color:'#CE1141', bg:'#000000'},
+  {teamId:1610612762, abbr:'UTA', name:'Utah Jazz',              color:'#002B5C', bg:'#F9A01B'},
+  {teamId:1610612764, abbr:'WAS', name:'Washington Wizards',     color:'#002B5C', bg:'#E31837'},
+];
+
 // ════════════════════════════ FULL PLAYER DB FETCH ════════════════════════════
 const PLAYERS_JSON_URL = 'https://jsierrahoopshype.github.io/nba-headshots/metadata/players.json';
 const ACTIVE_JSON_URL = 'https://jsierrahoopshype.github.io/nba-headshots/metadata/active.json';
@@ -457,6 +493,7 @@ let CFG = {
   robbed:      "Who got ROBBED? 👇",
   watermark:   "HoopsHype.com",
   arenaShape:  "circle",
+  seriesFormat: 1,
 };
 
 // ════════════════════════════ CANVAS ════════════════════════════
@@ -486,13 +523,22 @@ function loadImages(roster, cb){
   if(pending===0){ cb(); return; }
   roster.forEach(p=>{
     if(IMGS[p.id]){ pending--; if(pending===0) cb(); return; }
+    // Team entry — load logo from NBA CDN (cross-origin, needs CORS)
+    if(p._team && p._teamId){
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = ()=>{ IMGS[p.id]=img; console.log('Loaded logo for '+p.name); pending--; if(pending===0) cb(); };
+      img.onerror = ()=>{ IMGS[p.id]=null; console.log('CORS failed for '+p.name+' logo — using abbr fallback'); pending--; if(pending===0) cb(); };
+      img.src = NBA_LOGO_CDN + p._teamId + '/global/L/logo.svg';
+      return;
+    }
     // Skip NBA headshot load for custom players (no slug) — they use customImg or bg fallback
     if(!p.slug){ IMGS[p.id]=null; pending--; if(pending===0) cb(); return; }
     const img = new Image();
-    img.crossOrigin = 'anonymous';
+    // Same-origin relative path — no crossOrigin needed (and setting it can break loading)
     img.onload = ()=>{ IMGS[p.id]=img; console.log('Loaded headshot for '+p.name+' (primary)'); pending--; if(pending===0) cb(); };
     img.onerror = ()=>{
-      // fallback to NBA CDN — always with CORS to keep canvas clean
+      // fallback to NBA CDN (cross-origin) — needs CORS to keep canvas clean
       const img2 = new Image();
       img2.crossOrigin = 'anonymous';
       img2.onload = ()=>{ IMGS[p.id]=img2; console.log('Loaded headshot for '+p.name+' (CDN)'); pending--; if(pending===0) cb(); };
@@ -531,10 +577,12 @@ function getFace(p, r){
   return oc;
 }
 function drawInitials(c, p, r, sz){
+  const text = p._team && p.team ? p.team : getInitials(p.name);
+  const fontSize = text.length>2 ? Math.round(r*.65) : Math.round(r*.9);
   c.fillStyle = p.color;
-  c.font = `700 ${Math.round(r*.9)}px 'Bebas Neue','Barlow Condensed',sans-serif`;
+  c.font = `700 ${fontSize}px 'Bebas Neue','Barlow Condensed',sans-serif`;
   c.textAlign = 'center'; c.textBaseline = 'middle';
-  c.fillText(getInitials(p.name), r, r*1.05);
+  c.fillText(text, r, r*1.05);
 }
 function clearFaceCache(){ Object.keys(FACE_CACHE).forEach(k=>delete FACE_CACHE[k]); }
 
@@ -686,12 +734,27 @@ let phase; // 'loading'|'intro'|'fight'|'end'
 let phaseT;
 let flash, particles, dmgNums, screenShake;
 let endWinner;
-let speedMultiplier;
-let endgameBoost; // speed multiplier based on alive count: 1, 1.5, or 2
+let endgameBoost; // speed multiplier based on alive count: 1, 1.3, or 1.6
 let lastElimT; // timestamp of last elimination (for safety timeout)
+let seriesScores; // {playerId: wins}
+let seriesRound; // current round number (1-based)
+let seriesOver; // true when series champion decided
+let seriesChampion; // index of champion in CFG.roster
+let seriesSplashT; // timestamp when inter-round splash started
+let seriesLosses; // total losses per player in series
 
 function pickRoundDur(){
   return CFG.roundMinSec + Math.random()*(CFG.roundMaxSec-CFG.roundMinSec);
+}
+
+function initSeries(){
+  seriesScores = {};
+  seriesLosses = {};
+  CFG.roster.forEach(p=>{ seriesScores[p.id]=0; seriesLosses[p.id]=0; });
+  seriesRound = 1;
+  seriesOver = false;
+  seriesChampion = -1;
+  seriesSplashT = 0;
 }
 
 function startGame(){
@@ -725,7 +788,6 @@ function initGame(){
   flash = null; particles = []; dmgNums = [];
   screenShake = {x:0, y:0, mag:0};
   endWinner = -1;
-  speedMultiplier = 1.0;
   endgameBoost = 1.0;
   lastElimT = 0;
   roundDur = pickRoundDur();
@@ -758,7 +820,7 @@ class Ball {
     this.x = CX+Math.cos(a)*d;
     this.y = CY+Math.sin(a)*d;
 
-    const spd = (1.4+Math.random()*0.8)*(0.8+sf*0.2);
+    const spd = (1.6+Math.random()*0.7)*(0.8+sf*0.2);
     const va  = a+Math.PI+(Math.random()-.5)*1.0;
     this.vx = Math.cos(va)*spd;
     this.vy = Math.sin(va)*spd;
@@ -791,7 +853,7 @@ class Ball {
     aliveCnt--;
     lastElimT = performance.now();
     // Update endgame boost once per elimination
-    endgameBoost = aliveCnt<=2 ? 2.0 : aliveCnt<=3 ? 1.5 : 1.0;
+    endgameBoost = aliveCnt<=2 ? 1.6 : aliveCnt<=3 ? 1.3 : 1.0;
     shake(14);
     spawnExplosion(this.x, this.y, this.p.color);
     sndElimination();
@@ -823,8 +885,7 @@ class Ball {
 
     this.trail.push({x:this.x,y:this.y});
     if(this.trail.length>14) this.trail.shift();
-    const sm=speedMultiplier*endgameBoost;
-    this.x+=this.vx*sm; this.y+=this.vy*sm;
+    this.x+=this.vx*endgameBoost; this.y+=this.vy*endgameBoost;
 
     // Arena wall
     const shape = CFG.arenaShape||'circle';
@@ -1014,12 +1075,12 @@ function physicsStep(){
             const spdI=si, spdJ=sj;
             // Attacker is the faster ball
             if(spdI>=spdJ-0.3){
-              const dmg=relV*bi.sf*0.10;
+              const dmg=relV*bi.sf*0.08;
               const taken=bj.hit(dmg);
               if(taken>0){ bi.atkF=6; spawnClash(bj.x,bj.y,bi.p.color); spawnBladeSparks(bi); spawnDmg(bj.x,bj.y,Math.round(taken),bi.p.color); shake(Math.min(9,relV*1.8)); sndCollision(relV); sndSpark(); }
             }
             if(spdJ>=spdI-0.3){
-              const dmg=relV*bj.sf*0.10;
+              const dmg=relV*bj.sf*0.08;
               const taken=bi.hit(dmg);
               if(taken>0){ bj.atkF=6; spawnClash(bi.x,bi.y,bj.p.color); spawnBladeSparks(bj); spawnDmg(bi.x,bi.y,Math.round(taken),bj.p.color); shake(Math.min(9,relV*1.8)); sndCollision(relV); sndSpark(); }
             }
@@ -1097,6 +1158,34 @@ function triggerEnd(){
   if(phase!=='fight') return;
   const alive=balls.filter((b,i)=>!eliminated[i]&&b.alive);
   endWinner = alive.length===1 ? alive[0].idx : -1;
+
+  const sf = CFG.seriesFormat||1;
+  const winsNeeded = Math.ceil(sf/2);
+
+  // Series mode
+  if(sf>1 && endWinner>=0){
+    const wp = CFG.roster[endWinner];
+    seriesScores[wp.id] = (seriesScores[wp.id]||0)+1;
+    // Track losses for non-winners
+    CFG.roster.forEach((p,i)=>{ if(i!==endWinner) seriesLosses[p.id]=(seriesLosses[p.id]||0)+1; });
+
+    if(seriesScores[wp.id]>=winsNeeded){
+      // Series won
+      seriesOver = true;
+      seriesChampion = endWinner;
+      phase='end'; phaseT=performance.now();
+      flash={text:'SERIES CHAMPION!',color:wp.color,t:performance.now()};
+      sndVictory();
+      return;
+    }
+    // More rounds to play — show splash then auto-restart
+    phase='seriesSplash'; seriesSplashT=performance.now();
+    flash={text:`${wp.name.split(' ').pop()} ${CFG.winnerMsg}`,color:wp.color,t:performance.now()};
+    sndVictory();
+    return;
+  }
+
+  // Single match or draw
   phase='end'; phaseT=performance.now();
   flash={text:endWinner>=0?`${CFG.roster[endWinner].team} ${CFG.winnerMsg}`:'DRAW!',
          color:endWinner>=0?CFG.roster[endWinner].color:'#fff',t:performance.now()};
@@ -1124,9 +1213,7 @@ function loop(now){
   if(phase==='fight'){
     timerAcc+=dt;
     roundTimer=Math.max(0,roundDur-timerAcc);
-    // When timer expires, ramp up speed and reset timer
     if(roundTimer<=0){
-      speedMultiplier=Math.min(speedMultiplier+0.05, 1.4);
       roundDur=pickRoundDur();
       timerAcc=0; roundTimer=roundDur;
     }
@@ -1135,6 +1222,14 @@ function loop(now){
     updateFX(dt);
     // Safety: force end if game is stuck with <=1 alive for 1.5+ seconds
     if(aliveCnt<=1 && lastElimT>0 && now-lastElimT>1500) triggerEnd();
+  }
+  if(phase==='seriesSplash'){
+    updateFX(dt);
+    // After 3 seconds, start next round
+    if(performance.now()-seriesSplashT>3000){
+      seriesRound++;
+      startGame(); // starts loading/intro for next round
+    }
   }
   if(phase==='end'){
     updateFX(dt);
@@ -1149,15 +1244,20 @@ function loop(now){
   if(screenShake.mag>.3) ctx.translate(screenShake.x,screenShake.y);
 
   drawBg();
-  drawArenaFloor();
-  drawBallsClipped();
-  drawArenaRing();
-  drawHUD(now);
-  drawFlashFX(now);
-  drawDmgNums();
-  drawParticles();
-  if(phase==='end')   drawEndScreen(now);
-  if(phase==='intro') drawIntroFade(now);
+  if(phase==='seriesSplash'){
+    drawSeriesSplash(now);
+  } else {
+    drawArenaFloor();
+    drawBallsClipped();
+    drawArenaRing();
+    drawHUD(now);
+    if((CFG.seriesFormat||1)>1 && phase!=='end') drawSeriesDots();
+    drawFlashFX(now);
+    drawDmgNums();
+    drawParticles();
+    if(phase==='end') drawEndScreen(now);
+    if(phase==='intro') drawIntroFade(now);
+  }
   drawWatermark();
 
   ctx.restore();
@@ -1309,6 +1409,7 @@ function drawEndScreen(now){
   if(t>.2&&endWinner>=0){
     const t2=(t-.2)/.8, p=CFG.roster[endWinner];
     ctx.globalAlpha=t2;
+    const isSeries=seriesOver&&(CFG.seriesFormat||1)>1;
     const bigR=105, face=getFace(p,bigR);
     ctx.save();ctx.beginPath();ctx.arc(CX,H/2-85,bigR,0,Math.PI*2);
     ctx.clip();
@@ -1321,14 +1422,108 @@ function drawEndScreen(now){
     ctx.font=`900 ${W*.2}px 'Bebas Neue',sans-serif`;
     ctx.textAlign='center';ctx.textBaseline='middle';
     ctx.fillStyle=p.color;ctx.shadowColor=p.color;ctx.shadowBlur=90;
-    ctx.fillText('WON!',CX,H/2+55);ctx.shadowBlur=0;
+    ctx.fillText(isSeries?'SERIES':'WON!',CX,H/2+(isSeries?35:55));ctx.shadowBlur=0;
+
+    if(isSeries){
+      ctx.font=`900 ${W*.16}px 'Bebas Neue',sans-serif`;
+      ctx.fillStyle=p.color;ctx.shadowColor=p.color;ctx.shadowBlur=70;
+      ctx.fillText('WINNER!',CX,H/2+80);ctx.shadowBlur=0;
+
+      // Series record
+      const pWins=seriesScores[p.id]||0;
+      const pLosses=seriesLosses[p.id]||0;
+      ctx.font=`700 ${W*.07}px 'Barlow Condensed',sans-serif`;
+      ctx.fillStyle='rgba(200,220,255,.85)';
+      ctx.fillText(`${pWins}-${pLosses}`,CX,H/2+118);
+    }
 
     ctx.font=`700 ${W*.05}px 'Barlow Condensed',sans-serif`;
     ctx.fillStyle='#fff';ctx.shadowBlur=20;ctx.shadowColor=p.color;
-    ctx.fillText(p.name.toUpperCase(),CX,H/2+115);ctx.shadowBlur=0;
+    ctx.fillText(p.name.toUpperCase(),CX,H/2+(isSeries?155:115));ctx.shadowBlur=0;
 
     ctx.font=`600 ${W*.044}px 'Barlow Condensed',sans-serif`;
-    ctx.fillStyle='rgba(175,210,255,.8)';ctx.fillText(CFG.robbed,CX,H/2+158);
+    ctx.fillStyle='rgba(175,210,255,.8)';ctx.fillText(CFG.robbed,CX,H/2+(isSeries?195:158));
+  }
+  ctx.restore();
+}
+
+function drawSeriesDots(){
+  const sf=CFG.seriesFormat||1;
+  if(sf<=1) return;
+  const winsNeeded=Math.ceil(sf/2);
+  const dotR=4, gap=12, padX=14, padY=10;
+  const totalW=winsNeeded*gap;
+  ctx.save();
+  ctx.textAlign='right';ctx.textBaseline='middle';
+  ctx.font=`600 11px 'Barlow Condensed',sans-serif`;
+  const startY=40;
+  CFG.roster.forEach((p,i)=>{
+    const wins=seriesScores[p.id]||0;
+    const lastName=p.name.split(' ').pop();
+    const y=startY+i*22;
+    ctx.fillStyle='rgba(180,200,255,.6)';
+    ctx.fillText(lastName,W-padX-totalW-6,y);
+    for(let d=0;d<winsNeeded;d++){
+      const x=W-padX-totalW+d*gap+dotR;
+      ctx.beginPath();ctx.arc(x,y,dotR,0,Math.PI*2);
+      if(d<wins){
+        ctx.fillStyle=p.color;ctx.fill();
+      } else {
+        ctx.strokeStyle='rgba(180,200,255,.3)';ctx.lineWidth=1;ctx.stroke();
+      }
+    }
+  });
+  // Round label
+  ctx.textAlign='right';ctx.textBaseline='top';
+  ctx.font=`700 10px 'Barlow Condensed',sans-serif`;
+  ctx.fillStyle='rgba(130,160,220,.5)';
+  ctx.fillText(`ROUND ${seriesRound} OF ${sf}`,W-padX,startY+CFG.roster.length*22+2);
+  ctx.restore();
+}
+
+function drawSeriesSplash(now){
+  const t=Math.min(1,(now-seriesSplashT)/600);
+  ctx.save();
+  ctx.fillStyle=`rgba(1,1,12,${.95*t})`;ctx.fillRect(0,0,W,H);
+  if(t>.15){
+    const t2=Math.min(1,(t-.15)/.85);
+    ctx.globalAlpha=t2;
+    // Round header
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.font=`700 ${W*.045}px 'Barlow Condensed',sans-serif`;
+    ctx.fillStyle='rgba(130,170,255,.7)';
+    ctx.fillText(`ROUND ${seriesRound} OF ${CFG.seriesFormat} COMPLETE`,CX,H/2-120);
+
+    // Series scores
+    const sf=CFG.seriesFormat||1;
+    const winsNeeded=Math.ceil(sf/2);
+    let y=H/2-50;
+    ctx.font=`700 ${W*.055}px 'Barlow Condensed',sans-serif`;
+    CFG.roster.forEach((p,i)=>{
+      const wins=seriesScores[p.id]||0;
+      ctx.fillStyle=wins>0?p.color:'rgba(180,200,255,.4)';
+      ctx.textAlign='left';
+      ctx.fillText(p.name,CX-180,y);
+      ctx.textAlign='right';
+      ctx.fillText(wins,CX+180,y);
+      // Dots
+      for(let d=0;d<winsNeeded;d++){
+        const dx=CX+100+d*14;
+        ctx.beginPath();ctx.arc(dx,y,4,0,Math.PI*2);
+        if(d<wins){ctx.fillStyle=p.color;ctx.fill();}
+        else{ctx.strokeStyle='rgba(180,200,255,.25)';ctx.lineWidth=1;ctx.stroke();}
+      }
+      y+=36;
+    });
+
+    // Next round message
+    const remaining=3-(now-seriesSplashT)/1000;
+    if(remaining>0){
+      ctx.textAlign='center';
+      ctx.font=`600 ${W*.038}px 'Barlow Condensed',sans-serif`;
+      ctx.fillStyle='rgba(165,200,255,.6)';
+      ctx.fillText(`Next round in ${Math.ceil(remaining)}...`,CX,y+30);
+    }
   }
   ctx.restore();
 }
@@ -1467,6 +1662,7 @@ function checkAutoStop(now){
 function doRestart(){
   // If recording, just reset game (don't stop recording)
   FACE_CACHE && clearFaceCache();
+  initSeries();
   startGame();
   lastT=performance.now();
 }
@@ -1483,6 +1679,7 @@ function openModal(tab){
     elimMsg:CFG.elimMsg, winnerMsg:CFG.winnerMsg,
     robbed:CFG.robbed, watermark:CFG.watermark,
     arenaShape:CFG.arenaShape||'circle',
+    seriesFormat:CFG.seriesFormat||1,
   };
   document.getElementById('modal').classList.add('open');
   switchTab(tab||'players');
@@ -1499,13 +1696,15 @@ function switchTab(t){
 function renderTab(t){
   const body=document.getElementById('mbody');
   if(t==='players') body.innerHTML=buildPlayersTab();
+  if(t==='teams')   body.innerHTML=buildTeamsTab();
   if(t==='game')    body.innerHTML=buildGameTab();
   if(t==='text')    body.innerHTML=buildTextTab();
 }
 
 // ── PLAYERS ──
 function buildPlayersTab(){
-  let html=`<div style="font-size:11px;color:#334;margin-bottom:10px;line-height:1.5;">Win % sets strength, speed, and damage. Higher % = stronger fighter. All players start with 82 energy. Set an emoji or image URL as weapon — leave blank for razor ring.</div>`;
+  let html=`<div style="font-size:11px;color:#334;margin-bottom:10px;line-height:1.5;">Win % sets strength, speed, and damage. Higher % = stronger fighter. All players start with 82 energy. Set an emoji or image URL as weapon — leave blank for razor ring.</div>
+  <div style="margin-bottom:12px;"><button class="addbtn" onclick="teamBattleQuickFill();switchTab('teams')">🏀 TEAM BATTLE — Random 5 Teams</button></div>`;
   DRAFT.roster.forEach((p,i)=>{
     const isCustom = p._custom;
     const faceSrc = p.customImg || (p.slug ? `${BASE}${p.slug}.png` : '');
@@ -1686,22 +1885,113 @@ function handleFileUpload(i,input){
   reader.readAsDataURL(file);
 }
 
+// ── TEAMS ──
+function _teamToRosterEntry(t){
+  return {id:'team_'+t.abbr, slug:'', name:t.name, team:t.abbr, color:t.color, bg:t.bg,
+    winPct:20, icon:'', iconUrl:'', customImg:'', _team:true, _teamId:t.teamId};
+}
+
+function buildTeamsTab(){
+  let html=`<div style="font-size:11px;color:#334;margin-bottom:10px;line-height:1.5;">Add NBA teams to battle. Teams use their official logo on the ball. Win %, weapons, series, and recording all work the same as players.</div>`;
+
+  // Show current team entries in roster
+  DRAFT.roster.forEach((p,i)=>{
+    const logoUrl = p._team && p._teamId ? NBA_LOGO_CDN+p._teamId+'/global/L/logo.svg' : '';
+    html+=`<div class="pcard">
+      <button class="del" onclick="removeP(${i});switchTab('teams')">✕</button>
+      <div class="prow">
+        <div class="pface" style="background:${p.bg};">${logoUrl?`<img src="${logoUrl}" style="width:80%;height:80%;object-fit:contain;margin:10%;" onerror="this.style.display='none'">`:`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:${p.color};">${p._team?p.team:getInitials(p.name)}</div>`}</div>
+        <div class="pinfo"><div class="pname">${p.name}</div><div class="psub">${p.team||''}</div></div>
+        <div style="text-align:right;"><div style="font-size:9px;color:#334;text-transform:uppercase;letter-spacing:.8px;">Win %</div>
+        <div class="pct-val" id="pv${i}">${p.winPct||10}%</div></div>
+      </div>
+      <div class="pctrls">
+        <div><label>Win % (1–99)</label><input type="range" min="1" max="99" value="${p.winPct||10}" oninput="setPct(${i},this.value)"></div>
+        <div><label>Primary</label><input type="color" class="sw" value="${p.color}" oninput="DRAFT.roster[${i}].color=this.value"></div>
+        <div><label>BG</label><input type="color" class="sw" value="${p.bg}" oninput="DRAFT.roster[${i}].bg=this.value"></div>
+      </div>
+      <div style="margin-top:8px;">
+        <label class="lbl">Weapon (emoji or image URL — leave blank for saw blade)</label>
+        <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
+          <input class="fi" style="width:60px;margin:0;text-align:center;font-size:18px;" value="${p.icon||''}" oninput="DRAFT.roster[${i}].icon=this.value" placeholder="🔪">
+          <button style="background:#1a1a30;color:#778;border:1px solid #2a2a44;border-radius:4px;padding:4px 8px;cursor:pointer;font-size:11px;" onclick="DRAFT.roster[${i}].icon='';this.previousElementSibling.value=''">✕</button>
+          <input class="fi" style="flex:1;margin:0;font-size:11px;" value="${p.iconUrl||''}" oninput="DRAFT.roster[${i}].iconUrl=this.value" placeholder="Weapon image URL (optional)">
+        </div>
+      </div>
+    </div>`;
+  });
+
+  if(DRAFT.roster.length<10){
+    html+=`<div class="shd">Add NBA Team</div>
+    <input class="fi" id="tsearch" placeholder="Search by team name or abbreviation…" oninput="filterTeams()" style="margin-bottom:6px">
+    <div class="pplist" id="tplist">${buildTeamList('')}</div>`;
+  }
+
+  // Quick-fill button
+  html+=`<div style="margin-top:14px;"><button class="addbtn" onclick="teamBattleQuickFill()">🏀 RANDOM 5-TEAM BATTLE</button></div>`;
+  return html;
+}
+
+function buildTeamList(q){
+  const used=new Set(DRAFT.roster.filter(p=>p._team).map(p=>p._teamId));
+  const ql=q?q.toLowerCase():'';
+  let list=TEAM_DB.filter(t=>!used.has(t.teamId));
+  if(ql.length>0) list=list.filter(t=>t.name.toLowerCase().includes(ql)||t.abbr.toLowerCase().includes(ql));
+  if(list.length===0) return '<div style="padding:10px;color:#223;font-size:11px;">No matches</div>';
+  return list.map(t=>`
+    <div class="ppi" onclick="addTeam(${t.teamId})">
+      <div class="ppi-face" style="background:${t.bg};display:flex;align-items:center;justify-content:center;">
+        <img src="${NBA_LOGO_CDN}${t.teamId}/global/L/logo.svg" style="width:80%;height:80%;object-fit:contain;" onerror="this.outerHTML='<span style=\\'font-size:11px;font-weight:700;color:${t.color}\\'>${t.abbr}</span>'">
+      </div>
+      <div><div class="ppi-name">${t.name}</div><div class="ppi-team">${t.abbr}</div></div>
+    </div>`).join('');
+}
+
+function filterTeams(){const q=document.getElementById('tsearch')?.value||'';const el=document.getElementById('tplist');if(el)el.innerHTML=buildTeamList(q);}
+
+function addTeam(teamId){
+  if(DRAFT.roster.length>=10) return;
+  const t=TEAM_DB.find(t=>t.teamId===teamId);
+  if(!t) return;
+  DRAFT.roster.push(_teamToRosterEntry(t));
+  renderTab('teams');
+}
+
+function teamBattleQuickFill(){
+  // Pick 5 random unique teams
+  const shuffled=[...TEAM_DB].sort(()=>Math.random()-.5);
+  DRAFT.roster=shuffled.slice(0,5).map(t=>_teamToRosterEntry(t));
+  renderTab('teams');
+}
+
 // ── GAME ──
 function buildGameTab(){
   const shapes=[{id:'circle',emoji:'⭕',label:'Circle'},{id:'square',emoji:'⬛',label:'Square'},{id:'triangle',emoji:'🔺',label:'Triangle'},{id:'hexagon',emoji:'⬡',label:'Hexagon'}];
   const cur=DRAFT.arenaShape||'circle';
+  const sf=DRAFT.seriesFormat||1;
+  const seriesOpts=[{v:1,label:'Single'},{v:3,label:'Best of 3'},{v:5,label:'Best of 5'},{v:7,label:'Best of 7'}];
   return`
     <div class="shd">Arena Shape</div>
     <div class="weapon-sel" style="grid-template-columns:repeat(4,1fr);margin-bottom:14px;">
       ${shapes.map(s=>`<div class="wp${s.id===cur?' on':''}" title="${s.label}" onclick="setShape('${s.id}',this)">${s.emoji}<div style="font-size:9px;margin-top:2px;color:#778;">${s.label}</div></div>`).join('')}
     </div>
+    <div class="shd">Series Format</div>
+    <div class="weapon-sel" style="grid-template-columns:repeat(4,1fr);margin-bottom:14px;">
+      ${seriesOpts.map(s=>`<div class="wp${s.v===sf?' on':''}" onclick="setSeriesFormat(${s.v},this)"><div style="font-size:12px;font-weight:700;color:#ccd;">${s.label}</div></div>`).join('')}
+    </div>
     <div class="shd">Round Timer</div>
-    <p style="font-size:11px;color:#336;line-height:1.5;margin-bottom:10px;">Ball speed gradually ramps up over time. Each phase lasts a random time between Min and Max seconds before the next speed increase. Players are eliminated only when their energy reaches 0.</p>
+    <p style="font-size:11px;color:#336;line-height:1.5;margin-bottom:10px;">Each phase lasts a random time between Min and Max seconds. Players are eliminated only when their energy reaches 0.</p>
     <div class="r2">
       <div><label class="lbl">Min seconds (10–80)</label><input id="gtmin" class="fi" type="number" min="10" max="80" value="${DRAFT.roundMinSec}"></div>
       <div><label class="lbl">Max seconds (20–90)</label><input id="gtmax" class="fi" type="number" min="20" max="90" value="${DRAFT.roundMaxSec}"></div>
     </div>
   `;
+}
+
+function setSeriesFormat(v,el){
+  DRAFT.seriesFormat=v;
+  el.closest('.weapon-sel').querySelectorAll('.wp').forEach(w=>w.classList.remove('on'));
+  el.classList.add('on');
 }
 
 function setShape(id,el){
@@ -1749,6 +2039,7 @@ function applyClose(){
 }
 
 // ════════════════════════════ BOOT ════════════════════════════
+initSeries();
 startGame();
 lastT=performance.now();
 requestAnimationFrame(loop);
