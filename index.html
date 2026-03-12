@@ -395,6 +395,39 @@ let FULL_DB = [...PDATA]; // start with hardcoded fallback
 let FULL_DB_LOADED = false;
 // Lookup map: playerId → exact slug from GitHub tree API (guaranteed to match real filenames)
 const HEADSHOT_SLUGS = new Map();
+let _headshotSlugsReady = false;
+let _headshotSlugsPromise = null;
+
+// Fetch tree API and populate HEADSHOT_SLUGS, with 3s timeout.
+// Returns a promise that always resolves (never rejects).
+function ensureHeadshotSlugs(){
+  if(_headshotSlugsReady) return Promise.resolve();
+  if(_headshotSlugsPromise) return _headshotSlugsPromise;
+  _headshotSlugsPromise = new Promise(resolve=>{
+    const timer = setTimeout(()=>{
+      console.warn('[headshot] Tree API timed out after 3s, falling back to PDATA slugs');
+      _headshotSlugsReady=true; resolve();
+    }, 3000);
+    fetch(TREE_API_URL).then(r=>{
+      if(!r.ok) throw new Error(`HTTP ${r.status}`);
+      return r.json();
+    }).then(data=>{
+      if(data.tree&&Array.isArray(data.tree)){
+        const pat=/^players\/headshots\/face\/(\d+)-(.+)\.png$/;
+        data.tree.forEach(f=>{
+          const m=f.path.match(pat);
+          if(m) HEADSHOT_SLUGS.set(+m[1], m[1]+'-'+m[2]);
+        });
+      }
+      console.log(`[headshot] Tree API ready: ${HEADSHOT_SLUGS.size} slugs loaded`);
+      clearTimeout(timer); _headshotSlugsReady=true; resolve();
+    }).catch(e=>{
+      console.warn('[headshot] Tree API fetch failed:',e.message,'— falling back to PDATA slugs');
+      clearTimeout(timer); _headshotSlugsReady=true; resolve();
+    });
+  });
+  return _headshotSlugsPromise;
+}
 
 function _slugToName(slug){
   // slug format: "firstname-lastname" or "firstname-middle-lastname"
@@ -555,19 +588,8 @@ function loadImages(roster, cb){
     }
     // Skip NBA headshot load for custom players (no slug) — they use customImg or bg fallback
     if(!p.slug){ IMGS[p.id]=null; pending--; if(pending===0) cb(); return; }
-    // Use exact slug from tree API if available (guarantees match with actual filename)
-    const exactSlug = HEADSHOT_SLUGS.get(p.id);
-    if(!exactSlug){
-      // No file in repo for this player — skip straight to NBA CDN fallback
-      console.log('[headshot] '+p.name+' ('+p.id+'): no file in repo, trying NBA CDN');
-      const cdnUrl = NBA_CDN + p.id + '.png';
-      const img2 = new Image();
-      img2.crossOrigin = 'anonymous';
-      img2.onload = ()=>{ IMGS[p.id]=img2; console.log('[headshot] '+p.name+': loaded (CDN fallback)'); pending--; if(pending===0) cb(); };
-      img2.onerror = ()=>{ IMGS[p.id]=null; console.log('[headshot] '+p.name+': CDN also failed — using initials'); pending--; if(pending===0) cb(); };
-      img2.src = cdnUrl;
-      return;
-    }
+    // Use exact slug from tree API if available, otherwise fall back to PDATA slug
+    const exactSlug = HEADSHOT_SLUGS.get(p.id) || p.slug;
     const primaryUrl = BASE + exactSlug + '.png';
     const img = new Image();
     img.onload = ()=>{ IMGS[p.id]=img; console.log('[headshot] '+p.name+': loaded (repo: '+exactSlug+')'); pending--; if(pending===0) cb(); };
@@ -803,11 +825,15 @@ function startGame(){
   const customUrls = CFG.roster.filter(p=>p.customImg).map(p=>p.customImg);
   let customPending = customUrls.length;
   const onCustomDone = ()=>{
-    loadImages(CFG.roster, ()=>{
-      clearFaceCache();
-      initGame();
-      phase = 'intro';
-      phaseT = performance.now();
+    // Ensure HEADSHOT_SLUGS is populated before loading images (3s timeout)
+    ensureHeadshotSlugs().then(()=>{
+      console.log(`[headshot] Starting image load with ${HEADSHOT_SLUGS.size} tree API slugs available`);
+      loadImages(CFG.roster, ()=>{
+        clearFaceCache();
+        initGame();
+        phase = 'intro';
+        phaseT = performance.now();
+      });
     });
   };
   if(customPending===0){ onCustomDone(); return; }
