@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>HoopsHype Battle Arena</title>
+<script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.6/dist/umd/ffmpeg.js"></script>
+<script src="https://unpkg.com/@ffmpeg/util@0.12.1/dist/umd/index.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -39,8 +41,11 @@ canvas{display:block}
 .psub{font-size:11px;color:#336}
 .pctrls{display:grid;grid-template-columns:1fr 32px 32px;gap:7px;align-items:end}
 .pctrls label{font-size:9px;color:#336;display:block;margin-bottom:2px;text-transform:uppercase;letter-spacing:.8px}
-.pctrls input[type=range]{width:100%;height:4px;-webkit-appearance:none;border-radius:2px;background:#1a1a32;outline:none}
-.pctrls input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;background:#f5a623;cursor:pointer}
+.pctrls input[type=range]{width:100%;height:18px;-webkit-appearance:none;appearance:none;border-radius:2px;background:transparent;outline:none;cursor:pointer}
+.pctrls input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:#1a1a32}
+.pctrls input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:13px;height:13px;border-radius:50%;background:#f5a623;cursor:pointer;margin-top:-4.5px}
+.pctrls input[type=range]::-moz-range-track{height:4px;border-radius:2px;background:#1a1a32;border:none}
+.pctrls input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;background:#f5a623;cursor:pointer;border:none}
 .pct-val{font-size:20px;font-family:'Bebas Neue';color:#f5a623;text-align:right;letter-spacing:1px}
 .sw{width:32px;height:28px;border:none;border-radius:4px;cursor:pointer;padding:0;background:none}
 .del{position:absolute;top:8px;right:8px;background:none;border:none;color:#222;cursor:pointer;font-size:13px}
@@ -110,14 +115,17 @@ canvas{display:block}
 // ═══════════════════════════════════════════════════════════════════
 
 // ═══════════════════════════ AUDIO ENGINE ═══════════════════════════
-let _audioCtx=null, _masterGain=null, _audioDest=null, _muted=false;
+let _audioCtx=null, _masterGain=null, _playbackGain=null, _audioDest=null, _muted=false;
 
 function getAudioCtx(){
   if(!_audioCtx){
     _audioCtx=new (window.AudioContext||window.webkitAudioContext)();
     _masterGain=_audioCtx.createGain();
-    _masterGain.connect(_audioCtx.destination);
-    // MediaStreamDestination for recording audio
+    // Playback gain controls speaker output (mute silences this only)
+    _playbackGain=_audioCtx.createGain();
+    _masterGain.connect(_playbackGain);
+    _playbackGain.connect(_audioCtx.destination);
+    // Recording destination taps directly off masterGain (always full volume)
     if(_audioCtx.createMediaStreamDestination){
       _audioDest=_audioCtx.createMediaStreamDestination();
       _masterGain.connect(_audioDest);
@@ -132,7 +140,8 @@ document.addEventListener('click',()=>getAudioCtx(),{once:true});
 
 function toggleMute(){
   _muted=!_muted;
-  if(_masterGain) _masterGain.gain.value=_muted?0:1;
+  // Only mute playback (speakers), recording always gets full audio
+  if(_playbackGain) _playbackGain.gain.value=_muted?0:1;
   document.getElementById('muteBtn').textContent=_muted?'🔇 UNMUTE':'🔊 MUTE';
 }
 
@@ -1271,7 +1280,8 @@ function triggerEnd(){
 let lastT=performance.now();
 
 function loop(now){
-  const dt=Math.min((now-lastT)/1000,.05); lastT=now;
+  // Fixed timestep when recording for smooth, consistent video output
+  const dt=rActive ? 1/30 : Math.min((now-lastT)/1000,.05); lastT=now;
 
   if(phase==='idle'){
     ctx.fillStyle='#02020a'; ctx.fillRect(0,0,W,H);
@@ -1346,7 +1356,8 @@ function loop(now){
     drawFlashFX(now);
     drawDmgNums();
     drawParticles();
-    if(phase==='end') drawEndScreen(now);
+    if(phase==='end'&&!_converting) drawEndScreen(now);
+    if(phase==='end'&&_converting) drawConvertOverlay(now);
     if(phase==='intro') drawIntroFade(now);
   }
   drawWatermark();
@@ -1632,13 +1643,34 @@ function drawWatermark(){
   ctx.fillText(CFG.watermark,CX,H-10);ctx.restore();
 }
 
+function drawConvertOverlay(now){
+  ctx.fillStyle='rgba(0,0,0,.82)';ctx.fillRect(0,0,W,H);
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.font=`700 ${W*.055}px 'Bebas Neue',sans-serif`;
+  ctx.fillStyle='rgba(200,220,255,.9)';
+  ctx.fillText('Converting to MP4…',CX,H/2-20);
+  ctx.font=`600 ${W*.03}px 'Barlow Condensed',sans-serif`;
+  ctx.fillStyle='rgba(140,170,220,.6)';
+  ctx.fillText(_convertMsg||'please wait',CX,H/2+20);
+  // Animated dots
+  const dots='.'.repeat(1+Math.floor((now/500)%3));
+  ctx.fillText(dots,CX,H/2+45);
+}
+
 // ════════════════════════════ RECORDING ════════════════════════════
 let mRec=null, rChunks=[], rActive=false, rStopT=null;
+let _converting=false, _convertMsg='';
 
 function toggleRec(){ rActive?stopRec():startRec(); }
 
 function _pickMime(){
-  const candidates=['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm','video/mp4'];
+  const candidates=[
+    'video/mp4;codecs=h264,aac',
+    'video/mp4',
+    'video/webm;codecs=vp9,opus',
+    'video/webm;codecs=vp8,opus',
+    'video/webm'
+  ];
   for(const m of candidates){
     if(MediaRecorder.isTypeSupported(m)){console.log('[REC] Using mimeType:',m);return m;}
   }
@@ -1648,7 +1680,7 @@ function _pickMime(){
 
 function _createRecorder(stream, mime){
   try{
-    const opts=mime?{mimeType:mime,videoBitsPerSecond:10_000_000}:{};
+    const opts=mime?{mimeType:mime,videoBitsPerSecond:8_000_000,audioBitsPerSecond:192_000}:{};
     const rec=new MediaRecorder(stream,opts);
     console.log('[REC] MediaRecorder created with mimeType:',rec.mimeType);
     return rec;
@@ -1662,24 +1694,27 @@ function startRec(){
   if(!canvas.captureStream){alert('Recording not supported in this browser.');return;}
   rChunks=[];
 
-  // Capture canvas video stream
+  // Ensure AudioContext + MediaStreamDestination exist BEFORE capturing
+  getAudioCtx();
+
+  // Capture canvas video stream at fixed 30fps for stable recording
   let vidStream;
-  try{ vidStream=canvas.captureStream(60); console.log('[REC] captureStream(60) OK'); }
+  try{ vidStream=canvas.captureStream(30); console.log('[REC] captureStream(30) OK'); }
   catch(e1){
     if(e1.name==='SecurityError'||/origin-clean|tainted|security/i.test(e1.message)){
       console.error('[REC] Canvas tainted — this should not happen with CORS-only loading + initials fallback.');
       alert('Recording failed: canvas tainted by cross-origin images. Reload the page and try again.');
       return;
     }
-    try{ vidStream=canvas.captureStream(30); console.log('[REC] captureStream(30) OK (60fps failed)'); }
+    try{ vidStream=canvas.captureStream(0); console.log('[REC] captureStream(0) OK (30fps failed)'); }
     catch(e2){ alert('Canvas capture failed: '+e2.message); return; }
   }
 
   const mime=_pickMime();
 
-  // Try with audio first, fall back to video-only
+  // Combine video + audio into a single MediaStream for perfect sync
   let rec=null;
-  const audioStream=getAudioStream();
+  const audioStream=_audioDest?_audioDest.stream:null;
   if(audioStream&&audioStream.getAudioTracks().length>0){
     console.log('[REC] Attempting video+audio recording');
     const combined=new MediaStream([...vidStream.getVideoTracks(),...audioStream.getAudioTracks()]);
@@ -1700,7 +1735,7 @@ function startRec(){
     if(e.data&&e.data.size>0){rChunks.push(e.data);console.log('[REC] chunk:',e.data.size,'bytes');}
   };
   mRec.onerror=e=>console.error('[REC] error:',e);
-  mRec.onstop=()=>{console.log('[REC] stopped, chunks:',rChunks.length);downloadRec();};
+  // onstop set in stopRec to wait for final flush
 
   try{
     mRec.start(100);
@@ -1717,30 +1752,101 @@ function startRec(){
 }
 
 function stopRec(){
-  if(mRec&&mRec.state==='recording'){
-    console.log('[REC] Stopping recorder…');
-    mRec.stop();
-  }
   rActive=false; rStopT=null;
   document.getElementById('recBtn').textContent='⏺ REC & DOWNLOAD';
   document.getElementById('recBtn').style.color='';
   document.getElementById('recDot').style.display='none';
+  if(mRec&&mRec.state==='recording'){
+    console.log('[REC] Flushing final data and stopping…');
+    // Wait for the final dataavailable event after requestData+stop
+    mRec.onstop=()=>{console.log('[REC] stopped, chunks:',rChunks.length);downloadRec();};
+    try{mRec.requestData();}catch(e){/* ignore if not supported */}
+    mRec.stop();
+  }
 }
 
-function downloadRec(){
-  if(rChunks.length===0){console.warn('[REC] No data to download');return;}
-  const mimeType=mRec?.mimeType||'video/webm';
-  const ext=mimeType.includes('mp4')?'mp4':'webm';
-  const blob=new Blob(rChunks,{type:mimeType});
-  console.log('[REC] Download: blob size',blob.size,'bytes, type',mimeType);
+function _triggerDownload(blob, filename){
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
-  a.href=url; a.download=`hoopshype-battle.${ext}`;
+  a.href=url; a.download=filename;
   a.style.display='none';
   document.body.appendChild(a);
   a.click();
   setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(url);},8000);
-  console.log('[REC] Download triggered');
+  console.log('[REC] Download triggered:',filename,blob.size,'bytes');
+}
+
+async function downloadRec(){
+  if(rChunks.length===0){console.warn('[REC] No data to download');return;}
+  const mimeType=mRec?.mimeType||'video/webm';
+  const rawBlob=new Blob(rChunks,{type:mimeType});
+  console.log('[REC] Raw blob:',rawBlob.size,'bytes, type',mimeType);
+
+  // If already MP4, download directly
+  if(mimeType.includes('mp4')){
+    _triggerDownload(rawBlob,'hoopshype-battle.mp4');
+    return;
+  }
+
+  // Try ffmpeg.wasm conversion from WebM → MP4
+  if(typeof FFmpeg!=='undefined'&&typeof FFmpegUtil!=='undefined'){
+    _converting=true; _convertMsg='Loading ffmpeg…';
+    try{
+      const ffmpeg=new FFmpeg.FFmpeg();
+      let loaded=false;
+
+      // 60s timeout for the entire conversion
+      const timeout=new Promise((_,rej)=>setTimeout(()=>rej(new Error('Conversion timed out after 60s')),60000));
+
+      const convert=async ()=>{
+        ffmpeg.on('progress',({progress})=>{
+          const pct=Math.round((progress||0)*100);
+          _convertMsg=`Encoding… ${pct}%`;
+        });
+        ffmpeg.on('log',({message})=>console.log('[ffmpeg]',message));
+
+        _convertMsg='Loading ffmpeg core…';
+        await ffmpeg.load({
+          coreURL:'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js',
+          wasmURL:'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.wasm'
+        });
+        loaded=true;
+
+        _convertMsg='Writing input…';
+        const inputData=new Uint8Array(await rawBlob.arrayBuffer());
+        await ffmpeg.writeFile('input.webm',inputData);
+
+        _convertMsg='Converting…';
+        await ffmpeg.exec([
+          '-i','input.webm',
+          '-c:v','libx264','-preset','ultrafast','-crf','18',
+          '-c:a','aac','-b:a','192k',
+          'output.mp4'
+        ]);
+
+        _convertMsg='Reading output…';
+        const outData=await ffmpeg.readFile('output.mp4');
+        const mp4Blob=new Blob([outData.buffer],{type:'video/mp4'});
+        console.log('[REC] MP4 conversion done:',mp4Blob.size,'bytes');
+
+        try{ffmpeg.terminate();}catch(e){}
+        _converting=false; _convertMsg='';
+        _triggerDownload(mp4Blob,'hoopshype-battle.mp4');
+      };
+
+      await Promise.race([convert(),timeout]);
+    }catch(e){
+      console.warn('[REC] ffmpeg conversion failed:',e.message,'— falling back to WebM');
+      _converting=false; _convertMsg='';
+      _triggerDownload(rawBlob,'hoopshype-battle.webm');
+      alert('Saved as .webm (MP4 conversion failed)');
+    }
+  } else {
+    // ffmpeg.wasm not available, download as-is
+    console.warn('[REC] ffmpeg.wasm not loaded, downloading WebM');
+    const ext=mimeType.includes('mp4')?'mp4':'webm';
+    _triggerDownload(rawBlob,`hoopshype-battle.${ext}`);
+  }
 }
 
 function checkAutoStop(now){
