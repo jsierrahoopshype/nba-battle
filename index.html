@@ -523,13 +523,7 @@ function _mergeIntoDB(players, source){
 
 // ════════════════════════════ CONFIG ════════════════════════════
 let CFG = {
-  roster: [
-    {...PDATA[0], winPct:35, icon:PDATA[0].icon, iconUrl:'', customImg:''},
-    {...PDATA[1], winPct:30, icon:PDATA[1].icon, iconUrl:'', customImg:''},
-    {...PDATA[2], winPct:10, icon:PDATA[2].icon, iconUrl:'', customImg:''},
-    {...PDATA[3], winPct:15, icon:PDATA[3].icon, iconUrl:'', customImg:''},
-    {...PDATA[4], winPct:10, icon:PDATA[4].icon, iconUrl:'', customImg:''},
-  ],
+  roster: [],
   roundMinSec: 45,
   roundMaxSec: 90,
   title:       ["WHO'S THE BEST", "IN THE NBA?"],
@@ -1279,6 +1273,23 @@ let lastT=performance.now();
 function loop(now){
   const dt=Math.min((now-lastT)/1000,.05); lastT=now;
 
+  if(phase==='idle'){
+    ctx.fillStyle='#02020a'; ctx.fillRect(0,0,W,H);
+    const g=ctx.createRadialGradient(CX,CY,0,CX,CY,AR*1.7);
+    g.addColorStop(0,'rgba(15,15,55,.55)');g.addColorStop(1,'rgba(2,2,10,0)');
+    ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.font=`700 ${W*.045}px 'Bebas Neue',sans-serif`;
+    const pulse=0.5+0.5*Math.sin(now/400);
+    ctx.fillStyle=`rgba(100,130,220,${0.5+pulse*0.4})`;
+    ctx.fillText('Click  ⚔ PLAYERS  to build your roster',CX,H/2);
+    ctx.font=`600 ${W*.028}px 'Barlow Condensed',sans-serif`;
+    ctx.fillStyle='rgba(80,100,160,.45)';
+    ctx.fillText('Add at least 2 players to start',CX,H/2+35);
+    drawWatermark();
+    requestAnimationFrame(loop); return;
+  }
+
   if(phase==='loading'){
     ctx.fillStyle='#02020a'; ctx.fillRect(0,0,W,H);
     ctx.font=`700 ${W*.06}px 'Bebas Neue',sans-serif`;
@@ -1740,6 +1751,7 @@ function checkAutoStop(now){
 
 // ════════════════════════════ CONTROLS ════════════════════════════
 function doRestart(){
+  if(CFG.roster.length<2){ phase='idle'; return; }
   // If recording, just reset game (don't stop recording)
   FACE_CACHE && clearFaceCache();
   initSeries();
@@ -2120,8 +2132,13 @@ function applyClose(){
 }
 
 // ════════════════════════════ BOOT ════════════════════════════
-initSeries();
-startGame();
+if(CFG.roster.length>=2){
+  initSeries();
+  startGame();
+} else {
+  phase='idle';
+  CX=W/2; CY=H*0.468; AR=260;
+}
 lastT=performance.now();
 requestAnimationFrame(loop);
 </script>
