@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>HoopsHype Battle Arena</title>
+<script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.6/dist/umd/ffmpeg.js"></script>
+<script src="https://unpkg.com/@ffmpeg/util@0.12.1/dist/umd/index.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -1354,7 +1356,8 @@ function loop(now){
     drawFlashFX(now);
     drawDmgNums();
     drawParticles();
-    if(phase==='end') drawEndScreen(now);
+    if(phase==='end'&&!_converting) drawEndScreen(now);
+    if(phase==='end'&&_converting) drawConvertOverlay(now);
     if(phase==='intro') drawIntroFade(now);
   }
   drawWatermark();
@@ -1640,8 +1643,23 @@ function drawWatermark(){
   ctx.fillText(CFG.watermark,CX,H-10);ctx.restore();
 }
 
+function drawConvertOverlay(now){
+  ctx.fillStyle='rgba(0,0,0,.82)';ctx.fillRect(0,0,W,H);
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.font=`700 ${W*.055}px 'Bebas Neue',sans-serif`;
+  ctx.fillStyle='rgba(200,220,255,.9)';
+  ctx.fillText('Converting to MP4…',CX,H/2-20);
+  ctx.font=`600 ${W*.03}px 'Barlow Condensed',sans-serif`;
+  ctx.fillStyle='rgba(140,170,220,.6)';
+  ctx.fillText(_convertMsg||'please wait',CX,H/2+20);
+  // Animated dots
+  const dots='.'.repeat(1+Math.floor((now/500)%3));
+  ctx.fillText(dots,CX,H/2+45);
+}
+
 // ════════════════════════════ RECORDING ════════════════════════════
 let mRec=null, rChunks=[], rActive=false, rStopT=null;
+let _converting=false, _convertMsg='';
 
 function toggleRec(){ rActive?stopRec():startRec(); }
 
@@ -1747,20 +1765,88 @@ function stopRec(){
   }
 }
 
-function downloadRec(){
-  if(rChunks.length===0){console.warn('[REC] No data to download');return;}
-  const mimeType=mRec?.mimeType||'video/webm';
-  const ext=mimeType.includes('mp4')?'mp4':'webm';
-  const blob=new Blob(rChunks,{type:mimeType});
-  console.log('[REC] Download: blob size',blob.size,'bytes, type',mimeType);
+function _triggerDownload(blob, filename){
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
-  a.href=url; a.download=`hoopshype-battle.${ext}`;
+  a.href=url; a.download=filename;
   a.style.display='none';
   document.body.appendChild(a);
   a.click();
   setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(url);},8000);
-  console.log('[REC] Download triggered');
+  console.log('[REC] Download triggered:',filename,blob.size,'bytes');
+}
+
+async function downloadRec(){
+  if(rChunks.length===0){console.warn('[REC] No data to download');return;}
+  const mimeType=mRec?.mimeType||'video/webm';
+  const rawBlob=new Blob(rChunks,{type:mimeType});
+  console.log('[REC] Raw blob:',rawBlob.size,'bytes, type',mimeType);
+
+  // If already MP4, download directly
+  if(mimeType.includes('mp4')){
+    _triggerDownload(rawBlob,'hoopshype-battle.mp4');
+    return;
+  }
+
+  // Try ffmpeg.wasm conversion from WebM → MP4
+  if(typeof FFmpeg!=='undefined'&&typeof FFmpegUtil!=='undefined'){
+    _converting=true; _convertMsg='Loading ffmpeg…';
+    try{
+      const ffmpeg=new FFmpeg.FFmpeg();
+      let loaded=false;
+
+      // 60s timeout for the entire conversion
+      const timeout=new Promise((_,rej)=>setTimeout(()=>rej(new Error('Conversion timed out after 60s')),60000));
+
+      const convert=async ()=>{
+        ffmpeg.on('progress',({progress})=>{
+          const pct=Math.round((progress||0)*100);
+          _convertMsg=`Encoding… ${pct}%`;
+        });
+        ffmpeg.on('log',({message})=>console.log('[ffmpeg]',message));
+
+        _convertMsg='Loading ffmpeg core…';
+        await ffmpeg.load({
+          coreURL:'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js',
+          wasmURL:'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.wasm'
+        });
+        loaded=true;
+
+        _convertMsg='Writing input…';
+        const inputData=new Uint8Array(await rawBlob.arrayBuffer());
+        await ffmpeg.writeFile('input.webm',inputData);
+
+        _convertMsg='Converting…';
+        await ffmpeg.exec([
+          '-i','input.webm',
+          '-c:v','libx264','-preset','ultrafast','-crf','18',
+          '-c:a','aac','-b:a','192k',
+          'output.mp4'
+        ]);
+
+        _convertMsg='Reading output…';
+        const outData=await ffmpeg.readFile('output.mp4');
+        const mp4Blob=new Blob([outData.buffer],{type:'video/mp4'});
+        console.log('[REC] MP4 conversion done:',mp4Blob.size,'bytes');
+
+        try{ffmpeg.terminate();}catch(e){}
+        _converting=false; _convertMsg='';
+        _triggerDownload(mp4Blob,'hoopshype-battle.mp4');
+      };
+
+      await Promise.race([convert(),timeout]);
+    }catch(e){
+      console.warn('[REC] ffmpeg conversion failed:',e.message,'— falling back to WebM');
+      _converting=false; _convertMsg='';
+      _triggerDownload(rawBlob,'hoopshype-battle.webm');
+      alert('Saved as .webm (MP4 conversion failed)');
+    }
+  } else {
+    // ffmpeg.wasm not available, download as-is
+    console.warn('[REC] ffmpeg.wasm not loaded, downloading WebM');
+    const ext=mimeType.includes('mp4')?'mp4':'webm';
+    _triggerDownload(rawBlob,`hoopshype-battle.${ext}`);
+  }
 }
 
 function checkAutoStop(now){
