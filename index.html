@@ -1782,18 +1782,14 @@ async function downloadRec(){
   const rawBlob=new Blob(rChunks,{type:mimeType});
   console.log('[REC] Raw blob:',rawBlob.size,'bytes, type',mimeType);
 
-  // If already MP4, download directly
-  if(mimeType.includes('mp4')){
-    _triggerDownload(rawBlob,'hoopshype-battle.mp4');
-    return;
-  }
+  // Always convert via ffmpeg.wasm to ensure aac audio (native mp4 has opus which Twitter rejects)
+  const inputExt=mimeType.includes('mp4')?'mp4':'webm';
+  const inputName=`input.${inputExt}`;
 
-  // Try ffmpeg.wasm conversion from WebM → MP4
   if(typeof FFmpeg!=='undefined'&&typeof FFmpegUtil!=='undefined'){
     _converting=true; _convertMsg='Loading ffmpeg…';
     try{
       const ffmpeg=new FFmpeg.FFmpeg();
-      let loaded=false;
 
       // 60s timeout for the entire conversion
       const timeout=new Promise((_,rej)=>setTimeout(()=>rej(new Error('Conversion timed out after 60s')),60000));
@@ -1801,7 +1797,7 @@ async function downloadRec(){
       const convert=async ()=>{
         ffmpeg.on('progress',({progress})=>{
           const pct=Math.round((progress||0)*100);
-          _convertMsg=`Encoding… ${pct}%`;
+          _convertMsg=`Converting… ${pct}%`;
         });
         ffmpeg.on('log',({message})=>console.log('[ffmpeg]',message));
 
@@ -1810,17 +1806,17 @@ async function downloadRec(){
           coreURL:'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js',
           wasmURL:'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.wasm'
         });
-        loaded=true;
 
         _convertMsg='Writing input…';
         const inputData=new Uint8Array(await rawBlob.arrayBuffer());
-        await ffmpeg.writeFile('input.webm',inputData);
+        await ffmpeg.writeFile(inputName,inputData);
 
         _convertMsg='Converting…';
         await ffmpeg.exec([
-          '-i','input.webm',
-          '-c:v','libx264','-preset','ultrafast','-crf','18',
+          '-i',inputName,
+          '-c:v','copy',
           '-c:a','aac','-b:a','192k',
+          '-movflags','+faststart',
           'output.mp4'
         ]);
 
@@ -1838,14 +1834,14 @@ async function downloadRec(){
     }catch(e){
       console.warn('[REC] ffmpeg conversion failed:',e.message,'— falling back to WebM');
       _converting=false; _convertMsg='';
-      _triggerDownload(rawBlob,'hoopshype-battle.webm');
+      const fallbackBlob=new Blob(rChunks,{type:'video/webm'});
+      _triggerDownload(fallbackBlob,'hoopshype-battle.webm');
       alert('Saved as .webm (MP4 conversion failed)');
     }
   } else {
     // ffmpeg.wasm not available, download as-is
-    console.warn('[REC] ffmpeg.wasm not loaded, downloading WebM');
-    const ext=mimeType.includes('mp4')?'mp4':'webm';
-    _triggerDownload(rawBlob,`hoopshype-battle.${ext}`);
+    console.warn('[REC] ffmpeg.wasm not loaded, downloading raw file');
+    _triggerDownload(rawBlob,`hoopshype-battle.${inputExt}`);
   }
 }
 
