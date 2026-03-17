@@ -2,5 +2,6 @@ name = "nba-battle"
 main = "worker-proxy.js"
 compatibility_date = "2024-01-01"
 
-[site]
-bucket = "."
+[assets]
+directory = "."
+binding = "ASSETS"
