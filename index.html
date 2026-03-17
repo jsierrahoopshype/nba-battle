@@ -312,7 +312,7 @@ function sndVictory(){
 }
 
 // ═══════════════════════════ PLAYER DB ═══════════════════════════
-const BASE = "https://jsierrahoopshype.github.io/nba-headshots/players/headshots/face/";
+const BASE = "https://nba-battle.thejorgesierra.workers.dev/headshot/";
 const NBA_CDN = "https://cdn.nba.com/headshots/nba/latest/260x190/";
 
 let PDATA = [
@@ -599,7 +599,6 @@ function loadImages(roster, cb){
       console.log('[headshot] '+p.name+': repo file failed ('+exactSlug+'), trying NBA CDN');
       const cdnUrl = NBA_CDN + p.id + '.png';
       const img2 = new Image();
-      img2.crossOrigin = 'anonymous';
       img2.onload = ()=>{ IMGS[p.id]=img2; console.log('[headshot] '+p.name+': loaded (CDN fallback)'); pending--; if(pending===0) cb(); };
       img2.onerror = ()=>{ IMGS[p.id]=null; console.log('[headshot] '+p.name+': all sources failed — using initials'); pending--; if(pending===0) cb(); };
       img2.src = cdnUrl;
@@ -650,7 +649,6 @@ const ICON_IMGS = {};
 function loadIconImg(url){
   if(ICON_IMGS[url]) return ICON_IMGS[url];
   const img = new Image();
-  img.crossOrigin = 'anonymous';
   img.onload = ()=>{ ICON_IMGS[url] = img; };
   img.onerror = ()=>{ ICON_IMGS[url] = null; };
   ICON_IMGS[url] = 'loading';
@@ -664,7 +662,6 @@ function loadCustomImg(url, cb){
   if(!url) return;
   if(CUSTOM_IMGS[url] && CUSTOM_IMGS[url]!=='loading') { if(cb) cb(); return; }
   const img = new Image();
-  if(!url.startsWith('data:')) img.crossOrigin = 'anonymous';
   img.onload = ()=>{ CUSTOM_IMGS[url]=img; if(cb) cb(); };
   img.onerror = ()=>{ CUSTOM_IMGS[url]=null; if(cb) cb(); };
   CUSTOM_IMGS[url] = 'loading';
