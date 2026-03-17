@@ -4,8 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>HoopsHype Battle Arena</title>
-<script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.6/dist/umd/ffmpeg.js"></script>
-<script src="https://unpkg.com/@ffmpeg/util@0.12.1/dist/umd/index.js"></script>
+<script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -1786,46 +1785,39 @@ async function downloadRec(){
   const inputExt=mimeType.includes('mp4')?'mp4':'webm';
   const inputName=`input.${inputExt}`;
 
-  if(typeof FFmpeg!=='undefined'&&typeof FFmpegUtil!=='undefined'){
+  if(typeof FFmpeg!=='undefined'&&typeof FFmpeg.createFFmpeg==='function'){
     _converting=true; _convertMsg='Loading ffmpeg…';
     try{
-      const ffmpeg=new FFmpeg.FFmpeg();
+      const {createFFmpeg,fetchFile}=FFmpeg;
+      const ffmpeg=createFFmpeg({log:false});
 
       // 60s timeout for the entire conversion
       const timeout=new Promise((_,rej)=>setTimeout(()=>rej(new Error('Conversion timed out after 60s')),60000));
 
       const convert=async ()=>{
-        ffmpeg.on('progress',({progress})=>{
-          const pct=Math.round((progress||0)*100);
-          _convertMsg=`Converting… ${pct}%`;
-        });
-        ffmpeg.on('log',({message})=>console.log('[ffmpeg]',message));
-
         _convertMsg='Loading ffmpeg core…';
-        await ffmpeg.load({
-          coreURL:'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js',
-          wasmURL:'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.wasm'
-        });
+        await ffmpeg.load();
+        console.log('[REC] ffmpeg loaded OK');
 
         _convertMsg='Writing input…';
-        const inputData=new Uint8Array(await rawBlob.arrayBuffer());
-        await ffmpeg.writeFile(inputName,inputData);
+        ffmpeg.FS('writeFile',inputName,await fetchFile(rawBlob));
 
         _convertMsg='Converting…';
-        await ffmpeg.exec([
+        await ffmpeg.run(
           '-i',inputName,
           '-c:v','copy',
           '-c:a','aac','-b:a','192k',
           '-movflags','+faststart',
           'output.mp4'
-        ]);
+        );
+        console.log('[REC] ffmpeg conversion complete');
 
         _convertMsg='Reading output…';
-        const outData=await ffmpeg.readFile('output.mp4');
+        const outData=ffmpeg.FS('readFile','output.mp4');
         const mp4Blob=new Blob([outData.buffer],{type:'video/mp4'});
-        console.log('[REC] MP4 conversion done:',mp4Blob.size,'bytes');
+        console.log('[REC] MP4 size:',mp4Blob.size,'bytes');
 
-        try{ffmpeg.terminate();}catch(e){}
+        try{ffmpeg.exit();}catch(e){}
         _converting=false; _convertMsg='';
         _triggerDownload(mp4Blob,'hoopshype-battle.mp4');
       };
