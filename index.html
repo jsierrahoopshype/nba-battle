@@ -1802,9 +1802,10 @@ async function downloadRec(){
         _convertMsg='Converting…';
         await ffmpeg.run(
           '-i',inputName,
-          '-c:v','copy',
-          '-c:a','aac','-b:a','192k',
+          '-c:v','libx264','-preset','ultrafast','-crf','23',
+          '-c:a','aac','-b:a','128k',
           '-movflags','+faststart',
+          '-pix_fmt','yuv420p',
           'output.mp4'
         );
         console.log('[REC] ffmpeg conversion complete');
