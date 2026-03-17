@@ -1689,11 +1689,7 @@ async function startRec(){
   if(!canvas.captureStream){alert('Recording not supported in this browser.');return;}
   rChunks=[];
 
-  // Ensure AudioContext is created and resumed BEFORE captureStream — audio clock must start first
-  const actx=getAudioCtx();
-  if(actx.state==='suspended') await actx.resume();
-
-  // Capture canvas video stream at 24fps
+  // Capture canvas video stream at 24fps (video only, no audio)
   let vidStream;
   try{ vidStream=canvas.captureStream(24); console.log('[REC] captureStream(24) OK'); }
   catch(e1){
@@ -1702,26 +1698,13 @@ async function startRec(){
       alert('Recording failed: canvas tainted by cross-origin images. Reload the page and try again.');
       return;
     }
-    try{ vidStream=canvas.captureStream(0); console.log('[REC] captureStream(0) OK (30fps failed)'); }
+    try{ vidStream=canvas.captureStream(0); console.log('[REC] captureStream(0) OK (24fps failed)'); }
     catch(e2){ alert('Canvas capture failed: '+e2.message); return; }
   }
 
   const mime=_pickMime();
-
-  // Combine video + audio into a single MediaStream for perfect sync
-  let rec=null;
-  const audioStream=_audioDest?_audioDest.stream:null;
-  if(audioStream&&audioStream.getAudioTracks().length>0){
-    console.log('[REC] Attempting video+audio recording');
-    const combined=new MediaStream([...vidStream.getVideoTracks(),...audioStream.getAudioTracks()]);
-    rec=_createRecorder(combined,mime);
-  }
+  let rec=_createRecorder(vidStream,mime);
   if(!rec){
-    console.log('[REC] Falling back to video-only recording');
-    rec=_createRecorder(vidStream,mime);
-  }
-  if(!rec){
-    // Last resort: no options at all
     try{rec=new MediaRecorder(vidStream);console.log('[REC] Bare MediaRecorder created');}
     catch(e){alert('MediaRecorder failed: '+e.message);return;}
   }
