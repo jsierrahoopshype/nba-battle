@@ -1276,8 +1276,7 @@ function triggerEnd(){
 let lastT=performance.now();
 
 function loop(now){
-  // Fixed timestep when recording for smooth, consistent video output
-  const dt=rActive ? 1/30 : Math.min((now-lastT)/1000,.05); lastT=now;
+  const dt=Math.min((now-lastT)/1000,.05); lastT=now;
 
   if(phase==='idle'){
     ctx.fillStyle='#02020a'; ctx.fillRect(0,0,W,H);
@@ -1686,16 +1685,17 @@ function _createRecorder(stream, mime){
   }
 }
 
-function startRec(){
+async function startRec(){
   if(!canvas.captureStream){alert('Recording not supported in this browser.');return;}
   rChunks=[];
 
-  // Ensure AudioContext + MediaStreamDestination exist BEFORE capturing
-  getAudioCtx();
+  // Ensure AudioContext is created and resumed BEFORE captureStream — audio clock must start first
+  const actx=getAudioCtx();
+  if(actx.state==='suspended') await actx.resume();
 
-  // Capture canvas video stream at fixed 30fps for stable recording
+  // Capture canvas video stream at 24fps
   let vidStream;
-  try{ vidStream=canvas.captureStream(30); console.log('[REC] captureStream(30) OK'); }
+  try{ vidStream=canvas.captureStream(24); console.log('[REC] captureStream(24) OK'); }
   catch(e1){
     if(e1.name==='SecurityError'||/origin-clean|tainted|security/i.test(e1.message)){
       console.error('[REC] Canvas tainted — this should not happen with CORS-only loading + initials fallback.');
@@ -1734,7 +1734,7 @@ function startRec(){
   // onstop set in stopRec to wait for final flush
 
   try{
-    mRec.start(100);
+    mRec.start(1000);
     rActive=true; rStopT=null;
     console.log('[REC] Recording started, state:',mRec.state);
     document.getElementById('recBtn').textContent='⏹ STOP';
