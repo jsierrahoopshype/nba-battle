@@ -1,7 +1,8 @@
 name = "nba-battle"
 main = "worker-proxy.js"
-compatibility_date = "2024-01-01"
-
+compatibility_date = "2024-03-01"
 [assets]
 directory = "."
 binding = "ASSETS"
+html_handling = "auto-trailing-slash"
+not_found_handling = "single-page-application"
