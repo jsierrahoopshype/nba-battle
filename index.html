@@ -841,7 +841,7 @@ function startGame(){
 
 function initGame(){
   N = CFG.roster.length;
-  CX = W/2; CY = 480; AR = 380;
+  CX = W/2; CY = 560; AR = 320;
   BR = Math.max(22, Math.min(44, Math.floor(AR/(N*1.5))));
   // Clear cached edge normals (depend on CX/CY/AR)
   Object.keys(EDGE_NORMALS).forEach(k=>delete EDGE_NORMALS[k]);
