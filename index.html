@@ -547,7 +547,7 @@ let CFG = {
 // ════════════════════════════ CANVAS ════════════════════════════
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
-const W=540, H=960;
+const W=1080, H=1080;
 canvas.width=W; canvas.height=H;
 
 function resize(){
@@ -841,8 +841,8 @@ function startGame(){
 
 function initGame(){
   N = CFG.roster.length;
-  CX = W/2; CY = H*0.468; AR = 260;
-  BR = Math.max(18, Math.min(36, Math.floor(AR/(N*1.5))));
+  CX = W/2; CY = 480; AR = 380;
+  BR = Math.max(22, Math.min(44, Math.floor(AR/(N*1.5))));
   // Clear cached edge normals (depend on CX/CY/AR)
   Object.keys(EDGE_NORMALS).forEach(k=>delete EDGE_NORMALS[k]);
   eliminated = Array(N).fill(false);
@@ -1284,11 +1284,11 @@ function loop(now){
     g.addColorStop(0,'rgba(15,15,55,.55)');g.addColorStop(1,'rgba(2,2,10,0)');
     ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
     ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.font=`700 ${W*.045}px 'Bebas Neue',sans-serif`;
+    ctx.font=`700 ${W*.023}px 'Bebas Neue',sans-serif`;
     const pulse=0.5+0.5*Math.sin(now/400);
     ctx.fillStyle=`rgba(100,130,220,${0.5+pulse*0.4})`;
     ctx.fillText('Click  ⚔ PLAYERS  to build your roster',CX,H/2);
-    ctx.font=`600 ${W*.028}px 'Barlow Condensed',sans-serif`;
+    ctx.font=`600 ${W*.014}px 'Barlow Condensed',sans-serif`;
     ctx.fillStyle='rgba(80,100,160,.45)';
     ctx.fillText('Add at least 2 players to start',CX,H/2+35);
     drawWatermark();
@@ -1297,7 +1297,7 @@ function loop(now){
 
   if(phase==='loading'){
     ctx.fillStyle='#02020a'; ctx.fillRect(0,0,W,H);
-    ctx.font=`700 ${W*.06}px 'Bebas Neue',sans-serif`;
+    ctx.font=`700 ${W*.03}px 'Bebas Neue',sans-serif`;
     ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.fillStyle='rgba(100,130,200,.7)';
     ctx.fillText('LOADING HEADSHOTS…',CX,H/2);
@@ -1404,14 +1404,14 @@ function drawArenaRing(){
 function drawHUD(now){
   // Title
   ctx.save();ctx.textAlign='center';ctx.textBaseline='top';
-  const lh=W*.09, ty=34;
+  const lh=W*.045, ty=34;
   CFG.title.forEach((line,i)=>{
-    ctx.font=`900 ${W*.085}px 'Bebas Neue',sans-serif`;
+    ctx.font=`900 ${W*.043}px 'Bebas Neue',sans-serif`;
     ctx.fillStyle='#fff';ctx.shadowColor='rgba(80,130,255,.9)';ctx.shadowBlur=22;
     ctx.fillText(line,CX,ty+i*lh);
   });
   ctx.shadowBlur=0;
-  ctx.font=`700 ${W*.04}px 'Barlow Condensed',sans-serif`;
+  ctx.font=`700 ${W*.02}px 'Barlow Condensed',sans-serif`;
   ctx.fillStyle='rgba(165,200,255,.7)';
   ctx.fillText(CFG.subtitle,CX,ty+CFG.title.length*lh+3);
   ctx.restore();
@@ -1421,7 +1421,7 @@ function drawHUD(now){
 }
 
 function drawPanel(){
-  const py=CY+AR+18, ph=108, px=18, pw=W-36;
+  const py=CY+AR+24, ph=140, px=24, pw=W-48;
   ctx.save();
   rrect(px,py,pw,ph,12);
   ctx.fillStyle='rgba(4,4,18,.92)';ctx.fill();
@@ -1435,7 +1435,7 @@ function drawPanel(){
     ctx.save();ctx.globalAlpha=al;
 
     // Thumb
-    const tr=14, ty=py+16;
+    const tr=20, ty=py+24;
     ctx.save();ctx.beginPath();ctx.arc(sx,ty,tr,0,Math.PI*2);ctx.clip();
     const face=getFace(p,tr);
     try{ ctx.drawImage(face,sx-tr,ty-tr,tr*2,tr*2); }
@@ -1445,18 +1445,18 @@ function drawPanel(){
     ctx.strokeStyle=dead?'#1a1a1a':p.color;ctx.lineWidth=1.8;ctx.stroke();
 
     // Energy bar
-    const bw=sw*.76,bh=5,bx=sx-bw/2,bby=py+38;
+    const bw=sw*.76,bh=7,bx=sx-bw/2,bby=py+54;
     if(!dead){
       const hf=b.hp/b.maxHP;
       ctx.fillStyle='rgba(0,0,0,.5)';rrect(bx,bby,bw,bh,2);ctx.fill();
       const hcol=hf>.5?lerpc('#00ff88','#ffcc00',(1-hf)*2):lerpc('#ffcc00','#ff2244',(.5-hf)*2);
       ctx.fillStyle=hcol;rrect(bx,bby,Math.max(2,bw*hf),bh,2);ctx.fill();
-      ctx.font=`600 ${Math.max(8,sw*.16)}px 'Barlow Condensed',sans-serif`;
+      ctx.font=`600 ${Math.max(10,sw*.16)}px 'Barlow Condensed',sans-serif`;
       ctx.textAlign='center';ctx.textBaseline='top';
       ctx.fillStyle='rgba(180,200,255,.55)';
-      ctx.fillText(`${Math.ceil(b.hp)}/${b.maxHP}`,sx,bby+7);
+      ctx.fillText(`${Math.ceil(b.hp)}/${b.maxHP}`,sx,bby+9);
     } else {
-      ctx.font=`700 ${Math.max(9,sw*.18)}px 'Bebas Neue',sans-serif`;
+      ctx.font=`700 ${Math.max(11,sw*.18)}px 'Bebas Neue',sans-serif`;
       ctx.textAlign='center';ctx.textBaseline='top';
       ctx.fillStyle='#330a0a';ctx.fillText('OUT',sx,bby);
     }
@@ -1470,7 +1470,7 @@ function drawFlashFX(now){
   const p=(now-flash.t)/2000;if(p>=1){flash=null;return;}
   const fa=Math.max(0,1-p*1.1), sc=Math.min(1,.12+p*5.5);
   ctx.save();ctx.globalAlpha=fa;
-  ctx.font=`900 ${W*.08*sc}px 'Bebas Neue',sans-serif`;
+  ctx.font=`900 ${W*.04*sc}px 'Bebas Neue',sans-serif`;
   ctx.textAlign='center';ctx.textBaseline='middle';
   ctx.fillStyle=flash.color;ctx.shadowColor=flash.color;ctx.shadowBlur=65;
   ctx.fillText(flash.text,CX,CY);ctx.shadowBlur=0;ctx.restore();
@@ -1479,7 +1479,7 @@ function drawFlashFX(now){
 function drawDmgNums(){
   dmgNums.forEach(d=>{
     ctx.save();ctx.globalAlpha=Math.max(0,d.life);
-    ctx.font=`900 ${W*.05}px 'Bebas Neue',sans-serif`;
+    ctx.font=`900 ${W*.025}px 'Bebas Neue',sans-serif`;
     ctx.textAlign='center';ctx.textBaseline='middle';
     ctx.fillStyle=d.color;ctx.shadowColor=d.color;ctx.shadowBlur=14;
     ctx.fillText('-'+d.val,d.x,d.y);ctx.shadowBlur=0;ctx.restore();
@@ -1507,39 +1507,39 @@ function drawEndScreen(now){
     const t2=(t-.2)/.8, p=CFG.roster[endWinner];
     ctx.globalAlpha=t2;
     const isSeries=seriesOver&&(CFG.seriesFormat||1)>1;
-    const bigR=105, face=getFace(p,bigR);
-    ctx.save();ctx.beginPath();ctx.arc(CX,H/2-85,bigR,0,Math.PI*2);
+    const bigR=120, face=getFace(p,bigR);
+    ctx.save();ctx.beginPath();ctx.arc(CX,H/2-95,bigR,0,Math.PI*2);
     ctx.clip();
-    try{ ctx.drawImage(face,CX-bigR,H/2-85-bigR,bigR*2,bigR*2); }
+    try{ ctx.drawImage(face,CX-bigR,H/2-95-bigR,bigR*2,bigR*2); }
     catch(e){ ctx.fillStyle=p.bg;ctx.fill(); }
     ctx.restore();
-    ctx.beginPath();ctx.arc(CX,H/2-85,bigR,0,Math.PI*2);
+    ctx.beginPath();ctx.arc(CX,H/2-95,bigR,0,Math.PI*2);
     ctx.strokeStyle=p.color;ctx.lineWidth=6;ctx.shadowColor=p.color;ctx.shadowBlur=55;ctx.stroke();ctx.shadowBlur=0;
 
-    ctx.font=`900 ${W*.2}px 'Bebas Neue',sans-serif`;
+    ctx.font=`900 ${W*.1}px 'Bebas Neue',sans-serif`;
     ctx.textAlign='center';ctx.textBaseline='middle';
     ctx.fillStyle=p.color;ctx.shadowColor=p.color;ctx.shadowBlur=90;
-    ctx.fillText(isSeries?'SERIES':'WON!',CX,H/2+(isSeries?35:55));ctx.shadowBlur=0;
+    ctx.fillText(isSeries?'SERIES':'WON!',CX,H/2+(isSeries?45:60));ctx.shadowBlur=0;
 
     if(isSeries){
-      ctx.font=`900 ${W*.16}px 'Bebas Neue',sans-serif`;
+      ctx.font=`900 ${W*.08}px 'Bebas Neue',sans-serif`;
       ctx.fillStyle=p.color;ctx.shadowColor=p.color;ctx.shadowBlur=70;
-      ctx.fillText('WINNER!',CX,H/2+80);ctx.shadowBlur=0;
+      ctx.fillText('WINNER!',CX,H/2+90);ctx.shadowBlur=0;
 
       // Series record
       const pWins=seriesScores[p.id]||0;
       const pLosses=seriesLosses[p.id]||0;
-      ctx.font=`700 ${W*.07}px 'Barlow Condensed',sans-serif`;
+      ctx.font=`700 ${W*.035}px 'Barlow Condensed',sans-serif`;
       ctx.fillStyle='rgba(200,220,255,.85)';
-      ctx.fillText(`${pWins}-${pLosses}`,CX,H/2+118);
+      ctx.fillText(`${pWins}-${pLosses}`,CX,H/2+128);
     }
 
-    ctx.font=`700 ${W*.05}px 'Barlow Condensed',sans-serif`;
+    ctx.font=`700 ${W*.025}px 'Barlow Condensed',sans-serif`;
     ctx.fillStyle='#fff';ctx.shadowBlur=20;ctx.shadowColor=p.color;
-    ctx.fillText(p.name.toUpperCase(),CX,H/2+(isSeries?155:115));ctx.shadowBlur=0;
+    ctx.fillText(p.name.toUpperCase(),CX,H/2+(isSeries?165:125));ctx.shadowBlur=0;
 
-    ctx.font=`600 ${W*.044}px 'Barlow Condensed',sans-serif`;
-    ctx.fillStyle='rgba(175,210,255,.8)';ctx.fillText(CFG.robbed,CX,H/2+(isSeries?195:158));
+    ctx.font=`600 ${W*.022}px 'Barlow Condensed',sans-serif`;
+    ctx.fillStyle='rgba(175,210,255,.8)';ctx.fillText(CFG.robbed,CX,H/2+(isSeries?200:165));
   }
   ctx.restore();
 }
@@ -1587,7 +1587,7 @@ function drawSeriesSplash(now){
     ctx.globalAlpha=t2;
     // Round header
     ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.font=`700 ${W*.045}px 'Barlow Condensed',sans-serif`;
+    ctx.font=`700 ${W*.023}px 'Barlow Condensed',sans-serif`;
     ctx.fillStyle='rgba(130,170,255,.7)';
     ctx.fillText(`ROUND ${seriesRound} OF ${CFG.seriesFormat} COMPLETE`,CX,H/2-120);
 
@@ -1595,17 +1595,17 @@ function drawSeriesSplash(now){
     const sf=CFG.seriesFormat||1;
     const winsNeeded=Math.ceil(sf/2);
     let y=H/2-50;
-    ctx.font=`700 ${W*.055}px 'Barlow Condensed',sans-serif`;
+    ctx.font=`700 ${W*.028}px 'Barlow Condensed',sans-serif`;
     CFG.roster.forEach((p,i)=>{
       const wins=seriesScores[p.id]||0;
       ctx.fillStyle=wins>0?p.color:'rgba(180,200,255,.4)';
       ctx.textAlign='left';
-      ctx.fillText(p.name,CX-180,y);
+      ctx.fillText(p.name,CX-220,y);
       ctx.textAlign='right';
-      ctx.fillText(wins,CX+180,y);
+      ctx.fillText(wins,CX+220,y);
       // Dots
       for(let d=0;d<winsNeeded;d++){
-        const dx=CX+100+d*14;
+        const dx=CX+130+d*16;
         ctx.beginPath();ctx.arc(dx,y,4,0,Math.PI*2);
         if(d<wins){ctx.fillStyle=p.color;ctx.fill();}
         else{ctx.strokeStyle='rgba(180,200,255,.25)';ctx.lineWidth=1;ctx.stroke();}
@@ -1617,7 +1617,7 @@ function drawSeriesSplash(now){
     const remaining=3-(now-seriesSplashT)/1000;
     if(remaining>0){
       ctx.textAlign='center';
-      ctx.font=`600 ${W*.038}px 'Barlow Condensed',sans-serif`;
+      ctx.font=`600 ${W*.019}px 'Barlow Condensed',sans-serif`;
       ctx.fillStyle='rgba(165,200,255,.6)';
       ctx.fillText(`Next round in ${Math.ceil(remaining)}...`,CX,y+30);
     }
@@ -1632,7 +1632,7 @@ function drawIntroFade(now){
 }
 
 function drawWatermark(){
-  ctx.save();ctx.font=`600 ${W*.027}px 'Barlow Condensed',sans-serif`;
+  ctx.save();ctx.font=`600 ${W*.014}px 'Barlow Condensed',sans-serif`;
   ctx.textAlign='center';ctx.textBaseline='bottom';
   ctx.fillStyle='rgba(90,120,170,.38)';
   ctx.fillText(CFG.watermark,CX,H-10);ctx.restore();
@@ -1641,10 +1641,10 @@ function drawWatermark(){
 function drawConvertOverlay(now){
   ctx.fillStyle='rgba(0,0,0,.82)';ctx.fillRect(0,0,W,H);
   ctx.textAlign='center';ctx.textBaseline='middle';
-  ctx.font=`700 ${W*.055}px 'Bebas Neue',sans-serif`;
+  ctx.font=`700 ${W*.028}px 'Bebas Neue',sans-serif`;
   ctx.fillStyle='rgba(200,220,255,.9)';
   ctx.fillText('Converting to MP4…',CX,H/2-20);
-  ctx.font=`600 ${W*.03}px 'Barlow Condensed',sans-serif`;
+  ctx.font=`600 ${W*.015}px 'Barlow Condensed',sans-serif`;
   ctx.fillStyle='rgba(140,170,220,.6)';
   ctx.fillText(_convertMsg||'please wait',CX,H/2+20);
   // Animated dots
@@ -2212,7 +2212,7 @@ if(CFG.roster.length>=2){
   startGame();
 } else {
   phase='idle';
-  CX=W/2; CY=H*0.468; AR=260;
+  CX=W/2; CY=480; AR=380;
 }
 lastT=performance.now();
 requestAnimationFrame(loop);
