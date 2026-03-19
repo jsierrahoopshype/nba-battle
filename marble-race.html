@@ -63,93 +63,79 @@ const LEVEL_H = FINISH_Y + 500;
 
 function buildObstacles(){
   const obs = [];
+  const LW = W*0.55; // max platform width = 55% of canvas
 
-  // Section 1: Funnel entry (y=200-400)
-  obs.push({type:'slope', x:40, y:280, w:200, angle:0.35});
-  obs.push({type:'slope', x:500, y:280, w:200, angle:-0.35});
-  obs.push({type:'slope', x:140, y:400, w:120, angle:0.5});
-  obs.push({type:'slope', x:400, y:400, w:120, angle:-0.5});
+  // Section 1: Funnel entry (y=200-400) — 80px+ gap at bottom
+  obs.push({type:'slope', x:20, y:280, w:180, angle:0.35});
+  obs.push({type:'slope', x:520, y:280, w:180, angle:-0.35});
+  obs.push({type:'slope', x:100, y:400, w:130, angle:0.45});
+  obs.push({type:'slope', x:440, y:400, w:130, angle:-0.45});
 
-  // Section 2: Peg field (y=550-900)
+  // Section 2: Angled bumper field (y=550-950) — staggered, guiding downward
   for(let row=0; row<5; row++){
-    const cols = row%2===0 ? 5 : 4;
-    const ox = row%2===0 ? 45 : 100;
-    for(let c=0; c<cols; c++){
-      obs.push({type:'peg', x:ox+c*115, y:550+row*85});
-    }
+    const leftSide = row%2===0;
+    const baseX = leftSide ? 60 : 300;
+    obs.push({type:'slope', x:baseX, y:550+row*90, w:180, angle:leftSide?0.3:-0.3});
   }
 
-  // Section 3: Zigzag channels (y=1050-1500)
-  obs.push({type:'rect', x:0, y:1050, w:360, h:18});
-  obs.push({type:'rect', x:180, y:1200, w:360, h:18});
-  obs.push({type:'rect', x:0, y:1350, w:360, h:18});
-  obs.push({type:'rect', x:180, y:1500, w:360, h:18});
+  // Section 3: Zigzag shelves (y=1100-1550) — alternating L/R, max 55% width
+  obs.push({type:'rect', x:0, y:1100, w:LW, h:18});
+  obs.push({type:'rect', x:W-LW, y:1250, w:LW, h:18});
+  obs.push({type:'rect', x:0, y:1400, w:LW, h:18});
+  obs.push({type:'rect', x:W-LW, y:1550, w:LW, h:18});
 
-  // Section 4: Narrow gates (y=1650-1900)
-  obs.push({type:'rect', x:0, y:1650, w:200, h:18});
-  obs.push({type:'rect', x:290, y:1650, w:250, h:18});
-  obs.push({type:'rect', x:0, y:1800, w:250, h:18});
-  obs.push({type:'rect', x:340, y:1800, w:200, h:18});
+  // Section 4: Narrow gates (y=1700-1900) — each side has a gap
+  obs.push({type:'rect', x:0, y:1700, w:190, h:18});
+  obs.push({type:'rect', x:W-LW, y:1850, w:LW, h:18});
 
-  // Section 5: Rotating blockers (y=2000-2400)
-  obs.push({type:'spinner', x:270, y:2050, w:220, speed:0.02});
-  obs.push({type:'spinner', x:270, y:2300, w:220, speed:-0.025});
+  // Section 5: Wide funnel (y=2000-2200) — 100px gap at bottom
+  obs.push({type:'slope', x:20, y:2000, w:190, angle:0.4});
+  obs.push({type:'slope', x:520, y:2000, w:190, angle:-0.4});
+  obs.push({type:'slope', x:100, y:2200, w:130, angle:0.5});
+  obs.push({type:'slope', x:440, y:2200, w:130, angle:-0.5});
 
-  // Section 6: Staircase (y=2550-3100)
+  // Section 6: Staircase (y=2400-2900) — alternating L/R, 55% width
   for(let i=0; i<6; i++){
     const leftSide = i%2===0;
-    obs.push({type:'rect', x:leftSide?0:220, y:2550+i*100, w:320, h:16});
+    obs.push({type:'rect', x:leftSide?0:(W-LW), y:2400+i*100, w:LW, h:16});
   }
 
-  // Section 7: Dense peg maze (y=3300-3700)
+  // Section 7: Angled bumper maze (y=3100-3600) — offset rows guide balls through
+  for(let row=0; row<6; row++){
+    const leftSide = row%2===0;
+    const bx = leftSide ? 40+row*20 : 280+row*10;
+    obs.push({type:'slope', x:bx, y:3100+row*90, w:160, angle:leftSide?0.35:-0.35});
+  }
+
+  // Section 8: Funnel squeeze (y=3800-4100) — 90px gap at bottom
+  obs.push({type:'slope', x:20, y:3800, w:190, angle:0.4});
+  obs.push({type:'slope', x:520, y:3800, w:190, angle:-0.4});
+  obs.push({type:'slope', x:110, y:4000, w:120, angle:0.5});
+  obs.push({type:'slope', x:430, y:4000, w:120, angle:-0.5});
+
+  // Section 9: Bouncer bumpers (y=4200-4800) — large angled bumpers
+  obs.push({type:'slope', x:40, y:4250, w:200, angle:0.3});
+  obs.push({type:'slope', x:500, y:4450, w:200, angle:-0.3});
+  obs.push({type:'slope', x:40, y:4650, w:200, angle:0.3});
+  obs.push({type:'slope', x:500, y:4850, w:200, angle:-0.3});
+
+  // Section 10: Final gauntlet (y=5000-5600) — alternating shelves
+  obs.push({type:'rect', x:0, y:5050, w:LW, h:16});
+  obs.push({type:'rect', x:W-LW, y:5200, w:LW, h:16});
+  obs.push({type:'rect', x:0, y:5350, w:LW, h:16});
+  obs.push({type:'rect', x:W-LW, y:5500, w:LW, h:16});
+
+  // Scattered angled bumpers in final stretch (y=5700-6300)
   for(let row=0; row<5; row++){
-    const cols = row%2===0 ? 6 : 5;
-    const ox = row%2===0 ? 40 : 80;
-    for(let c=0; c<cols; c++){
-      obs.push({type:'peg', x:ox+c*95, y:3300+row*80});
-    }
+    const leftSide = row%2===0;
+    obs.push({type:'slope', x:leftSide?80:320, y:5700+row*120, w:160, angle:leftSide?0.35:-0.35});
   }
 
-  // Section 8: Funnel squeeze (y=3900-4300)
-  obs.push({type:'slope', x:20, y:3900, w:200, angle:0.45});
-  obs.push({type:'slope', x:520, y:3900, w:200, angle:-0.45});
-  obs.push({type:'slope', x:80, y:4100, w:160, angle:0.55});
-  obs.push({type:'slope', x:460, y:4100, w:160, angle:-0.55});
-  obs.push({type:'rect', x:0, y:4300, w:195, h:18});
-  obs.push({type:'rect', x:345, y:4300, w:195, h:18});
-
-  // Section 9: Bouncer field (y=4500-5200)
-  obs.push({type:'peg', x:135, y:4500, r:25});
-  obs.push({type:'peg', x:405, y:4500, r:25});
-  obs.push({type:'peg', x:270, y:4650, r:25});
-  obs.push({type:'peg', x:135, y:4800, r:25});
-  obs.push({type:'peg', x:405, y:4800, r:25});
-  obs.push({type:'peg', x:270, y:4950, r:25});
-  obs.push({type:'spinner', x:270, y:5100, w:260, speed:0.018});
-
-  // Section 10: Final gauntlet (y=5300-7000)
-  obs.push({type:'rect', x:0, y:5350, w:300, h:16});
-  obs.push({type:'rect', x:240, y:5500, w:300, h:16});
-  obs.push({type:'rect', x:0, y:5650, w:300, h:16});
-  obs.push({type:'rect', x:240, y:5800, w:300, h:16});
-
-  // Scattered pegs in final stretch
-  for(let row=0; row<5; row++){
-    const cols = row%2===0 ? 5 : 4;
-    const ox = row%2===0 ? 55 : 100;
-    for(let c=0; c<cols; c++){
-      obs.push({type:'peg', x:ox+c*110, y:6050+row*80});
-    }
-  }
-
-  // Final funnel
-  obs.push({type:'slope', x:20, y:6550, w:180, angle:0.4});
-  obs.push({type:'slope', x:500, y:6550, w:180, angle:-0.4});
-  obs.push({type:'slope', x:80, y:6750, w:140, angle:0.5});
-  obs.push({type:'slope', x:460, y:6750, w:140, angle:-0.5});
-
-  // Last spinner before finish
-  obs.push({type:'spinner', x:270, y:7000, w:200, speed:-0.022});
+  // Final funnel (y=6550-6750) — 100px gap
+  obs.push({type:'slope', x:20, y:6550, w:170, angle:0.4});
+  obs.push({type:'slope', x:520, y:6550, w:170, angle:-0.4});
+  obs.push({type:'slope', x:100, y:6750, w:130, angle:0.5});
+  obs.push({type:'slope', x:440, y:6750, w:130, angle:-0.5});
 
   // Walls
   obs.push({type:'wall', x:-20, y:LEVEL_H/2, w:40, h:LEVEL_H});
@@ -163,14 +149,13 @@ function buildObstacles(){
 
 // ════════════════════════════ MATTER.JS SETUP ════════════════════════════
 const {Engine, World, Bodies, Body, Composite, Events, Constraint} = Matter;
-let engine, world, tokenBodies=[], obsBodies=[], spinners=[];
+let engine, world, tokenBodies=[], obsBodies=[];
 
 function createPhysics(){
   engine = Engine.create({gravity:{x:0, y:CFG.gravity}});
   world = engine.world;
   tokenBodies = [];
   obsBodies = [];
-  spinners = [];
 
   // Tokens
   const t1 = Bodies.circle(200, 80, 22, {
@@ -206,11 +191,6 @@ function createPhysics(){
       }
       case 'wall': {
         body = Bodies.rectangle(o.x, o.y, o.w, o.h, {isStatic:true, label:'wall'});
-        break;
-      }
-      case 'spinner': {
-        body = Bodies.rectangle(o.x, o.y, o.w, 14, {isStatic:true, restitution:0.4, label:'spinner'});
-        spinners.push({body, speed:o.speed});
         break;
       }
     }
@@ -274,24 +254,11 @@ for(let i=0; i<20; i++){
 let camY = 0, winner = -1, winnerT = 0, phase = 'race';
 let autoRestartT = 0;
 
-// Stuck detection per token
-let stuckTrack = [
-  {lastX:0, lastY:0, lastCheckT:0},
-  {lastX:0, lastY:0, lastCheckT:0}
-];
-// Spinner contact tracking per token
-let spinnerContact = [0, 0]; // timestamp of first contact, 0 = not touching
-
 function restartRace(){
   _seed = CFG.seed;
   particles = [];
   winner = -1; phase = 'race';
   camY = 0;
-  stuckTrack = [
-    {lastX:0, lastY:0, lastCheckT:0},
-    {lastX:0, lastY:0, lastCheckT:0}
-  ];
-  spinnerContact = [0, 0];
 
   // Clear physics
   if(engine) Engine.clear(engine);
@@ -315,7 +282,7 @@ function setupCollisionEvents(){
         tokenBody = pair.bodyA.label==='p2' ? pair.bodyA : pair.bodyB;
         color = CFG.p2.color;
       }
-      if(tokenBody && (labels.includes('peg')||labels.includes('rect')||labels.includes('slope')||labels.includes('spinner'))){
+      if(tokenBody && (labels.includes('peg')||labels.includes('rect')||labels.includes('slope'))){
         spawnHitParticles(tokenBody.position.x, tokenBody.position.y, color);
       }
     });
@@ -378,9 +345,9 @@ function drawObstacles(){
         ctx.lineTo(verts[i].x-pos.x, verts[i].y-pos.y);
       }
       ctx.closePath();
-      ctx.fillStyle = b.label==='spinner' ? '#2a2a4e' : '#1a1a2e';
+      ctx.fillStyle = '#1a1a2e';
       ctx.fill();
-      ctx.strokeStyle = b.label==='spinner' ? 'rgba(255,160,60,.4)' : 'rgba(100,140,255,.15)';
+      ctx.strokeStyle = 'rgba(100,140,255,.15)';
       ctx.lineWidth = 1; ctx.stroke();
     }
     ctx.restore();
@@ -580,60 +547,11 @@ function loop(now){
   if(phase==='race'){
     Engine.update(engine, dt*1000);
 
-    // Update spinners
-    spinners.forEach(s=>{
-      Body.setAngle(s.body, s.body.angle + s.speed);
-    });
-
-    // Unstuck system + downward nudge
+    // Downward nudge — keep tokens trending downward
     for(let i=0; i<2; i++){
       const tb = tokenBodies[i];
-      const vel = tb.velocity;
-
-      // Minimum downward velocity nudge
-      if(vel.y < 2){
-        Body.applyForce(tb, tb.position, {x:0, y:0.002});
-      }
-
-      // Position-based stuck detection every 2 seconds
-      const st = stuckTrack[i];
-      if(now - st.lastCheckT > 2000){
-        if(st.lastCheckT > 0){
-          const dx = tb.position.x - st.lastX;
-          const dy = tb.position.y - st.lastY;
-          const dist = Math.sqrt(dx*dx + dy*dy);
-          if(dist < 20){
-            // Stuck — apply escape kick
-            Body.setPosition(tb, {x:tb.position.x, y:tb.position.y - 30});
-            Body.setVelocity(tb, {x:(Math.random()-0.5)*30, y:-(5+Math.random()*15)});
-          }
-        }
-        st.lastX = tb.position.x;
-        st.lastY = tb.position.y;
-        st.lastCheckT = now;
-      }
-
-      // Spinner contact stuck detection
-      let touchingSpinner = false;
-      const pairs = engine.pairs.list;
-      for(let j=0; j<pairs.length; j++){
-        const pair = pairs[j];
-        if(!pair.isActive) continue;
-        const aIsToken = pair.bodyA === tb;
-        const bIsToken = pair.bodyB === tb;
-        if(!aIsToken && !bIsToken) continue;
-        const other = aIsToken ? pair.bodyB : pair.bodyA;
-        if(other.label === 'spinner'){ touchingSpinner = true; break; }
-      }
-      if(touchingSpinner){
-        if(spinnerContact[i] === 0) spinnerContact[i] = now;
-        else if(now - spinnerContact[i] > 1000){
-          Body.setPosition(tb, {x:tb.position.x, y:tb.position.y - 30});
-          Body.setVelocity(tb, {x:(Math.random()-0.5)*30, y:-(5+Math.random()*15)});
-          spinnerContact[i] = 0;
-        }
-      } else {
-        spinnerContact[i] = 0;
+      if(tb.velocity.y < 2){
+        Body.applyForce(tb, tb.position, {x:0, y:0.004});
       }
     }
 
