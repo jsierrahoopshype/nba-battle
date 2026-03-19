@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Marble Race</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;background:#0a0a1a;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;font-family:'Segoe UI',system-ui,sans-serif}
+canvas{border-radius:6px;cursor:default}
+#ui{position:fixed;bottom:12px;display:flex;gap:10px;z-index:10}
+#ui button{background:rgba(20,20,50,.85);color:#ccd;border:1px solid rgba(100,140,255,.25);border-radius:8px;padding:8px 18px;font:700 14px system-ui;cursor:pointer;backdrop-filter:blur(6px)}
+#ui button:hover{background:rgba(40,40,80,.95);border-color:rgba(100,140,255,.5)}
+#recDot{display:none;position:fixed;top:14px;right:14px;width:14px;height:14px;background:#f33;border-radius:50%;z-index:20;animation:blink 1s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="ui">
+<button onclick="restartRace()">⟳ RESTART</button>
+<button id="recBtn" onclick="toggleRec()">⏺ REC</button>
+</div>
+<div id="recDot"></div>
+<script>
+// ════════════════════════════ CONFIGURATION ════════════════════════════
+const CFG = {
+  p1: {
+    name: 'LeBron James',
+    img: 'https://cdn.nba.com/headshots/nba/latest/260x190/2544.png',
+    color: '#552583'
+  },
+  p2: {
+    name: 'Stephen Curry',
+    img: 'https://cdn.nba.com/headshots/nba/latest/260x190/201939.png',
+    color: '#1D428A'
+  },
+  gravity: 1.2,
+  seed: 42
+};
+
+// ════════════════════════════ CANVAS SETUP ════════════════════════════
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const W = 540, H = 960;
+canvas.width = W; canvas.height = H;
+
+function resize(){
+  const s = Math.min(window.innerWidth/W, (window.innerHeight-60)/H);
+  canvas.style.width = s*W+'px'; canvas.style.height = s*H+'px';
+}
+resize(); window.addEventListener('resize', resize);
+
+// ════════════════════════════ SEEDED RNG ════════════════════════════
+let _seed = CFG.seed;
+function rng(){ _seed=((_seed*1103515245+12345)&0x7fffffff); return _seed/0x7fffffff; }
+function rngRange(a,b){ return a+rng()*(b-a); }
+
+// ════════════════════════════ LEVEL DESIGN ════════════════════════════
+const FINISH_Y = 7500;
+const LEVEL_H = FINISH_Y + 500;
+
+function buildObstacles(){
+  const obs = [];
+
+  // Section 1: Funnel entry (y=200-400)
+  obs.push({type:'slope', x:40, y:280, w:200, angle:0.35});
+  obs.push({type:'slope', x:500, y:280, w:200, angle:-0.35});
+  obs.push({type:'slope', x:140, y:400, w:120, angle:0.5});
+  obs.push({type:'slope', x:400, y:400, w:120, angle:-0.5});
+
+  // Section 2: Peg field (y=550-900)
+  for(let row=0; row<5; row++){
+    const cols = row%2===0 ? 6 : 5;
+    const ox = row%2===0 ? 45 : 90;
+    for(let c=0; c<cols; c++){
+      obs.push({type:'peg', x:ox+c*90, y:550+row*70});
+    }
+  }
+
+  // Section 3: Zigzag channels (y=1050-1500)
+  obs.push({type:'rect', x:0, y:1050, w:360, h:18});
+  obs.push({type:'rect', x:180, y:1200, w:360, h:18});
+  obs.push({type:'rect', x:0, y:1350, w:360, h:18});
+  obs.push({type:'rect', x:180, y:1500, w:360, h:18});
+
+  // Section 4: Narrow gates (y=1650-1900)
+  obs.push({type:'rect', x:0, y:1650, w:200, h:18});
+  obs.push({type:'rect', x:290, y:1650, w:250, h:18});
+  obs.push({type:'rect', x:0, y:1800, w:250, h:18});
+  obs.push({type:'rect', x:340, y:1800, w:200, h:18});
+
+  // Section 5: Rotating blockers (y=2000-2400)
+  obs.push({type:'spinner', x:270, y:2050, w:220, speed:0.02});
+  obs.push({type:'spinner', x:270, y:2300, w:220, speed:-0.025});
+
+  // Section 6: Staircase (y=2550-3100)
+  for(let i=0; i<6; i++){
+    const leftSide = i%2===0;
+    obs.push({type:'rect', x:leftSide?0:220, y:2550+i*100, w:320, h:16});
+  }
+
+  // Section 7: Dense peg maze (y=3300-3700)
+  for(let row=0; row<6; row++){
+    const cols = row%2===0 ? 8 : 7;
+    const ox = row%2===0 ? 30 : 65;
+    for(let c=0; c<cols; c++){
+      obs.push({type:'peg', x:ox+c*70, y:3300+row*65});
+    }
+  }
+
+  // Section 8: Funnel squeeze (y=3900-4300)
+  obs.push({type:'slope', x:20, y:3900, w:200, angle:0.45});
+  obs.push({type:'slope', x:520, y:3900, w:200, angle:-0.45});
+  obs.push({type:'slope', x:80, y:4100, w:160, angle:0.55});
+  obs.push({type:'slope', x:460, y:4100, w:160, angle:-0.55});
+  obs.push({type:'rect', x:0, y:4300, w:195, h:18});
+  obs.push({type:'rect', x:345, y:4300, w:195, h:18});
+
+  // Section 9: Bouncer field (y=4500-5200)
+  obs.push({type:'peg', x:135, y:4500, r:25});
+  obs.push({type:'peg', x:405, y:4500, r:25});
+  obs.push({type:'peg', x:270, y:4650, r:25});
+  obs.push({type:'peg', x:135, y:4800, r:25});
+  obs.push({type:'peg', x:405, y:4800, r:25});
+  obs.push({type:'peg', x:270, y:4950, r:25});
+  obs.push({type:'spinner', x:270, y:5100, w:260, speed:0.018});
+
+  // Section 10: Final gauntlet (y=5300-7000)
+  obs.push({type:'rect', x:0, y:5350, w:300, h:16});
+  obs.push({type:'rect', x:240, y:5500, w:300, h:16});
+  obs.push({type:'rect', x:0, y:5650, w:300, h:16});
+  obs.push({type:'rect', x:240, y:5800, w:300, h:16});
+
+  // Scattered pegs in final stretch
+  for(let row=0; row<5; row++){
+    const cols = row%2===0 ? 5 : 4;
+    const ox = row%2===0 ? 55 : 100;
+    for(let c=0; c<cols; c++){
+      obs.push({type:'peg', x:ox+c*110, y:6050+row*80});
+    }
+  }
+
+  // Final funnel
+  obs.push({type:'slope', x:20, y:6550, w:180, angle:0.4});
+  obs.push({type:'slope', x:500, y:6550, w:180, angle:-0.4});
+  obs.push({type:'slope', x:80, y:6750, w:140, angle:0.5});
+  obs.push({type:'slope', x:460, y:6750, w:140, angle:-0.5});
+
+  // Last spinner before finish
+  obs.push({type:'spinner', x:270, y:7000, w:200, speed:-0.022});
+
+  // Walls
+  obs.push({type:'wall', x:-20, y:LEVEL_H/2, w:40, h:LEVEL_H});
+  obs.push({type:'wall', x:W+20, y:LEVEL_H/2, w:40, h:LEVEL_H});
+
+  // Floor below finish
+  obs.push({type:'rect', x:0, y:FINISH_Y+200, w:W, h:40});
+
+  return obs;
+}
+
+// ════════════════════════════ MATTER.JS SETUP ════════════════════════════
+const {Engine, World, Bodies, Body, Composite, Events, Constraint} = Matter;
+let engine, world, tokenBodies=[], obsBodies=[], spinners=[];
+
+function createPhysics(){
+  engine = Engine.create({gravity:{x:0, y:CFG.gravity}});
+  world = engine.world;
+  tokenBodies = [];
+  obsBodies = [];
+  spinners = [];
+
+  // Tokens
+  const t1 = Bodies.circle(200, 80, 22, {
+    restitution:0.5, friction:0.08, density:0.0018, label:'p1',
+    collisionFilter:{group:-1}
+  });
+  const t2 = Bodies.circle(340, 80, 22, {
+    restitution:0.5, friction:0.08, density:0.0018, label:'p2',
+    collisionFilter:{group:-2}
+  });
+  tokenBodies = [t1, t2];
+  World.add(world, [t1, t2]);
+
+  // Build obstacles
+  const obstacles = buildObstacles();
+  obstacles.forEach(o => {
+    let body;
+    switch(o.type){
+      case 'peg': {
+        const r = o.r || 12;
+        body = Bodies.circle(o.x, o.y, r, {isStatic:true, restitution:0.8, label:'peg', _pegR:r});
+        break;
+      }
+      case 'rect': {
+        body = Bodies.rectangle(o.x+o.w/2, o.y+o.h/2, o.w, o.h, {isStatic:true, restitution:0.3, label:'rect'});
+        break;
+      }
+      case 'slope': {
+        body = Bodies.rectangle(o.x + (o.angle>0?o.w/2:-o.w/2), o.y, o.w, 16, {
+          isStatic:true, restitution:0.3, angle:o.angle, label:'slope'
+        });
+        break;
+      }
+      case 'wall': {
+        body = Bodies.rectangle(o.x, o.y, o.w, o.h, {isStatic:true, label:'wall'});
+        break;
+      }
+      case 'spinner': {
+        body = Bodies.rectangle(o.x, o.y, o.w, 14, {isStatic:true, restitution:0.4, label:'spinner'});
+        spinners.push({body, speed:o.speed});
+        break;
+      }
+    }
+    if(body){
+      obsBodies.push(body);
+      World.add(world, body);
+    }
+  });
+}
+
+// ════════════════════════════ IMAGES ════════════════════════════
+const imgs = {};
+let imgsLoaded = 0;
+
+function loadImg(key, url){
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = ()=>{ imgs[key] = img; imgsLoaded++; };
+  img.onerror = ()=>{ imgs[key] = null; imgsLoaded++; };
+  img.src = url;
+}
+loadImg('p1', CFG.p1.img);
+loadImg('p2', CFG.p2.img);
+
+// ════════════════════════════ PARTICLES ════════════════════════════
+let particles = [];
+
+function spawnHitParticles(x, y, color){
+  for(let i=0; i<6; i++){
+    const a = Math.random()*Math.PI*2, spd = 1+Math.random()*3;
+    particles.push({
+      x, y, vx:Math.cos(a)*spd, vy:Math.sin(a)*spd-1,
+      size:2+Math.random()*3, color, life:1
+    });
+  }
+}
+
+function updateParticles(dt){
+  for(let i=particles.length-1; i>=0; i--){
+    const p = particles[i];
+    p.x += p.vx; p.y += p.vy; p.vy += 0.08;
+    p.life -= dt*2.5;
+    if(p.life<=0) particles.splice(i,1);
+  }
+}
+
+// ════════════════════════════ CLOUDS ════════════════════════════
+const clouds = [];
+for(let i=0; i<20; i++){
+  clouds.push({
+    x: Math.random()*W,
+    y: Math.random()*LEVEL_H,
+    w: 80+Math.random()*160,
+    h: 30+Math.random()*50,
+    speed: 0.15+Math.random()*0.3,
+    alpha: 0.06+Math.random()*0.1
+  });
+}
+
+// ════════════════════════════ GAME STATE ════════════════════════════
+let camY = 0, winner = -1, winnerT = 0, phase = 'race';
+let autoRestartT = 0;
+
+function restartRace(){
+  _seed = CFG.seed;
+  particles = [];
+  winner = -1; phase = 'race';
+  camY = 0;
+
+  // Clear physics
+  if(engine) Engine.clear(engine);
+  createPhysics();
+
+  // Nudge tokens slightly differently each restart
+  Body.setVelocity(tokenBodies[0], {x:rngRange(-0.5,0.5), y:0});
+  Body.setVelocity(tokenBodies[1], {x:rngRange(-0.5,0.5), y:0});
+}
+
+// ════════════════════════════ COLLISION EVENTS ════════════════════════════
+function setupCollisionEvents(){
+  Events.on(engine, 'collisionStart', (e)=>{
+    e.pairs.forEach(pair=>{
+      const labels = [pair.bodyA.label, pair.bodyB.label];
+      let tokenBody = null, color = '';
+      if(labels.includes('p1')){
+        tokenBody = pair.bodyA.label==='p1' ? pair.bodyA : pair.bodyB;
+        color = CFG.p1.color;
+      } else if(labels.includes('p2')){
+        tokenBody = pair.bodyA.label==='p2' ? pair.bodyA : pair.bodyB;
+        color = CFG.p2.color;
+      }
+      if(tokenBody && (labels.includes('peg')||labels.includes('rect')||labels.includes('slope')||labels.includes('spinner'))){
+        spawnHitParticles(tokenBody.position.x, tokenBody.position.y, color);
+      }
+    });
+  });
+}
+
+// ════════════════════════════ DRAWING ════════════════════════════
+function drawBackground(){
+  // Sky gradient
+  const gy = -camY*0.05;
+  const grad = ctx.createLinearGradient(0, gy, 0, gy+H*1.5);
+  grad.addColorStop(0, '#87CEEB');
+  grad.addColorStop(0.5, '#B0E0FF');
+  grad.addColorStop(1, '#E8F4FF');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Clouds parallax
+  ctx.save();
+  clouds.forEach(c=>{
+    const cy = (c.y - camY*0.3) % (H+c.h*2) - c.h;
+    ctx.globalAlpha = c.alpha;
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.ellipse(c.x, cy, c.w/2, c.h/2, 0, 0, Math.PI*2);
+    ctx.fill();
+  });
+  ctx.restore();
+}
+
+function drawObstacles(){
+  ctx.save();
+  ctx.translate(0, -camY);
+
+  obsBodies.forEach(b=>{
+    if(b.label==='wall') return;
+    const pos = b.position;
+
+    // Skip if off-screen
+    if(pos.y < camY-100 || pos.y > camY+H+100) return;
+
+    ctx.save();
+    ctx.translate(pos.x, pos.y);
+    ctx.rotate(b.angle);
+
+    if(b.label==='peg'){
+      const r = b._pegR || 12;
+      const pg = ctx.createRadialGradient(0,0,0,0,0,r);
+      pg.addColorStop(0,'#3a3a5e');pg.addColorStop(1,'#1a1a2e');
+      ctx.beginPath(); ctx.arc(0,0,r,0,Math.PI*2);
+      ctx.fillStyle = pg; ctx.fill();
+      ctx.strokeStyle = 'rgba(100,140,255,.3)';
+      ctx.lineWidth = 1.5; ctx.stroke();
+    } else {
+      // Rectangle-based obstacles
+      const verts = b.vertices;
+      ctx.beginPath();
+      ctx.moveTo(verts[0].x-pos.x, verts[0].y-pos.y);
+      for(let i=1; i<verts.length; i++){
+        ctx.lineTo(verts[i].x-pos.x, verts[i].y-pos.y);
+      }
+      ctx.closePath();
+      ctx.fillStyle = b.label==='spinner' ? '#2a2a4e' : '#1a1a2e';
+      ctx.fill();
+      ctx.strokeStyle = b.label==='spinner' ? 'rgba(255,160,60,.4)' : 'rgba(100,140,255,.15)';
+      ctx.lineWidth = 1; ctx.stroke();
+    }
+    ctx.restore();
+  });
+
+  // Finish line
+  const fy = FINISH_Y - camY;
+  if(fy > -50 && fy < H+50){
+    const checkSize = 20;
+    for(let cx=0; cx<W; cx+=checkSize){
+      for(let r=0; r<2; r++){
+        const isBlack = (Math.floor(cx/checkSize)+r)%2===0;
+        ctx.fillStyle = isBlack ? '#1a1a2e' : '#fff';
+        ctx.fillRect(cx, FINISH_Y+r*checkSize-camY, checkSize, checkSize);
+      }
+    }
+    ctx.fillStyle = '#ff3366';
+    ctx.font = '700 22px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText('🏁 FINISH LINE 🏁', W/2, FINISH_Y-12-camY);
+  }
+
+  ctx.restore();
+}
+
+function drawToken(body, cfg, idx){
+  const px = body.position.x;
+  const py = body.position.y - camY;
+
+  // Skip if off-screen
+  if(py < -60 || py > H+60) return;
+
+  const r = 22;
+
+  // Glow
+  ctx.save();
+  ctx.globalAlpha = 0.3;
+  ctx.beginPath(); ctx.arc(px, py, r*2, 0, Math.PI*2);
+  const gg = ctx.createRadialGradient(px,py,0,px,py,r*2);
+  gg.addColorStop(0, cfg.color); gg.addColorStop(1, 'transparent');
+  ctx.fillStyle = gg; ctx.fill();
+  ctx.restore();
+
+  // Token circle
+  ctx.save();
+  ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI*2); ctx.clip();
+  if(imgs['p'+(idx+1)]){
+    ctx.drawImage(imgs['p'+(idx+1)], px-r, py-r, r*2, r*2);
+  } else {
+    ctx.fillStyle = cfg.color;
+    ctx.fillRect(px-r, py-r, r*2, r*2);
+    ctx.fillStyle = '#fff';
+    ctx.font = '700 18px system-ui';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(cfg.name[0], px, py);
+  }
+  ctx.restore();
+
+  // Ring
+  ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI*2);
+  ctx.strokeStyle = cfg.color; ctx.lineWidth = 3;
+  ctx.shadowColor = cfg.color; ctx.shadowBlur = 10;
+  ctx.stroke(); ctx.shadowBlur = 0;
+
+  // Name label
+  ctx.font = '600 13px system-ui';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  ctx.fillStyle = 'rgba(0,0,0,.6)';
+  ctx.fillText(cfg.name, px+1, py+r+7);
+  ctx.fillStyle = '#fff';
+  ctx.fillText(cfg.name, px, py+r+6);
+}
+
+function drawParticlesOnScreen(){
+  ctx.save();
+  particles.forEach(p=>{
+    ctx.globalAlpha = Math.max(0, p.life);
+    ctx.beginPath(); ctx.arc(p.x, p.y-camY, p.size, 0, Math.PI*2);
+    ctx.fillStyle = p.color; ctx.fill();
+  });
+  ctx.restore();
+}
+
+function drawWinnerScreen(){
+  if(winner<0) return;
+  const t = Math.min(1, (performance.now()-winnerT)/800);
+  const cfg = winner===0 ? CFG.p1 : CFG.p2;
+
+  ctx.save();
+  ctx.fillStyle = `rgba(0,0,0,${0.7*t})`;
+  ctx.fillRect(0,0,W,H);
+
+  if(t>0.15){
+    const t2 = Math.min(1,(t-0.15)/0.85);
+    ctx.globalAlpha = t2;
+
+    // Winner face
+    const bigR = 80;
+    ctx.save();
+    ctx.beginPath(); ctx.arc(W/2, H/2-80, bigR, 0, Math.PI*2); ctx.clip();
+    const key = winner===0?'p1':'p2';
+    if(imgs[key]){
+      ctx.drawImage(imgs[key], W/2-bigR, H/2-80-bigR, bigR*2, bigR*2);
+    } else {
+      ctx.fillStyle = cfg.color; ctx.fill();
+    }
+    ctx.restore();
+
+    ctx.beginPath(); ctx.arc(W/2, H/2-80, bigR, 0, Math.PI*2);
+    ctx.strokeStyle = cfg.color; ctx.lineWidth = 5;
+    ctx.shadowColor = cfg.color; ctx.shadowBlur = 40;
+    ctx.stroke(); ctx.shadowBlur = 0;
+
+    // Text
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = '900 64px system-ui';
+    ctx.fillStyle = cfg.color;
+    ctx.shadowColor = cfg.color; ctx.shadowBlur = 50;
+    ctx.fillText('WINS!', W/2, H/2+40);
+    ctx.shadowBlur = 0;
+
+    ctx.font = '700 28px system-ui';
+    ctx.fillStyle = '#fff';
+    ctx.fillText(cfg.name.toUpperCase(), W/2, H/2+90);
+
+    // Countdown
+    const remaining = Math.max(0, 5-(performance.now()-winnerT)/1000);
+    if(remaining>0){
+      ctx.font = '600 18px system-ui';
+      ctx.fillStyle = 'rgba(200,220,255,.6)';
+      ctx.fillText(`Restarting in ${Math.ceil(remaining)}...`, W/2, H/2+130);
+    }
+  }
+  ctx.restore();
+}
+
+function drawHUD(){
+  // Position indicators
+  const cfgs = [CFG.p1, CFG.p2];
+  const positions = tokenBodies.map(b=>b.position.y);
+  const leader = positions[0] > positions[1] ? 0 : 1;
+
+  ctx.save();
+  ctx.font = '700 14px system-ui';
+  ctx.textBaseline = 'middle';
+
+  for(let i=0; i<2; i++){
+    const x = 16 + i*280;
+    const pct = Math.min(100, Math.max(0, (positions[i]/FINISH_Y)*100));
+
+    // Progress bar background
+    ctx.fillStyle = 'rgba(0,0,0,.4)';
+    roundRect(x, 14, 230, 28, 6);
+    ctx.fill();
+
+    // Progress bar fill
+    ctx.fillStyle = cfgs[i].color;
+    if(pct>0){
+      roundRect(x, 14, Math.max(8, 230*(pct/100)), 28, 6);
+      ctx.fill();
+    }
+
+    // Name
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'left';
+    ctx.fillText(`${cfgs[i].name.split(' ').pop()} ${Math.round(pct)}%`, x+8, 28);
+
+    // Leader badge
+    if(i===leader && phase==='race'){
+      ctx.fillStyle = '#ffd700';
+      ctx.font = '700 11px system-ui';
+      ctx.textAlign = 'right';
+      ctx.fillText('▲ LEAD', x+222, 28);
+      ctx.font = '700 14px system-ui';
+    }
+  }
+  ctx.restore();
+}
+
+function roundRect(x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);
+  ctx.closePath();
+}
+
+// ════════════════════════════ GAME LOOP ════════════════════════════
+let lastT = 0;
+
+function loop(now){
+  const dt = Math.min((now-lastT)/1000, 0.05);
+  lastT = now;
+
+  // Physics
+  if(phase==='race'){
+    Engine.update(engine, dt*1000);
+
+    // Update spinners
+    spinners.forEach(s=>{
+      Body.setAngle(s.body, s.body.angle + s.speed);
+    });
+
+    // Check winner
+    for(let i=0; i<2; i++){
+      if(tokenBodies[i].position.y >= FINISH_Y && winner<0){
+        winner = i;
+        winnerT = performance.now();
+        phase = 'win';
+        autoRestartT = now + 5000;
+
+        // Auto-stop recording if active
+        if(rActive) setTimeout(()=>stopRec(), 1500);
+      }
+    }
+
+    // Camera follows leading token
+    const leadY = Math.max(tokenBodies[0].position.y, tokenBodies[1].position.y);
+    const targetCam = Math.max(0, leadY - H*0.55);
+    camY += (targetCam - camY) * 0.06;
+  }
+
+  if(phase==='win' && now >= autoRestartT){
+    restartRace();
+  }
+
+  // Update particles
+  updateParticles(dt);
+
+  // Draw
+  drawBackground();
+  drawObstacles();
+  drawToken(tokenBodies[0], CFG.p1, 0);
+  drawToken(tokenBodies[1], CFG.p2, 1);
+  drawParticlesOnScreen();
+  drawHUD();
+  if(phase==='win') drawWinnerScreen();
+
+  requestAnimationFrame(loop);
+}
+
+// ════════════════════════════ RECORDING ════════════════════════════
+let mRec=null, rChunks=[], rActive=false;
+
+function toggleRec(){ rActive ? stopRec() : startRec(); }
+
+function startRec(){
+  if(!canvas.captureStream){alert('Recording not supported.');return;}
+  rChunks=[];
+  const stream = canvas.captureStream(24);
+  const mime = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
+    ? 'video/webm;codecs=vp9' : 'video/webm';
+  mRec = new MediaRecorder(stream, {mimeType:mime, videoBitsPerSecond:4000000});
+  mRec.ondataavailable = e=>{ if(e.data&&e.data.size>0) rChunks.push(e.data); };
+  mRec.start(1000);
+  rActive = true;
+  document.getElementById('recBtn').textContent = '⏹ STOP';
+  document.getElementById('recBtn').style.color = '#ff5566';
+  document.getElementById('recDot').style.display = 'block';
+  restartRace();
+}
+
+function stopRec(){
+  rActive = false;
+  document.getElementById('recBtn').textContent = '⏺ REC';
+  document.getElementById('recBtn').style.color = '';
+  document.getElementById('recDot').style.display = 'none';
+  if(mRec && mRec.state==='recording'){
+    mRec.onstop = ()=>{
+      if(rChunks.length===0) return;
+      const blob = new Blob(rChunks, {type:mRec.mimeType||'video/webm'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'marble-race.webm';
+      document.body.appendChild(a); a.click();
+      setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(url);},5000);
+    };
+    try{mRec.requestData();}catch(e){}
+    mRec.stop();
+  }
+}
+
+// ════════════════════════════ INIT ════════════════════════════
+createPhysics();
+setupCollisionEvents();
+lastT = performance.now();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
