@@ -9,7 +9,7 @@
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{width:100%;height:100%;background:#0a0a1a;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;font-family:'Segoe UI',system-ui,sans-serif}
 canvas{border-radius:6px;cursor:default;position:relative;z-index:1}
-#ui{position:fixed;bottom:12px;display:flex;gap:10px;z-index:50}
+#ui{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);display:flex;gap:10px;z-index:50}
 #ui button{background:rgba(20,20,50,.85);color:#ccd;border:1px solid rgba(100,140,255,.25);border-radius:8px;padding:8px 18px;font:700 14px system-ui;cursor:pointer;backdrop-filter:blur(6px)}
 #ui button:hover{background:rgba(40,40,80,.95);border-color:rgba(100,140,255,.5)}
 #recDot{display:none;position:fixed;top:14px;right:14px;width:14px;height:14px;background:#f33;border-radius:50%;z-index:20;animation:blink 1s infinite}
@@ -26,7 +26,7 @@ canvas{border-radius:6px;cursor:default;position:relative;z-index:1}
 .pcard input[type=color]{width:40px;height:28px;border:1px solid rgba(80,130,255,.3);border-radius:4px;background:none;cursor:pointer;vertical-align:middle}
 .pcard input[type=range]{width:100%;accent-color:#87CEEB}
 .pcard .preview-row{display:flex;align-items:center;gap:10px}
-.pcard .face-preview{width:44px;height:44px;border-radius:50%;border:2px solid #445;object-fit:cover;background:#081228;flex-shrink:0}
+.pcard .face-preview{width:40px;height:40px;border-radius:50%;border:2px solid #445;object-fit:cover;background:#081228;flex-shrink:0}
 .pcard .file-btn{background:#142044;border:1px solid rgba(100,140,255,.25);border-radius:6px;padding:5px 12px;color:#9bc;font:600 12px system-ui;cursor:pointer}
 .pcard .file-btn:hover{background:#1a2a55}
 #search-box{width:100%;background:#081228;border:1px solid rgba(80,130,255,.2);border-radius:6px;padding:7px 10px;color:#dde;font:13px system-ui;outline:none;margin-bottom:6px}
@@ -301,7 +301,12 @@ const {Engine, World, Bodies, Body, Composite, Events, Constraint} = Matter;
 let engine, world, tokenBodies=[], obsBodies=[];
 
 function createPhysics(){
-  engine = Engine.create({gravity:{x:0, y:CFG.gravity}});
+  if(!engine){
+    engine = Engine.create({gravity:{x:0, y:CFG.gravity}});
+  } else {
+    Composite.clear(engine.world);
+    engine.gravity.y = CFG.gravity;
+  }
   world = engine.world;
   tokenBodies = [];
   obsBodies = [];
@@ -412,8 +417,6 @@ function restartRace(){
   winner = -1; phase = 'race';
   camY = 0;
 
-  // Clear physics
-  if(engine) Engine.clear(engine);
   createPhysics();
 
   // Nudge tokens slightly differently each restart
