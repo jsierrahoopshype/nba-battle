@@ -8,35 +8,124 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{width:100%;height:100%;background:#0a0a1a;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;font-family:'Segoe UI',system-ui,sans-serif}
-canvas{border-radius:6px;cursor:default}
-#ui{position:fixed;bottom:12px;display:flex;gap:10px;z-index:10}
+canvas{border-radius:6px;cursor:default;position:relative;z-index:1}
+#ui{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);display:flex;gap:10px;z-index:50}
 #ui button{background:rgba(20,20,50,.85);color:#ccd;border:1px solid rgba(100,140,255,.25);border-radius:8px;padding:8px 18px;font:700 14px system-ui;cursor:pointer;backdrop-filter:blur(6px)}
 #ui button:hover{background:rgba(40,40,80,.95);border-color:rgba(100,140,255,.5)}
 #recDot{display:none;position:fixed;top:14px;right:14px;width:14px;height:14px;background:#f33;border-radius:50%;z-index:20;animation:blink 1s infinite}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+#modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+#modal-overlay.open{display:flex}
+#modal{background:#0d1b3e;border:1px solid rgba(100,160,255,.25);border-radius:14px;width:92%;max-width:480px;max-height:88vh;overflow-y:auto;padding:20px;color:#cce}
+#modal h2{text-align:center;font:700 22px system-ui;color:#87CEEB;margin-bottom:14px}
+.pcard{background:rgba(10,20,50,.8);border:1px solid rgba(80,130,255,.2);border-radius:10px;padding:14px;margin-bottom:14px}
+.pcard h3{font:700 15px system-ui;color:#9bc;margin-bottom:10px}
+.pcard label{display:block;font:600 12px system-ui;color:#7a9cc0;margin:8px 0 3px}
+.pcard input[type=text],.pcard input[type=url]{width:100%;background:#081228;border:1px solid rgba(80,130,255,.2);border-radius:6px;padding:7px 10px;color:#dde;font:13px system-ui;outline:none}
+.pcard input:focus{border-color:rgba(100,160,255,.5)}
+.pcard input[type=color]{width:40px;height:28px;border:1px solid rgba(80,130,255,.3);border-radius:4px;background:none;cursor:pointer;vertical-align:middle}
+.pcard input[type=range]{width:100%;accent-color:#87CEEB}
+.pcard .preview-row{display:flex;align-items:center;gap:10px}
+.pcard .face-preview{width:40px;height:40px;border-radius:50%;border:2px solid #445;object-fit:cover;background:#081228;flex-shrink:0}
+.pcard .file-btn{background:#142044;border:1px solid rgba(100,140,255,.25);border-radius:6px;padding:5px 12px;color:#9bc;font:600 12px system-ui;cursor:pointer}
+.pcard .file-btn:hover{background:#1a2a55}
+#search-box{width:100%;background:#081228;border:1px solid rgba(80,130,255,.2);border-radius:6px;padding:7px 10px;color:#dde;font:13px system-ui;outline:none;margin-bottom:6px}
+#search-box:focus{border-color:rgba(100,160,255,.5)}
+#search-results{max-height:180px;overflow-y:auto;margin-bottom:12px}
+.sr-item{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:6px;cursor:pointer;font:13px system-ui;color:#bcd}
+.sr-item:hover{background:rgba(80,130,255,.15)}
+.sr-item img{width:32px;height:32px;border-radius:50%;object-fit:cover;background:#081228}
+#modal .btn-row{display:flex;gap:10px;justify-content:center;margin-top:14px}
+#modal .btn-row button{padding:10px 28px;border-radius:8px;border:none;font:700 15px system-ui;cursor:pointer}
+#modal .btn-apply{background:#2a6fff;color:#fff}
+#modal .btn-apply:hover{background:#3a7fff}
+#modal .btn-cancel{background:#1a2040;color:#8ab;border:1px solid rgba(80,130,255,.25)}
+#modal .btn-cancel:hover{background:#222a50}
+.search-for{display:inline-block;font:600 12px system-ui;color:#9bc;background:#142044;border:1px solid rgba(100,140,255,.25);border-radius:6px;padding:5px 12px;margin-bottom:8px;cursor:pointer}
+.search-for:hover{background:#1a2a55;border-color:rgba(100,140,255,.5);color:#87CEEB}
+.search-for.active{background:#2a6fff;color:#fff;border-color:#2a6fff}
+
 </style>
 </head>
 <body>
 <canvas id="c"></canvas>
 <div id="ui">
 <button onclick="restartRace()">⟳ RESTART</button>
+<button onclick="openModal()">⚙ PLAYERS</button>
 <button id="recBtn" onclick="toggleRec()">⏺ REC</button>
 </div>
 <div id="recDot"></div>
+<div id="modal-overlay" onclick="if(event.target===this)closeModal()">
+<div id="modal">
+<h2>⚙ Configure Players</h2>
+<div class="pcard" id="pc1">
+<h3>Player 1</h3>
+<div class="search-for" onclick="showSearch(1)">🔍 Search NBA player...</div>
+<div class="preview-row">
+<img class="face-preview" id="prev1" src="">
+<div style="flex:1">
+<label>Name</label>
+<input type="text" id="name1">
+</div>
+</div>
+<label>Headshot URL</label>
+<input type="url" id="url1" oninput="document.getElementById('prev1').src=this.value">
+<label style="display:inline">or upload: </label>
+<input type="file" id="file1" accept="image/*" style="display:none" onchange="handleFile(1,this)">
+<button class="file-btn" onclick="document.getElementById('file1').click()">Choose Image</button>
+<div style="display:flex;gap:16px;align-items:center;margin-top:6px">
+<div><label>Color</label><br><input type="color" id="color1"></div>
+<div style="flex:1"><label>Win % bias: <span id="winLbl1">50</span>%</label><input type="range" id="win1" min="1" max="99" value="50" oninput="document.getElementById('winLbl1').textContent=this.value"></div>
+</div>
+</div>
+<div class="pcard" id="pc2">
+<h3>Player 2</h3>
+<div class="search-for" onclick="showSearch(2)">🔍 Search NBA player...</div>
+<div class="preview-row">
+<img class="face-preview" id="prev2" src="">
+<div style="flex:1">
+<label>Name</label>
+<input type="text" id="name2">
+</div>
+</div>
+<label>Headshot URL</label>
+<input type="url" id="url2" oninput="document.getElementById('prev2').src=this.value">
+<label style="display:inline">or upload: </label>
+<input type="file" id="file2" accept="image/*" style="display:none" onchange="handleFile(2,this)">
+<button class="file-btn" onclick="document.getElementById('file2').click()">Choose Image</button>
+<div style="display:flex;gap:16px;align-items:center;margin-top:6px">
+<div><label>Color</label><br><input type="color" id="color2"></div>
+<div style="flex:1"><label>Win % bias: <span id="winLbl2">50</span>%</label><input type="range" id="win2" min="1" max="99" value="50" oninput="document.getElementById('winLbl2').textContent=this.value"></div>
+</div>
+</div>
+<div id="search-panel" style="display:none">
+<h3 id="search-panel-title" style="font:700 14px system-ui;color:#87CEEB;margin-bottom:6px">Search NBA Players</h3>
+<input type="text" id="search-box" placeholder="Type a player name..." oninput="filterPlayers(this.value)">
+<div id="search-results"></div>
+<button class="file-btn" style="margin-top:4px" onclick="hideSearch()">Cancel Search</button>
+</div>
+<div class="btn-row">
+<button class="btn-cancel" onclick="closeModal()">Cancel</button>
+<button class="btn-apply" onclick="applyConfig()">Apply &amp; Restart</button>
+</div>
+</div>
+</div>
 <script>
 // ════════════════════════════ CONFIGURATION ════════════════════════════
 const CFG = {
   p1: {
     name: 'LeBron James',
     img: 'https://cdn.nba.com/headshots/nba/latest/260x190/2544.png',
-    color: '#552583'
+    color: '#552583',
+    winBias: 50
   },
   p2: {
     name: 'Stephen Curry',
     img: 'https://cdn.nba.com/headshots/nba/latest/260x190/201939.png',
-    color: '#1D428A'
+    color: '#1D428A',
+    winBias: 50
   },
-  gravity: 1.2,
+  gravity: 2.5,
   seed: 42
 };
 
@@ -63,121 +152,174 @@ const LEVEL_H = FINISH_Y + 500;
 
 function buildObstacles(){
   const obs = [];
+  // All slopes use steep angles (0.58-0.78 rad ≈ 33-45°) so balls ALWAYS slide off.
+  // Slopes are short (100-150px) to minimize contact time.
+  // Funnels have 120px+ exit gaps. Pegs have 90px+ row spacing.
+  // Every section guarantees 100px+ clear downward path.
 
-  // Section 1: Funnel entry (y=200-400)
-  obs.push({type:'slope', x:40, y:280, w:200, angle:0.35});
-  obs.push({type:'slope', x:500, y:280, w:200, angle:-0.35});
-  obs.push({type:'slope', x:140, y:400, w:120, angle:0.5});
-  obs.push({type:'slope', x:400, y:400, w:120, angle:-0.5});
+  // ── Section 1: Wide entry funnel (y=180-350) ──
+  // Two steep ramps guide balls to center, 140px gap at bottom
+  obs.push({type:'slope', x:0,   y:200, w:140, angle:0.7});
+  obs.push({type:'slope', x:540, y:200, w:140, angle:-0.7});
 
-  // Section 2: Peg field (y=550-900)
-  for(let row=0; row<5; row++){
-    const cols = row%2===0 ? 5 : 4;
-    const ox = row%2===0 ? 45 : 100;
+  // ── Section 2: Staggered pegs (y=450-750) ──
+  // Classic pachinko — balls bounce through, can't get stuck on round surfaces
+  for(let row=0; row<4; row++){
+    const cols = 4;
+    const gap = W/(cols+1);
+    const off = (row%2===0) ? 0 : gap*0.5;
     for(let c=0; c<cols; c++){
-      obs.push({type:'peg', x:ox+c*115, y:550+row*85});
+      obs.push({type:'peg', x: gap + c*gap + off, y: 480 + row*80, r:14});
     }
   }
 
-  // Section 3: Zigzag channels (y=1050-1500)
-  obs.push({type:'rect', x:0, y:1050, w:360, h:18});
-  obs.push({type:'rect', x:180, y:1200, w:360, h:18});
-  obs.push({type:'rect', x:0, y:1350, w:360, h:18});
-  obs.push({type:'rect', x:180, y:1500, w:360, h:18});
+  // ── Section 3: Steep zigzag chutes (y=850-1250) ──
+  // Short, steep ramps alternating sides — balls launch off the end
+  obs.push({type:'slope', x:0,   y:880,  w:130, angle:0.7});
+  obs.push({type:'slope', x:540, y:1020, w:130, angle:-0.7});
+  obs.push({type:'slope', x:0,   y:1160, w:130, angle:0.7});
 
-  // Section 4: Narrow gates (y=1650-1900)
-  obs.push({type:'rect', x:0, y:1650, w:200, h:18});
-  obs.push({type:'rect', x:290, y:1650, w:250, h:18});
-  obs.push({type:'rect', x:0, y:1800, w:250, h:18});
-  obs.push({type:'rect', x:340, y:1800, w:200, h:18});
-
-  // Section 5: Rotating blockers (y=2000-2400)
-  obs.push({type:'spinner', x:270, y:2050, w:220, speed:0.02});
-  obs.push({type:'spinner', x:270, y:2300, w:220, speed:-0.025});
-
-  // Section 6: Staircase (y=2550-3100)
-  for(let i=0; i<6; i++){
-    const leftSide = i%2===0;
-    obs.push({type:'rect', x:leftSide?0:220, y:2550+i*100, w:320, h:16});
-  }
-
-  // Section 7: Dense peg maze (y=3300-3700)
-  for(let row=0; row<5; row++){
-    const cols = row%2===0 ? 6 : 5;
-    const ox = row%2===0 ? 40 : 80;
+  // ── Section 4: Bumper field (y=1350-1650) ──
+  // Dense peg grid with staggered rows
+  for(let row=0; row<4; row++){
+    const cols = 5;
+    const gap = W/(cols+1);
+    const off = (row%2===0) ? 0 : gap*0.5;
     for(let c=0; c<cols; c++){
-      obs.push({type:'peg', x:ox+c*95, y:3300+row*80});
+      obs.push({type:'peg', x: gap + c*gap + off, y: 1380 + row*80, r:12});
     }
   }
 
-  // Section 8: Funnel squeeze (y=3900-4300)
-  obs.push({type:'slope', x:20, y:3900, w:200, angle:0.45});
-  obs.push({type:'slope', x:520, y:3900, w:200, angle:-0.45});
-  obs.push({type:'slope', x:80, y:4100, w:160, angle:0.55});
-  obs.push({type:'slope', x:460, y:4100, w:160, angle:-0.55});
-  obs.push({type:'rect', x:0, y:4300, w:195, h:18});
-  obs.push({type:'rect', x:345, y:4300, w:195, h:18});
+  // ── Section 5: Steep cascade (y=1750-2200) ──
+  // Alternating wall-hugging ramps, each very steep (42°)
+  for(let i=0; i<5; i++){
+    const left = (i%2===0);
+    obs.push({type:'slope',
+      x: left ? 0 : 540,
+      y: 1780 + i*95,
+      w: 120,
+      angle: left ? 0.73 : -0.73
+    });
+  }
 
-  // Section 9: Bouncer field (y=4500-5200)
-  obs.push({type:'peg', x:135, y:4500, r:25});
-  obs.push({type:'peg', x:405, y:4500, r:25});
-  obs.push({type:'peg', x:270, y:4650, r:25});
-  obs.push({type:'peg', x:135, y:4800, r:25});
-  obs.push({type:'peg', x:405, y:4800, r:25});
-  obs.push({type:'peg', x:270, y:4950, r:25});
-  obs.push({type:'spinner', x:270, y:5100, w:260, speed:0.018});
+  // ── Section 6: Wide V-funnel (y=2350-2500) ──
+  // Single layer funnel with 150px exit gap
+  obs.push({type:'slope', x:0,   y:2370, w:130, angle:0.65});
+  obs.push({type:'slope', x:540, y:2370, w:130, angle:-0.65});
 
-  // Section 10: Final gauntlet (y=5300-7000)
-  obs.push({type:'rect', x:0, y:5350, w:300, h:16});
-  obs.push({type:'rect', x:240, y:5500, w:300, h:16});
-  obs.push({type:'rect', x:0, y:5650, w:300, h:16});
-  obs.push({type:'rect', x:240, y:5800, w:300, h:16});
-
-  // Scattered pegs in final stretch
-  for(let row=0; row<5; row++){
-    const cols = row%2===0 ? 5 : 4;
-    const ox = row%2===0 ? 55 : 100;
+  // ── Section 7: Large bouncy pegs (y=2600-2950) ──
+  // Big pegs with wide spacing — balls ricochet dramatically
+  for(let row=0; row<4; row++){
+    const cols = 3;
+    const gap = W/(cols+1);
+    const off = (row%2===0) ? 0 : gap*0.5;
     for(let c=0; c<cols; c++){
-      obs.push({type:'peg', x:ox+c*110, y:6050+row*80});
+      obs.push({type:'peg', x: gap + c*gap + off, y: 2640 + row*90, r:20});
     }
   }
 
-  // Final funnel
-  obs.push({type:'slope', x:20, y:6550, w:180, angle:0.4});
-  obs.push({type:'slope', x:500, y:6550, w:180, angle:-0.4});
-  obs.push({type:'slope', x:80, y:6750, w:140, angle:0.5});
-  obs.push({type:'slope', x:460, y:6750, w:140, angle:-0.5});
+  // ── Section 8: Speed ramps (y=3050-3500) ──
+  // Short, steep 45° ramps fling balls side to side
+  for(let i=0; i<5; i++){
+    const left = (i%2===0);
+    obs.push({type:'slope',
+      x: left ? 0 : 540,
+      y: 3080 + i*95,
+      w: 110,
+      angle: left ? 0.78 : -0.78
+    });
+  }
 
-  // Last spinner before finish
-  obs.push({type:'spinner', x:270, y:7000, w:200, speed:-0.022});
+  // ── Section 9: Pinball pegs (y=3650-4050) ──
+  // Medium pegs in tight staggered pattern
+  for(let row=0; row<5; row++){
+    const cols = 5;
+    const gap = W/(cols+1);
+    const off = (row%2===0) ? 0 : gap*0.5;
+    for(let c=0; c<cols; c++){
+      obs.push({type:'peg', x: gap + c*gap + off, y: 3680 + row*80, r:13});
+    }
+  }
+
+  // ── Section 10: Half-pipe swoops (y=4150-4600) ──
+  // Steep ramps from walls create swooping motion
+  obs.push({type:'slope', x:0,   y:4180, w:120, angle:0.75});
+  obs.push({type:'slope', x:540, y:4330, w:120, angle:-0.75});
+  obs.push({type:'slope', x:0,   y:4480, w:120, angle:0.75});
+
+  // ── Section 11: Mixed ramps + pegs (y=4700-5200) ──
+  // Ramps at top, pegs below — balls accelerate then scatter
+  obs.push({type:'slope', x:0,   y:4730, w:120, angle:0.7});
+  obs.push({type:'slope', x:540, y:4870, w:120, angle:-0.7});
+  for(let row=0; row<3; row++){
+    const cols = 4;
+    const gap = W/(cols+1);
+    const off = (row%2===0) ? 0 : gap*0.5;
+    for(let c=0; c<cols; c++){
+      obs.push({type:'peg', x: gap + c*gap + off, y: 5020 + row*75, r:12});
+    }
+  }
+
+  // ── Section 12: Final cascade (y=5350-5800) ──
+  // Rapid steep zigzags to the finish
+  for(let i=0; i<5; i++){
+    const left = (i%2===0);
+    obs.push({type:'slope',
+      x: left ? 0 : 540,
+      y: 5380 + i*95,
+      w: 110,
+      angle: left ? 0.75 : -0.75
+    });
+  }
+
+  // ── Section 13: Final peg scatter (y=5950-6300) ──
+  for(let row=0; row<4; row++){
+    const cols = 4;
+    const gap = W/(cols+1);
+    const off = (row%2===0) ? 0 : gap*0.5;
+    for(let c=0; c<cols; c++){
+      obs.push({type:'peg', x: gap + c*gap + off, y: 5980 + row*85, r:15});
+    }
+  }
+
+  // ── Section 14: Exit funnel (y=6450-6600) ──
+  obs.push({type:'slope', x:0,   y:6470, w:130, angle:0.68});
+  obs.push({type:'slope', x:540, y:6470, w:130, angle:-0.68});
 
   // Walls
   obs.push({type:'wall', x:-20, y:LEVEL_H/2, w:40, h:LEVEL_H});
   obs.push({type:'wall', x:W+20, y:LEVEL_H/2, w:40, h:LEVEL_H});
 
-  // Floor below finish
-  obs.push({type:'rect', x:0, y:FINISH_Y+200, w:W, h:40});
+  // Floor below finish (keeps balls from falling forever)
+  obs.push({type:'floor', x:W/2, y:FINISH_Y+200, w:W, h:40});
 
   return obs;
 }
 
 // ════════════════════════════ MATTER.JS SETUP ════════════════════════════
 const {Engine, World, Bodies, Body, Composite, Events, Constraint} = Matter;
-let engine, world, tokenBodies=[], obsBodies=[], spinners=[];
+let engine, world, tokenBodies=[], obsBodies=[];
 
 function createPhysics(){
-  engine = Engine.create({gravity:{x:0, y:CFG.gravity}});
+  if(!engine){
+    engine = Engine.create({gravity:{x:0, y:CFG.gravity}});
+  } else {
+    Composite.clear(engine.world);
+    engine.gravity.y = CFG.gravity;
+  }
   world = engine.world;
   tokenBodies = [];
   obsBodies = [];
-  spinners = [];
 
-  // Tokens
-  const t1 = Bodies.circle(200, 80, 22, {
+  // Tokens — win% bias affects starting Y offset (lower = head start)
+  const w1 = (CFG.p1.winBias||50)/100, w2 = (CFG.p2.winBias||50)/100;
+  const bias1 = (w1-0.5)*-40; // +50% → -20px head start, -50% → +20px behind
+  const bias2 = (w2-0.5)*-40;
+  const t1 = Bodies.circle(200, 80+bias1, 22, {
     restitution:0.5, friction:0.08, density:0.0018, label:'p1',
     collisionFilter:{group:-1}
   });
-  const t2 = Bodies.circle(340, 80, 22, {
+  const t2 = Bodies.circle(340, 80+bias2, 22, {
     restitution:0.5, friction:0.08, density:0.0018, label:'p2',
     collisionFilter:{group:-2}
   });
@@ -191,26 +333,21 @@ function createPhysics(){
     switch(o.type){
       case 'peg': {
         const r = o.r || 10;
-        body = Bodies.circle(o.x, o.y, r, {isStatic:true, restitution:0.8, label:'peg', _pegR:r});
+        body = Bodies.circle(o.x, o.y, r, {isStatic:true, restitution:0.9, friction:0.01, label:'peg', _pegR:r});
         break;
       }
-      case 'rect': {
-        body = Bodies.rectangle(o.x+o.w/2, o.y+o.h/2, o.w, o.h, {isStatic:true, restitution:0.3, label:'rect'});
+      case 'floor': {
+        body = Bodies.rectangle(o.x, o.y, o.w, o.h, {isStatic:true, restitution:0.3, label:'floor'});
         break;
       }
       case 'slope': {
-        body = Bodies.rectangle(o.x + (o.angle>0?o.w/2:-o.w/2), o.y, o.w, 16, {
-          isStatic:true, restitution:0.3, angle:o.angle, label:'slope'
+        body = Bodies.rectangle(o.x + (o.angle>0?o.w/2:-o.w/2), o.y, o.w, 12, {
+          isStatic:true, restitution:0.5, friction:0.02, angle:o.angle, label:'slope'
         });
         break;
       }
       case 'wall': {
         body = Bodies.rectangle(o.x, o.y, o.w, o.h, {isStatic:true, label:'wall'});
-        break;
-      }
-      case 'spinner': {
-        body = Bodies.rectangle(o.x, o.y, o.w, 14, {isStatic:true, restitution:0.4, label:'spinner'});
-        spinners.push({body, speed:o.speed});
         break;
       }
     }
@@ -274,27 +411,12 @@ for(let i=0; i<20; i++){
 let camY = 0, winner = -1, winnerT = 0, phase = 'race';
 let autoRestartT = 0;
 
-// Stuck detection per token
-let stuckTrack = [
-  {lastX:0, lastY:0, lastCheckT:0},
-  {lastX:0, lastY:0, lastCheckT:0}
-];
-// Spinner contact tracking per token
-let spinnerContact = [0, 0]; // timestamp of first contact, 0 = not touching
-
 function restartRace(){
   _seed = CFG.seed;
   particles = [];
   winner = -1; phase = 'race';
   camY = 0;
-  stuckTrack = [
-    {lastX:0, lastY:0, lastCheckT:0},
-    {lastX:0, lastY:0, lastCheckT:0}
-  ];
-  spinnerContact = [0, 0];
 
-  // Clear physics
-  if(engine) Engine.clear(engine);
   createPhysics();
 
   // Nudge tokens slightly differently each restart
@@ -315,7 +437,7 @@ function setupCollisionEvents(){
         tokenBody = pair.bodyA.label==='p2' ? pair.bodyA : pair.bodyB;
         color = CFG.p2.color;
       }
-      if(tokenBody && (labels.includes('peg')||labels.includes('rect')||labels.includes('slope')||labels.includes('spinner'))){
+      if(tokenBody && (labels.includes('peg')||labels.includes('floor')||labels.includes('slope'))){
         spawnHitParticles(tokenBody.position.x, tokenBody.position.y, color);
       }
     });
@@ -378,9 +500,9 @@ function drawObstacles(){
         ctx.lineTo(verts[i].x-pos.x, verts[i].y-pos.y);
       }
       ctx.closePath();
-      ctx.fillStyle = b.label==='spinner' ? '#2a2a4e' : '#1a1a2e';
+      ctx.fillStyle = '#1a1a2e';
       ctx.fill();
-      ctx.strokeStyle = b.label==='spinner' ? 'rgba(255,160,60,.4)' : 'rgba(100,140,255,.15)';
+      ctx.strokeStyle = 'rgba(100,140,255,.15)';
       ctx.lineWidth = 1; ctx.stroke();
     }
     ctx.restore();
@@ -580,60 +702,17 @@ function loop(now){
   if(phase==='race'){
     Engine.update(engine, dt*1000);
 
-    // Update spinners
-    spinners.forEach(s=>{
-      Body.setAngle(s.body, s.body.angle + s.speed);
-    });
-
-    // Unstuck system + downward nudge
+    // Downward nudge + win% bias force
+    const biases = [(CFG.p1.winBias||50)/100, (CFG.p2.winBias||50)/100];
     for(let i=0; i<2; i++){
       const tb = tokenBodies[i];
-      const vel = tb.velocity;
-
-      // Minimum downward velocity nudge
-      if(vel.y < 2){
-        Body.applyForce(tb, tb.position, {x:0, y:0.002});
+      if(tb.velocity.y < 3){
+        Body.applyForce(tb, tb.position, {x:0, y:0.008});
       }
-
-      // Position-based stuck detection every 2 seconds
-      const st = stuckTrack[i];
-      if(now - st.lastCheckT > 2000){
-        if(st.lastCheckT > 0){
-          const dx = tb.position.x - st.lastX;
-          const dy = tb.position.y - st.lastY;
-          const dist = Math.sqrt(dx*dx + dy*dy);
-          if(dist < 20){
-            // Stuck — apply escape kick
-            Body.setPosition(tb, {x:tb.position.x, y:tb.position.y - 30});
-            Body.setVelocity(tb, {x:(Math.random()-0.5)*30, y:-(5+Math.random()*15)});
-          }
-        }
-        st.lastX = tb.position.x;
-        st.lastY = tb.position.y;
-        st.lastCheckT = now;
-      }
-
-      // Spinner contact stuck detection
-      let touchingSpinner = false;
-      const pairs = engine.pairs.list;
-      for(let j=0; j<pairs.length; j++){
-        const pair = pairs[j];
-        if(!pair.isActive) continue;
-        const aIsToken = pair.bodyA === tb;
-        const bIsToken = pair.bodyB === tb;
-        if(!aIsToken && !bIsToken) continue;
-        const other = aIsToken ? pair.bodyB : pair.bodyA;
-        if(other.label === 'spinner'){ touchingSpinner = true; break; }
-      }
-      if(touchingSpinner){
-        if(spinnerContact[i] === 0) spinnerContact[i] = now;
-        else if(now - spinnerContact[i] > 1000){
-          Body.setPosition(tb, {x:tb.position.x, y:tb.position.y - 30});
-          Body.setVelocity(tb, {x:(Math.random()-0.5)*30, y:-(5+Math.random()*15)});
-          spinnerContact[i] = 0;
-        }
-      } else {
-        spinnerContact[i] = 0;
+      // Slight downward bias based on win% (max ±0.0008)
+      const bForce = (biases[i]-0.5)*0.0016;
+      if(Math.abs(bForce)>0.0001){
+        Body.applyForce(tb, tb.position, {x:0, y:bForce});
       }
     }
 
@@ -714,6 +793,124 @@ function stopRec(){
     try{mRec.requestData();}catch(e){}
     mRec.stop();
   }
+}
+
+// ════════════════════════════ MODAL / CONFIG ════════════════════════════
+let _allPlayers = null;
+let _searchTarget = 1; // which player slot search fills
+
+function openModal(){
+  document.getElementById('name1').value = CFG.p1.name;
+  document.getElementById('url1').value = CFG.p1.img;
+  document.getElementById('prev1').src = CFG.p1.img;
+  document.getElementById('color1').value = CFG.p1.color;
+  document.getElementById('win1').value = CFG.p1.winBias||50;
+  document.getElementById('winLbl1').textContent = CFG.p1.winBias||50;
+  document.getElementById('name2').value = CFG.p2.name;
+  document.getElementById('url2').value = CFG.p2.img;
+  document.getElementById('prev2').src = CFG.p2.img;
+  document.getElementById('color2').value = CFG.p2.color;
+  document.getElementById('win2').value = CFG.p2.winBias||50;
+  document.getElementById('winLbl2').textContent = CFG.p2.winBias||50;
+  hideSearch();
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function closeModal(){
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+
+function handleFile(idx, input){
+  const file = input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e=>{
+    document.getElementById('url'+idx).value = e.target.result;
+    document.getElementById('prev'+idx).src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function applyConfig(){
+  CFG.p1.name = document.getElementById('name1').value || 'Player 1';
+  CFG.p1.img = document.getElementById('url1').value;
+  CFG.p1.color = document.getElementById('color1').value;
+  CFG.p1.winBias = parseInt(document.getElementById('win1').value)||50;
+  CFG.p2.name = document.getElementById('name2').value || 'Player 2';
+  CFG.p2.img = document.getElementById('url2').value;
+  CFG.p2.color = document.getElementById('color2').value;
+  CFG.p2.winBias = parseInt(document.getElementById('win2').value)||50;
+
+  // Reload images
+  imgs.p1 = null; imgs.p2 = null;
+  imgsLoaded = 0;
+  loadImg('p1', CFG.p1.img);
+  loadImg('p2', CFG.p2.img);
+
+  closeModal();
+  restartRace();
+}
+
+// Player search
+async function loadPlayersDB(){
+  if(_allPlayers) return _allPlayers;
+  try{
+    const resp = await fetch('https://jsierrahoopshype.github.io/nba-headshots/metadata/players.json');
+    _allPlayers = await resp.json();
+    return _allPlayers;
+  }catch(e){
+    console.warn('Failed to load players.json:', e);
+    _allPlayers = [];
+    return [];
+  }
+}
+
+function showSearch(idx){
+  _searchTarget = idx;
+  // Highlight active search button
+  document.querySelectorAll('.search-for').forEach(el=>el.classList.remove('active'));
+  document.querySelector('#pc'+idx+' .search-for').classList.add('active');
+  document.getElementById('search-panel').style.display = '';
+  document.getElementById('search-panel-title').textContent = 'Search NBA Players → Player '+idx;
+  document.getElementById('search-box').value = '';
+  document.getElementById('search-results').innerHTML = '<div style="color:#6a8ab0;font:12px system-ui;padding:8px">Loading players...</div>';
+  document.getElementById('search-box').focus();
+  loadPlayersDB().then(()=>filterPlayers(''));
+}
+
+function hideSearch(){
+  document.getElementById('search-panel').style.display = 'none';
+  document.querySelectorAll('.search-for').forEach(el=>el.classList.remove('active'));
+}
+
+function filterPlayers(query){
+  if(!_allPlayers) return;
+  const q = query.toLowerCase().trim();
+  const results = q.length < 2
+    ? _allPlayers.slice(0, 30)
+    : _allPlayers.filter(p=>(p.name||'').toLowerCase().includes(q)).slice(0,30);
+
+  const container = document.getElementById('search-results');
+  if(results.length === 0){
+    container.innerHTML = '<div style="color:#6a8ab0;font:12px system-ui;padding:8px">No players found</div>';
+    return;
+  }
+  container.innerHTML = results.map(p=>{
+    const slug = p.slug || p.id || '';
+    const imgUrl = slug ? `https://nba-battle.thejorgesierra.workers.dev/headshot/${slug}.png` : '';
+    return `<div class="sr-item" onclick="pickPlayer('${(p.name||'').replace(/'/g,"\\'")}','${imgUrl}')">
+      <img src="${imgUrl}" onerror="this.style.display='none'">
+      <span>${p.name||'Unknown'}</span>
+    </div>`;
+  }).join('');
+}
+
+function pickPlayer(name, imgUrl){
+  const idx = _searchTarget;
+  document.getElementById('name'+idx).value = name;
+  document.getElementById('url'+idx).value = imgUrl;
+  document.getElementById('prev'+idx).src = imgUrl;
+  hideSearch();
 }
 
 // ════════════════════════════ INIT ════════════════════════════
