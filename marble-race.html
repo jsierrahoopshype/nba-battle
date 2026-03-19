@@ -124,7 +124,7 @@ const CFG = {
     color: '#1D428A',
     winBias: 50
   },
-  gravity: 1.2,
+  gravity: 2.5,
   seed: 42
 };
 
@@ -151,86 +151,144 @@ const LEVEL_H = FINISH_Y + 500;
 
 function buildObstacles(){
   const obs = [];
-  const LW = W*0.55; // max platform width = 55% of canvas
 
-  // Section 1: Funnel entry (y=200-400) — 80px+ gap at bottom
-  obs.push({type:'slope', x:20, y:280, w:180, angle:0.35});
-  obs.push({type:'slope', x:520, y:280, w:180, angle:-0.35});
-  obs.push({type:'slope', x:100, y:400, w:130, angle:0.45});
-  obs.push({type:'slope', x:440, y:400, w:130, angle:-0.45});
+  // ── Section 1: Opening funnel (y=200-400) ──
+  obs.push({type:'slope', x:0,   y:220, w:200, angle:0.4});
+  obs.push({type:'slope', x:540, y:220, w:200, angle:-0.4});
+  obs.push({type:'slope', x:80,  y:380, w:150, angle:0.5});
+  obs.push({type:'slope', x:460, y:380, w:150, angle:-0.5});
 
-  // Section 2: Angled bumper field (y=550-950) — staggered, guiding downward
-  for(let row=0; row<5; row++){
-    const leftSide = row%2===0;
-    const baseX = leftSide ? 60 : 300;
-    obs.push({type:'slope', x:baseX, y:550+row*90, w:180, angle:leftSide?0.3:-0.3});
+  // ── Section 2: Peg grid (y=500-750) ──
+  for(let row=0; row<4; row++){
+    const cols = 5;
+    const gap = W/(cols+1);
+    const off = (row%2===0) ? 0 : gap/2;
+    for(let c=0; c<cols; c++){
+      obs.push({type:'peg', x:gap+c*gap+off, y:520+row*65, r:12});
+    }
   }
 
-  // Section 3: Zigzag shelves (y=1100-1550) — alternating L/R, max 55% width
-  obs.push({type:'rect', x:0, y:1100, w:LW, h:18});
-  obs.push({type:'rect', x:W-LW, y:1250, w:LW, h:18});
-  obs.push({type:'rect', x:0, y:1400, w:LW, h:18});
-  obs.push({type:'rect', x:W-LW, y:1550, w:LW, h:18});
+  // ── Section 3: Steep zigzag ramps (y=850-1200) ──
+  obs.push({type:'slope', x:0,   y:870,  w:240, angle:0.55});
+  obs.push({type:'slope', x:540, y:1000, w:240, angle:-0.55});
+  obs.push({type:'slope', x:0,   y:1130, w:240, angle:0.55});
 
-  // Section 4: Narrow gates (y=1700-1900) — each side has a gap
-  obs.push({type:'rect', x:0, y:1700, w:190, h:18});
-  obs.push({type:'rect', x:W-LW, y:1850, w:LW, h:18});
+  // ── Section 4: Dense peg forest (y=1300-1550) ──
+  for(let row=0; row<4; row++){
+    const cols = 7;
+    const gap = W/(cols+1);
+    const off = (row%2===0) ? 0 : gap/2;
+    for(let c=0; c<cols; c++){
+      obs.push({type:'peg', x:gap+c*gap+off, y:1320+row*60, r:10});
+    }
+  }
 
-  // Section 5: Wide funnel (y=2000-2200) — 100px gap at bottom
-  obs.push({type:'slope', x:20, y:2000, w:190, angle:0.4});
-  obs.push({type:'slope', x:520, y:2000, w:190, angle:-0.4});
-  obs.push({type:'slope', x:100, y:2200, w:130, angle:0.5});
-  obs.push({type:'slope', x:440, y:2200, w:130, angle:-0.5});
+  // ── Section 5: V-funnel squeeze (y=1650-1900) ──
+  obs.push({type:'slope', x:0,   y:1660, w:220, angle:0.45});
+  obs.push({type:'slope', x:540, y:1660, w:220, angle:-0.45});
+  obs.push({type:'slope', x:100, y:1820, w:160, angle:0.55});
+  obs.push({type:'slope', x:440, y:1820, w:160, angle:-0.55});
 
-  // Section 6: Staircase (y=2400-2900) — alternating L/R, 55% width
+  // ── Section 6: Alternating ramp cascade (y=2000-2500) ──
   for(let i=0; i<6; i++){
-    const leftSide = i%2===0;
-    obs.push({type:'rect', x:leftSide?0:(W-LW), y:2400+i*100, w:LW, h:16});
+    const left = i%2===0;
+    obs.push({type:'slope',
+      x: left ? 0 : 540,
+      y: 2020+i*85,
+      w: 220,
+      angle: left ? 0.5 : -0.5
+    });
   }
 
-  // Section 7: Angled bumper maze (y=3100-3600) — offset rows guide balls through
-  for(let row=0; row<6; row++){
-    const leftSide = row%2===0;
-    const bx = leftSide ? 40+row*20 : 280+row*10;
-    obs.push({type:'slope', x:bx, y:3100+row*90, w:160, angle:leftSide?0.35:-0.35});
+  // ── Section 7: Large bumper pegs (y=2600-2900) ──
+  for(let row=0; row<4; row++){
+    const cols = 4;
+    const gap = W/(cols+1);
+    const off = (row%2===0) ? 0 : gap/2;
+    for(let c=0; c<cols; c++){
+      obs.push({type:'peg', x:gap+c*gap+off, y:2640+row*75, r:18});
+    }
   }
 
-  // Section 8: Funnel squeeze (y=3800-4100) — 90px gap at bottom
-  obs.push({type:'slope', x:20, y:3800, w:190, angle:0.4});
-  obs.push({type:'slope', x:520, y:3800, w:190, angle:-0.4});
-  obs.push({type:'slope', x:110, y:4000, w:120, angle:0.5});
-  obs.push({type:'slope', x:430, y:4000, w:120, angle:-0.5});
+  // ── Section 8: Tight funnel into open drop (y=3050-3300) ──
+  obs.push({type:'slope', x:0,   y:3060, w:200, angle:0.45});
+  obs.push({type:'slope', x:540, y:3060, w:200, angle:-0.45});
+  obs.push({type:'slope', x:120, y:3220, w:140, angle:0.6});
+  obs.push({type:'slope', x:420, y:3220, w:140, angle:-0.6});
 
-  // Section 9: Bouncer bumpers (y=4200-4800) — large angled bumpers
-  obs.push({type:'slope', x:40, y:4250, w:200, angle:0.3});
-  obs.push({type:'slope', x:500, y:4450, w:200, angle:-0.3});
-  obs.push({type:'slope', x:40, y:4650, w:200, angle:0.3});
-  obs.push({type:'slope', x:500, y:4850, w:200, angle:-0.3});
+  // ── Section 9: Half-pipe curves (y=3450-3900) ──
+  // Left half-pipe: steep slope pushing right, then gentle slope catching
+  obs.push({type:'slope', x:0,   y:3470, w:180, angle:0.6});
+  obs.push({type:'slope', x:350, y:3550, w:160, angle:-0.3});
+  // Right half-pipe
+  obs.push({type:'slope', x:540, y:3700, w:180, angle:-0.6});
+  obs.push({type:'slope', x:190, y:3780, w:160, angle:0.3});
 
-  // Section 10: Final gauntlet (y=5000-5600) — alternating shelves
-  obs.push({type:'rect', x:0, y:5050, w:LW, h:16});
-  obs.push({type:'rect', x:W-LW, y:5200, w:LW, h:16});
-  obs.push({type:'rect', x:0, y:5350, w:LW, h:16});
-  obs.push({type:'rect', x:W-LW, y:5500, w:LW, h:16});
+  // ── Section 10: Mixed pegs + ramps (y=3950-4350) ──
+  obs.push({type:'slope', x:0,   y:3970, w:200, angle:0.45});
+  obs.push({type:'slope', x:540, y:4100, w:200, angle:-0.45});
+  for(let row=0; row<3; row++){
+    const cols = 6;
+    const gap = W/(cols+1);
+    const off = (row%2===0) ? 0 : gap/2;
+    for(let c=0; c<cols; c++){
+      obs.push({type:'peg', x:gap+c*gap+off, y:4220+row*55, r:10});
+    }
+  }
 
-  // Scattered angled bumpers in final stretch (y=5700-6300)
+  // ── Section 11: Speed ramp canyon (y=4500-5100) ──
+  for(let i=0; i<7; i++){
+    const left = i%2===0;
+    obs.push({type:'slope',
+      x: left ? 0 : 540,
+      y: 4520+i*90,
+      w: 200+i*5,
+      angle: left ? 0.55 : -0.55
+    });
+  }
+
+  // ── Section 12: Peg pinball zone (y=5200-5600) ──
   for(let row=0; row<5; row++){
-    const leftSide = row%2===0;
-    obs.push({type:'slope', x:leftSide?80:320, y:5700+row*120, w:160, angle:leftSide?0.35:-0.35});
+    const cols = 6;
+    const gap = W/(cols+1);
+    const off = (row%2===0) ? 0 : gap/2;
+    for(let c=0; c<cols; c++){
+      obs.push({type:'peg', x:gap+c*gap+off, y:5240+row*70, r:14});
+    }
   }
 
-  // Final funnel (y=6550-6750) — 100px gap
-  obs.push({type:'slope', x:20, y:6550, w:170, angle:0.4});
-  obs.push({type:'slope', x:520, y:6550, w:170, angle:-0.4});
-  obs.push({type:'slope', x:100, y:6750, w:130, angle:0.5});
-  obs.push({type:'slope', x:440, y:6750, w:130, angle:-0.5});
+  // ── Section 13: Final funnel to finish (y=5750-6100) ──
+  obs.push({type:'slope', x:0,   y:5770, w:220, angle:0.4});
+  obs.push({type:'slope', x:540, y:5770, w:220, angle:-0.4});
+  obs.push({type:'slope', x:100, y:5930, w:170, angle:0.5});
+  obs.push({type:'slope', x:440, y:5930, w:170, angle:-0.5});
+  // Scattered pegs below funnel
+  for(let row=0; row<2; row++){
+    const cols = 4;
+    const gap = W/(cols+1);
+    const off = (row%2===0) ? 0 : gap/2;
+    for(let c=0; c<cols; c++){
+      obs.push({type:'peg', x:gap+c*gap+off, y:6050+row*60, r:12});
+    }
+  }
+
+  // ── Section 14: Last gauntlet ramps (y=6250-6700) ──
+  for(let i=0; i<5; i++){
+    const left = i%2===0;
+    obs.push({type:'slope',
+      x: left ? 0 : 540,
+      y: 6270+i*95,
+      w: 190,
+      angle: left ? 0.5 : -0.5
+    });
+  }
 
   // Walls
   obs.push({type:'wall', x:-20, y:LEVEL_H/2, w:40, h:LEVEL_H});
   obs.push({type:'wall', x:W+20, y:LEVEL_H/2, w:40, h:LEVEL_H});
 
-  // Floor below finish
-  obs.push({type:'rect', x:0, y:FINISH_Y+200, w:W, h:40});
+  // Floor below finish (keeps balls from falling forever)
+  obs.push({type:'floor', x:W/2, y:FINISH_Y+200, w:W, h:40});
 
   return obs;
 }
@@ -270,8 +328,8 @@ function createPhysics(){
         body = Bodies.circle(o.x, o.y, r, {isStatic:true, restitution:0.8, label:'peg', _pegR:r});
         break;
       }
-      case 'rect': {
-        body = Bodies.rectangle(o.x+o.w/2, o.y+o.h/2, o.w, o.h, {isStatic:true, restitution:0.3, label:'rect'});
+      case 'floor': {
+        body = Bodies.rectangle(o.x, o.y, o.w, o.h, {isStatic:true, restitution:0.3, label:'floor'});
         break;
       }
       case 'slope': {
@@ -373,7 +431,7 @@ function setupCollisionEvents(){
         tokenBody = pair.bodyA.label==='p2' ? pair.bodyA : pair.bodyB;
         color = CFG.p2.color;
       }
-      if(tokenBody && (labels.includes('peg')||labels.includes('rect')||labels.includes('slope'))){
+      if(tokenBody && (labels.includes('peg')||labels.includes('floor')||labels.includes('slope'))){
         spawnHitParticles(tokenBody.position.x, tokenBody.position.y, color);
       }
     });
@@ -642,8 +700,8 @@ function loop(now){
     const biases = [(CFG.p1.winBias||50)/100, (CFG.p2.winBias||50)/100];
     for(let i=0; i<2; i++){
       const tb = tokenBodies[i];
-      if(tb.velocity.y < 2){
-        Body.applyForce(tb, tb.position, {x:0, y:0.004});
+      if(tb.velocity.y < 3){
+        Body.applyForce(tb, tb.position, {x:0, y:0.008});
       }
       // Slight downward bias based on win% (max ±0.0008)
       const bForce = (biases[i]-0.5)*0.0016;
