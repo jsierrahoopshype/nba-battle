@@ -72,10 +72,10 @@ function buildObstacles(){
 
   // Section 2: Peg field (y=550-900)
   for(let row=0; row<5; row++){
-    const cols = row%2===0 ? 6 : 5;
-    const ox = row%2===0 ? 45 : 90;
+    const cols = row%2===0 ? 5 : 4;
+    const ox = row%2===0 ? 45 : 100;
     for(let c=0; c<cols; c++){
-      obs.push({type:'peg', x:ox+c*90, y:550+row*70});
+      obs.push({type:'peg', x:ox+c*115, y:550+row*85});
     }
   }
 
@@ -102,11 +102,11 @@ function buildObstacles(){
   }
 
   // Section 7: Dense peg maze (y=3300-3700)
-  for(let row=0; row<6; row++){
-    const cols = row%2===0 ? 8 : 7;
-    const ox = row%2===0 ? 30 : 65;
+  for(let row=0; row<5; row++){
+    const cols = row%2===0 ? 6 : 5;
+    const ox = row%2===0 ? 40 : 80;
     for(let c=0; c<cols; c++){
-      obs.push({type:'peg', x:ox+c*70, y:3300+row*65});
+      obs.push({type:'peg', x:ox+c*95, y:3300+row*80});
     }
   }
 
@@ -190,7 +190,7 @@ function createPhysics(){
     let body;
     switch(o.type){
       case 'peg': {
-        const r = o.r || 12;
+        const r = o.r || 10;
         body = Bodies.circle(o.x, o.y, r, {isStatic:true, restitution:0.8, label:'peg', _pegR:r});
         break;
       }
@@ -274,11 +274,24 @@ for(let i=0; i<20; i++){
 let camY = 0, winner = -1, winnerT = 0, phase = 'race';
 let autoRestartT = 0;
 
+// Stuck detection per token
+let stuckTrack = [
+  {lastX:0, lastY:0, lastCheckT:0},
+  {lastX:0, lastY:0, lastCheckT:0}
+];
+// Spinner contact tracking per token
+let spinnerContact = [0, 0]; // timestamp of first contact, 0 = not touching
+
 function restartRace(){
   _seed = CFG.seed;
   particles = [];
   winner = -1; phase = 'race';
   camY = 0;
+  stuckTrack = [
+    {lastX:0, lastY:0, lastCheckT:0},
+    {lastX:0, lastY:0, lastCheckT:0}
+  ];
+  spinnerContact = [0, 0];
 
   // Clear physics
   if(engine) Engine.clear(engine);
@@ -571,6 +584,58 @@ function loop(now){
     spinners.forEach(s=>{
       Body.setAngle(s.body, s.body.angle + s.speed);
     });
+
+    // Unstuck system + downward nudge
+    for(let i=0; i<2; i++){
+      const tb = tokenBodies[i];
+      const vel = tb.velocity;
+
+      // Minimum downward velocity nudge
+      if(vel.y < 2){
+        Body.applyForce(tb, tb.position, {x:0, y:0.002});
+      }
+
+      // Position-based stuck detection every 2 seconds
+      const st = stuckTrack[i];
+      if(now - st.lastCheckT > 2000){
+        if(st.lastCheckT > 0){
+          const dx = tb.position.x - st.lastX;
+          const dy = tb.position.y - st.lastY;
+          const dist = Math.sqrt(dx*dx + dy*dy);
+          if(dist < 20){
+            // Stuck — apply escape kick
+            Body.setPosition(tb, {x:tb.position.x, y:tb.position.y - 30});
+            Body.setVelocity(tb, {x:(Math.random()-0.5)*30, y:-(5+Math.random()*15)});
+          }
+        }
+        st.lastX = tb.position.x;
+        st.lastY = tb.position.y;
+        st.lastCheckT = now;
+      }
+
+      // Spinner contact stuck detection
+      let touchingSpinner = false;
+      const pairs = engine.pairs.list;
+      for(let j=0; j<pairs.length; j++){
+        const pair = pairs[j];
+        if(!pair.isActive) continue;
+        const aIsToken = pair.bodyA === tb;
+        const bIsToken = pair.bodyB === tb;
+        if(!aIsToken && !bIsToken) continue;
+        const other = aIsToken ? pair.bodyB : pair.bodyA;
+        if(other.label === 'spinner'){ touchingSpinner = true; break; }
+      }
+      if(touchingSpinner){
+        if(spinnerContact[i] === 0) spinnerContact[i] = now;
+        else if(now - spinnerContact[i] > 1000){
+          Body.setPosition(tb, {x:tb.position.x, y:tb.position.y - 30});
+          Body.setVelocity(tb, {x:(Math.random()-0.5)*30, y:-(5+Math.random()*15)});
+          spinnerContact[i] = 0;
+        }
+      } else {
+        spinnerContact[i] = 0;
+      }
+    }
 
     // Check winner
     for(let i=0; i<2; i++){
