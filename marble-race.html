@@ -125,7 +125,7 @@ const CFG = {
     color: '#1D428A',
     winBias: 50
   },
-  gravity: 1.2,
+  gravity: 0.8,
   seed: 42
 };
 
@@ -157,39 +157,39 @@ function buildObstacles(){
   // ══ ACT 1 (y 200–1200): Fast open drop ══
 
   // Row 1: V-shaped deflectors pointing inward
-  obs.push({type:'slope', x:0, y:250, w:160, angle:0.78, friction:0.01, restitution:0.4});
-  obs.push({type:'slope', x:W, y:250, w:160, angle:-0.78, friction:0.01, restitution:0.4});
+  obs.push({type:'slope', x:0, y:250, w:160, angle:0.78, friction:0.08, restitution:0.2});
+  obs.push({type:'slope', x:W, y:250, w:160, angle:-0.78, friction:0.08, restitution:0.2});
 
   // Row 2: Tighter V-deflectors
-  obs.push({type:'slope', x:60,  y:450, w:140, angle:0.78, friction:0.01, restitution:0.4});
-  obs.push({type:'slope', x:W-60, y:450, w:140, angle:-0.78, friction:0.01, restitution:0.4});
+  obs.push({type:'slope', x:60,  y:450, w:140, angle:0.78, friction:0.08, restitution:0.2});
+  obs.push({type:'slope', x:W-60, y:450, w:140, angle:-0.78, friction:0.08, restitution:0.2});
 
   // Peg cluster: 3×3 grid, spacing 90px, restitution 0.95
   for(let r=0; r<3; r++){
     for(let c=0; c<3; c++){
-      obs.push({type:'peg', x:CX-90+c*90, y:650+r*90, r:10, restitution:0.95});
+      obs.push({type:'peg', x:CX-90+c*90, y:650+r*90, r:10, restitution:0.7});
     }
   }
 
   // Wide funnel (opening ~300px, exit ~100px) merges both balls
-  obs.push({type:'slope', x:70,  y:1000, w:200, angle:0.78, friction:0.01, restitution:0.4});
-  obs.push({type:'slope', x:W-70, y:1000, w:200, angle:-0.78, friction:0.01, restitution:0.4});
+  obs.push({type:'slope', x:70,  y:1000, w:200, angle:0.78, friction:0.08, restitution:0.2});
+  obs.push({type:'slope', x:W-70, y:1000, w:200, angle:-0.78, friction:0.08, restitution:0.2});
 
   // ══ ACT 2 (y 1400–2500): Technical section ══
 
   // 4 alternating angled ramps (left/right, ~45°, width 200px)
-  obs.push({type:'slope', x:0, y:1450, w:200, angle:0.78, friction:0.01, restitution:0.4});
-  obs.push({type:'slope', x:W, y:1700, w:200, angle:-0.78, friction:0.01, restitution:0.4});
-  obs.push({type:'slope', x:0, y:1950, w:200, angle:0.78, friction:0.01, restitution:0.4});
-  obs.push({type:'slope', x:W, y:2200, w:200, angle:-0.78, friction:0.01, restitution:0.4});
+  obs.push({type:'slope', x:0, y:1450, w:200, angle:0.78, friction:0.08, restitution:0.2});
+  obs.push({type:'slope', x:W, y:1700, w:200, angle:-0.78, friction:0.08, restitution:0.2});
+  obs.push({type:'slope', x:0, y:1950, w:200, angle:0.78, friction:0.08, restitution:0.2});
+  obs.push({type:'slope', x:W, y:2200, w:200, angle:-0.78, friction:0.08, restitution:0.2});
 
   // Narrow gate 1 (80px gap in center) — angled inward so balls slide to gap
-  obs.push({type:'slope', x:0, y:1580, w:220, angle:0.25, friction:0.01, restitution:0.4});
-  obs.push({type:'slope', x:W, y:1580, w:220, angle:-0.25, friction:0.01, restitution:0.4});
+  obs.push({type:'slope', x:0, y:1580, w:220, angle:0.25, friction:0.08, restitution:0.2});
+  obs.push({type:'slope', x:W, y:1580, w:220, angle:-0.25, friction:0.08, restitution:0.2});
 
   // Narrow gate 2
-  obs.push({type:'slope', x:0, y:2060, w:220, angle:0.25, friction:0.01, restitution:0.4});
-  obs.push({type:'slope', x:W, y:2060, w:220, angle:-0.25, friction:0.01, restitution:0.4});
+  obs.push({type:'slope', x:0, y:2060, w:220, angle:0.25, friction:0.08, restitution:0.2});
+  obs.push({type:'slope', x:W, y:2060, w:220, angle:-0.25, friction:0.08, restitution:0.2});
 
   // ══ ACT 3 (y 2700–4000): Chaos section ══
 
@@ -198,59 +198,59 @@ function buildObstacles(){
   obs.push({type:'paddle', x:CX+80, y:3100, w:120, speed:-0.02});
 
   // Large central funnel re-merges both balls
-  obs.push({type:'slope', x:70,  y:3350, w:200, angle:0.78, friction:0.01, restitution:0.4});
-  obs.push({type:'slope', x:W-70, y:3350, w:200, angle:-0.78, friction:0.01, restitution:0.4});
+  obs.push({type:'slope', x:70,  y:3350, w:200, angle:0.78, friction:0.08, restitution:0.2});
+  obs.push({type:'slope', x:W-70, y:3350, w:200, angle:-0.78, friction:0.08, restitution:0.2});
 
   // Pinball bumper cluster: 6 pegs in triangle, restitution 0.98
-  obs.push({type:'peg', x:CX, y:3550, r:10, restitution:0.98});
-  obs.push({type:'peg', x:CX-55, y:3640, r:10, restitution:0.98});
-  obs.push({type:'peg', x:CX+55, y:3640, r:10, restitution:0.98});
-  obs.push({type:'peg', x:CX-110, y:3730, r:10, restitution:0.98});
-  obs.push({type:'peg', x:CX,     y:3730, r:10, restitution:0.98});
-  obs.push({type:'peg', x:CX+110, y:3730, r:10, restitution:0.98});
+  obs.push({type:'peg', x:CX, y:3550, r:10, restitution:0.7});
+  obs.push({type:'peg', x:CX-55, y:3640, r:10, restitution:0.7});
+  obs.push({type:'peg', x:CX+55, y:3640, r:10, restitution:0.7});
+  obs.push({type:'peg', x:CX-110, y:3730, r:10, restitution:0.7});
+  obs.push({type:'peg', x:CX,     y:3730, r:10, restitution:0.7});
+  obs.push({type:'peg', x:CX+110, y:3730, r:10, restitution:0.7});
 
   // Compression chamber: angled walls forcing into 100px corridor
-  obs.push({type:'slope', x:70,  y:3880, w:200, angle:0.78, friction:0.01, restitution:0.4});
-  obs.push({type:'slope', x:W-70, y:3880, w:200, angle:-0.78, friction:0.01, restitution:0.4});
+  obs.push({type:'slope', x:70,  y:3880, w:200, angle:0.78, friction:0.08, restitution:0.2});
+  obs.push({type:'slope', x:W-70, y:3880, w:200, angle:-0.78, friction:0.08, restitution:0.2});
 
   // ══ ACT 4 (y 4200–5500): Comeback zone ══
 
   // Split gate: V-divider sends balls left or right
-  obs.push({type:'slope', x:CX, y:4300, w:120, angle:-0.78, friction:0.01, restitution:0.4});
-  obs.push({type:'slope', x:CX, y:4300, w:120, angle:0.78, friction:0.01, restitution:0.4});
+  obs.push({type:'slope', x:CX, y:4300, w:120, angle:-0.78, friction:0.08, restitution:0.2});
+  obs.push({type:'slope', x:CX, y:4300, w:120, angle:0.78, friction:0.08, restitution:0.2});
 
   // Left channel has extra pegs (riskier path)
-  obs.push({type:'peg', x:80,  y:4480, r:10, restitution:0.95});
-  obs.push({type:'peg', x:150, y:4570, r:10, restitution:0.95});
-  obs.push({type:'peg', x:90,  y:4660, r:10, restitution:0.95});
-  obs.push({type:'peg', x:160, y:4750, r:10, restitution:0.95});
+  obs.push({type:'peg', x:80,  y:4480, r:10, restitution:0.7});
+  obs.push({type:'peg', x:150, y:4570, r:10, restitution:0.7});
+  obs.push({type:'peg', x:90,  y:4660, r:10, restitution:0.7});
+  obs.push({type:'peg', x:160, y:4750, r:10, restitution:0.7});
   // Right channel is cleaner — no obstacles
 
   // One slow rotating paddle blocking center
   obs.push({type:'paddle', x:CX, y:4900, w:120, speed:0.01});
 
   // Compression funnel
-  obs.push({type:'slope', x:70,  y:5200, w:200, angle:0.78, friction:0.01, restitution:0.4});
-  obs.push({type:'slope', x:W-70, y:5200, w:200, angle:-0.78, friction:0.01, restitution:0.4});
+  obs.push({type:'slope', x:70,  y:5200, w:200, angle:0.78, friction:0.08, restitution:0.2});
+  obs.push({type:'slope', x:W-70, y:5200, w:200, angle:-0.78, friction:0.08, restitution:0.2});
 
   // ══ ACT 5 (y 5700–7200): Final sprint ══
 
   // Fast angled deflector pairs
-  obs.push({type:'slope', x:0, y:5750, w:150, angle:0.78, friction:0.01, restitution:0.4});
-  obs.push({type:'slope', x:W, y:5750, w:150, angle:-0.78, friction:0.01, restitution:0.4});
-  obs.push({type:'slope', x:0, y:5950, w:150, angle:0.78, friction:0.01, restitution:0.4});
-  obs.push({type:'slope', x:W, y:5950, w:150, angle:-0.78, friction:0.01, restitution:0.4});
+  obs.push({type:'slope', x:0, y:5750, w:150, angle:0.78, friction:0.08, restitution:0.2});
+  obs.push({type:'slope', x:W, y:5750, w:150, angle:-0.78, friction:0.08, restitution:0.2});
+  obs.push({type:'slope', x:0, y:5950, w:150, angle:0.78, friction:0.08, restitution:0.2});
+  obs.push({type:'slope', x:W, y:5950, w:150, angle:-0.78, friction:0.08, restitution:0.2});
 
   // Last peg cluster (3×3, spacing 90px)
   for(let r=0; r<3; r++){
     for(let c=0; c<3; c++){
-      obs.push({type:'peg', x:CX-90+c*90, y:6200+r*90, r:10, restitution:0.95});
+      obs.push({type:'peg', x:CX-90+c*90, y:6200+r*90, r:10, restitution:0.7});
     }
   }
 
   // Funnel into finish chute
-  obs.push({type:'slope', x:70,  y:6550, w:180, angle:0.78, friction:0.01, restitution:0.4});
-  obs.push({type:'slope', x:W-70, y:6550, w:180, angle:-0.78, friction:0.01, restitution:0.4});
+  obs.push({type:'slope', x:70,  y:6550, w:180, angle:0.78, friction:0.08, restitution:0.2});
+  obs.push({type:'slope', x:W-70, y:6550, w:180, angle:-0.78, friction:0.08, restitution:0.2});
 
   // Narrow finish chute walls (120px wide, 200px tall)
   obs.push({type:'floor', x:CX-70, y:6750, w:20, h:200});
@@ -285,11 +285,11 @@ function createPhysics(){
 
   // Tokens — start close together at center, same Y
   const t1 = Bodies.circle(W/2-20, 80, 22, {
-    restitution:0.6, friction:0.05, frictionAir:0.008, density:0.0018, label:'p1',
+    restitution:0.3, friction:0.15, frictionAir:0.018, density:0.004, label:'p1',
     collisionFilter:{group:-1}
   });
   const t2 = Bodies.circle(W/2+20, 80, 22, {
-    restitution:0.6, friction:0.05, frictionAir:0.008, density:0.0018, label:'p2',
+    restitution:0.3, friction:0.15, frictionAir:0.018, density:0.004, label:'p2',
     collisionFilter:{group:-2}
   });
   tokenBodies = [t1, t2];
@@ -304,8 +304,8 @@ function createPhysics(){
         const r = o.r || 10;
         body = Bodies.circle(o.x, o.y, r, {
           isStatic:true,
-          restitution: o.restitution !== undefined ? o.restitution : 0.9,
-          friction: o.friction !== undefined ? o.friction : 0.01,
+          restitution: o.restitution !== undefined ? o.restitution : 0.7,
+          friction: o.friction !== undefined ? o.friction : 0.08,
           label:'peg', _pegR:r
         });
         break;
@@ -317,8 +317,8 @@ function createPhysics(){
       case 'slope': {
         body = Bodies.rectangle(o.x + (o.angle>0?o.w/2:-o.w/2), o.y, o.w, 12, {
           isStatic:true,
-          restitution: o.restitution !== undefined ? o.restitution : 0.5,
-          friction: o.friction !== undefined ? o.friction : 0.02,
+          restitution: o.restitution !== undefined ? o.restitution : 0.2,
+          friction: o.friction !== undefined ? o.friction : 0.08,
           angle:o.angle, label:'slope'
         });
         break;
@@ -801,12 +801,23 @@ function loop(now){
       if(trailHistory[i].length > 8) trailHistory[i].shift();
     }
 
+    // Max speed cap — keep action readable
+    const MAX_SPEED = 12;
+    for(let i=0; i<2; i++){
+      const tb = tokenBodies[i];
+      const spd = Math.sqrt(tb.velocity.x*tb.velocity.x + tb.velocity.y*tb.velocity.y);
+      if(spd > MAX_SPEED){
+        const scale = MAX_SPEED / spd;
+        Body.setVelocity(tb, {x:tb.velocity.x*scale, y:tb.velocity.y*scale});
+      }
+    }
+
     // Downward nudge + win% bias force
     const biases = [(CFG.p1.winBias||50)/100, (CFG.p2.winBias||50)/100];
     for(let i=0; i<2; i++){
       const tb = tokenBodies[i];
-      if(tb.velocity.y < 3){
-        Body.applyForce(tb, tb.position, {x:0, y:0.008});
+      if(tb.velocity.y < 1){
+        Body.applyForce(tb, tb.position, {x:0, y:0.003});
       }
       // Slight downward bias based on win% (max ±0.0008)
       const bForce = (biases[i]-0.5)*0.0016;
