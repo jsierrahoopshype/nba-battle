@@ -149,6 +149,7 @@ function rngRange(a,b){ return a+rng()*(b-a); }
 // ════════════════════════════ LEVEL DESIGN ════════════════════════════
 const FINISH_Y = 8900;
 const LEVEL_H = 9500;
+const BALL_RADIUS = 28;
 
 function buildObstacles(){
   const obs = [];
@@ -380,11 +381,11 @@ function createPhysics(){
   oscGateBodies = [];
 
   // Tokens — start close together at center, same Y
-  const t1 = Bodies.circle(W/2-20, 80, 22, {
+  const t1 = Bodies.circle(W/2-20, 80, BALL_RADIUS, {
     restitution:0.3, friction:0.15, frictionAir:0.018, density:0.004, label:'p1',
     collisionFilter:{group:-1}
   });
-  const t2 = Bodies.circle(W/2+20, 80, 22, {
+  const t2 = Bodies.circle(W/2+20, 80, BALL_RADIUS, {
     restitution:0.3, friction:0.15, frictionAir:0.018, density:0.004, label:'p2',
     collisionFilter:{group:-2}
   });
@@ -657,7 +658,7 @@ function drawToken(body, cfg, idx){
   // Skip if off-screen
   if(py < -60 || py > H+60) return;
 
-  const r = 22;
+  const r = BALL_RADIUS;
   const speed = Math.sqrt(body.velocity.x*body.velocity.x + body.velocity.y*body.velocity.y);
   const fast = speed > 8;
 
@@ -691,34 +692,36 @@ function drawToken(body, cfg, idx){
   ctx.fillStyle = gg; ctx.fill();
   ctx.restore();
 
-  // Token circle
+  // Token circle with face crop
   ctx.save();
   ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI*2); ctx.clip();
-  if(imgs['p'+(idx+1)]){
-    ctx.drawImage(imgs['p'+(idx+1)], px-r, py-r, r*2, r*2);
+  const imgKey = 'p'+(idx+1);
+  if(imgs[imgKey]){
+    const img = imgs[imgKey];
+    // Crop centered on top half: offset y by -15% of image height
+    const scale = Math.max(r*2/img.width, r*2/img.height);
+    const dw = img.width * scale;
+    const dh = img.height * scale;
+    const dx = px - dw/2;
+    const dy = py - dh/2 - img.height * scale * 0.15;
+    ctx.drawImage(img, dx, dy, dw, dh);
   } else {
     ctx.fillStyle = cfg.color;
     ctx.fillRect(px-r, py-r, r*2, r*2);
     ctx.fillStyle = '#fff';
-    ctx.font = '700 18px system-ui';
+    ctx.font = '700 20px system-ui';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(cfg.name[0], px, py);
   }
   ctx.restore();
 
-  // Ring — brighter glow when fast
+  // 4px colored ring with outer glow
+  ctx.save();
   ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI*2);
-  ctx.strokeStyle = cfg.color; ctx.lineWidth = 3;
-  ctx.shadowColor = cfg.color; ctx.shadowBlur = fast ? 20 : 10;
-  ctx.stroke(); ctx.shadowBlur = 0;
-
-  // Name label
-  ctx.font = '600 13px system-ui';
-  ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-  ctx.fillStyle = 'rgba(0,0,0,.6)';
-  ctx.fillText(cfg.name, px+1, py+r+7);
-  ctx.fillStyle = '#fff';
-  ctx.fillText(cfg.name, px, py+r+6);
+  ctx.strokeStyle = cfg.color; ctx.lineWidth = 4;
+  ctx.shadowColor = cfg.color; ctx.shadowBlur = 12;
+  ctx.stroke();
+  ctx.restore();
 }
 
 function drawParticlesOnScreen(){
@@ -794,35 +797,68 @@ function drawHUD(){
   ctx.font = '700 14px system-ui';
   ctx.textBaseline = 'middle';
 
+  const barH = 28;
+  const thumbR = 20;
+  const barX0 = 16;
+  const barW = 200;
   const pcts = [];
+
   for(let i=0; i<2; i++){
-    const x = 16 + i*280;
+    const bx = barX0 + i * (barW + thumbR*2 + 30);
+    const thumbCX = bx + thumbR;
+    const thumbCY = 14 + barH/2;
+    const barLeft = bx + thumbR*2 + 6;
     const pct = Math.min(100, Math.max(0, (positions[i]/FINISH_Y)*100));
     pcts.push(pct);
 
+    // Face thumbnail (20px radius circle)
+    ctx.save();
+    ctx.beginPath(); ctx.arc(thumbCX, thumbCY, thumbR, 0, Math.PI*2); ctx.clip();
+    const imgKey = 'p'+(i+1);
+    if(imgs[imgKey]){
+      const img = imgs[imgKey];
+      const scale = Math.max(thumbR*2/img.width, thumbR*2/img.height);
+      const dw = img.width * scale;
+      const dh = img.height * scale;
+      ctx.drawImage(img, thumbCX - dw/2, thumbCY - dh/2 - dh*0.15, dw, dh);
+    } else {
+      ctx.fillStyle = cfgs[i].color;
+      ctx.fillRect(thumbCX-thumbR, thumbCY-thumbR, thumbR*2, thumbR*2);
+      ctx.fillStyle = '#fff';
+      ctx.font = '700 16px system-ui';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(cfgs[i].name[0], thumbCX, thumbCY);
+    }
+    ctx.restore();
+    // Thumbnail ring
+    ctx.beginPath(); ctx.arc(thumbCX, thumbCY, thumbR, 0, Math.PI*2);
+    ctx.strokeStyle = cfgs[i].color; ctx.lineWidth = 2; ctx.stroke();
+
     // Progress bar background
     ctx.fillStyle = 'rgba(0,0,0,.4)';
-    roundRect(x, 14, 230, 28, 6);
+    roundRect(barLeft, 14, barW, barH, 6);
     ctx.fill();
 
     // Progress bar fill
     ctx.fillStyle = cfgs[i].color;
     if(pct>0){
-      roundRect(x, 14, Math.max(8, 230*(pct/100)), 28, 6);
+      roundRect(barLeft, 14, Math.max(8, barW*(pct/100)), barH, 6);
       ctx.fill();
     }
 
-    // Name
+    // Name and percentage
     ctx.fillStyle = '#fff';
     ctx.textAlign = 'left';
-    ctx.fillText(`${cfgs[i].name.split(' ').pop()} ${Math.round(pct)}%`, x+8, 28);
+    ctx.font = '700 13px system-ui';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(`${cfgs[i].name.split(' ').pop()} ${Math.round(pct)}%`, barLeft+6, 14+barH/2);
 
     // Leader badge
     if(i===leader && phase==='race'){
       ctx.fillStyle = '#ffd700';
       ctx.font = '700 11px system-ui';
       ctx.textAlign = 'right';
-      ctx.fillText('▲ LEAD', x+222, 28);
+      ctx.fillText('▲ LEAD', barLeft+barW-4, 14+barH/2);
       ctx.font = '700 14px system-ui';
     }
   }
@@ -832,12 +868,13 @@ function drawHUD(){
     const gap = Math.abs(pcts[0] - pcts[1]);
     ctx.textAlign = 'center';
     ctx.font = '700 12px system-ui';
+    ctx.textBaseline = 'middle';
     if(gap <= 3){
       ctx.fillStyle = '#ff4444';
-      ctx.fillText('NECK AND NECK', W/2, 28);
+      ctx.fillText('NECK AND NECK', W/2, 14+barH/2);
     } else if(gap > 5){
       ctx.fillStyle = 'rgba(255,255,255,.7)';
-      ctx.fillText(`GAP: ${Math.round(gap)}%`, W/2, 28);
+      ctx.fillText(`GAP: ${Math.round(gap)}%`, W/2, 14+barH/2);
     }
   }
 
