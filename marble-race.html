@@ -497,7 +497,7 @@ let autoRestartT = 0;
 let trailHistory = [[],[]];
 // Drama state
 let lastLeader = -1, leadChangeT = 0;
-let checkpointsPassed = [[false,false,false],[false,false,false]]; // [p1,p2] x [25%,50%,75%]
+let checkpointsPassed = [[false,false,false],[false,false,false]]; // [p1,p2] x [50%,75%,90%]
 let checkpointFlash = {active:false, t:0, color:'', pct:0};
 // Stuck detection: track positions every 3 seconds
 let stuckCheckTime = 0;
@@ -758,30 +758,40 @@ function drawWinnerScreen(){
 }
 
 function drawHUD(){
-  // Position indicators
   const cfgs = [CFG.p1, CFG.p2];
   const positions = tokenBodies.map(b=>b.position.y);
   const leader = positions[0] > positions[1] ? 0 : 1;
 
-  ctx.save();
-  ctx.font = '700 14px system-ui';
-  ctx.textBaseline = 'middle';
-
-  const barH = 28;
-  const thumbR = 20;
-  const barX0 = 16;
-  const barW = 200;
+  const barH = 36;
+  const thumbR = 24;
+  const barY = 6;
+  const barW = W/2 - 4; // each bar fills half the canvas width
   const pcts = [];
 
+  ctx.save();
+
   for(let i=0; i<2; i++){
-    const bx = barX0 + i * (barW + thumbR*2 + 30);
-    const thumbCX = bx + thumbR;
-    const thumbCY = 14 + barH/2;
-    const barLeft = bx + thumbR*2 + 6;
+    const barX = i === 0 ? 2 : W/2 + 2;
     const pct = Math.min(100, Math.max(0, (positions[i]/FINISH_Y)*100));
     pcts.push(pct);
 
-    // Face thumbnail (20px radius circle)
+    // Bar background
+    ctx.fillStyle = 'rgba(10,10,40,0.85)';
+    roundRect(barX, barY, barW, barH, 6);
+    ctx.fill();
+
+    // Progress fill
+    ctx.save();
+    roundRect(barX, barY, barW, barH, 6); ctx.clip();
+    ctx.fillStyle = cfgs[i].color;
+    ctx.globalAlpha = 0.5;
+    ctx.fillRect(barX, barY, barW*(pct/100), barH);
+    ctx.globalAlpha = 1;
+    ctx.restore();
+
+    // Headshot thumbnail (24px radius)
+    const thumbCX = i === 0 ? barX + 8 + thumbR : barX + barW - 8 - thumbR;
+    const thumbCY = barY + barH/2;
     ctx.save();
     ctx.beginPath(); ctx.arc(thumbCX, thumbCY, thumbR, 0, Math.PI*2); ctx.clip();
     const imgKey = 'p'+(i+1);
@@ -795,56 +805,59 @@ function drawHUD(){
       ctx.fillStyle = cfgs[i].color;
       ctx.fillRect(thumbCX-thumbR, thumbCY-thumbR, thumbR*2, thumbR*2);
       ctx.fillStyle = '#fff';
-      ctx.font = '700 16px system-ui';
+      ctx.font = '700 18px system-ui';
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(cfgs[i].name[0], thumbCX, thumbCY);
+      const initials = cfgs[i].name.split(/\s+/).map(w=>w[0]).slice(0,2).join('');
+      ctx.fillText(initials, thumbCX, thumbCY);
     }
     ctx.restore();
     // Thumbnail ring
     ctx.beginPath(); ctx.arc(thumbCX, thumbCY, thumbR, 0, Math.PI*2);
     ctx.strokeStyle = cfgs[i].color; ctx.lineWidth = 2; ctx.stroke();
 
-    // Progress bar background
-    ctx.fillStyle = 'rgba(0,0,0,.4)';
-    roundRect(barLeft, 14, barW, barH, 6);
-    ctx.fill();
-
-    // Progress bar fill
-    ctx.fillStyle = cfgs[i].color;
-    if(pct>0){
-      roundRect(barLeft, 14, Math.max(8, barW*(pct/100)), barH, 6);
-      ctx.fill();
-    }
-
-    // Name and percentage
+    // Name + percentage text
     ctx.fillStyle = '#fff';
-    ctx.textAlign = 'left';
-    ctx.font = '700 13px system-ui';
+    ctx.font = '700 16px system-ui';
     ctx.textBaseline = 'middle';
-    ctx.fillText(`${cfgs[i].name.split(' ').pop()} ${Math.round(pct)}%`, barLeft+6, 14+barH/2);
+    const nameStr = `${cfgs[i].name} ${Math.round(pct)}%`;
+    if(i === 0){
+      ctx.textAlign = 'left';
+      ctx.fillText(nameStr, thumbCX + thumbR + 8, thumbCY);
+    } else {
+      ctx.textAlign = 'right';
+      ctx.fillText(nameStr, thumbCX - thumbR - 8, thumbCY);
+    }
 
     // Leader badge
     if(i===leader && phase==='race'){
       ctx.fillStyle = '#ffd700';
-      ctx.font = '700 11px system-ui';
-      ctx.textAlign = 'right';
-      ctx.fillText('▲ LEAD', barLeft+barW-4, 14+barH/2);
-      ctx.font = '700 14px system-ui';
+      ctx.font = '700 12px system-ui';
+      if(i === 0){
+        ctx.textAlign = 'right';
+        ctx.fillText('▲ LEAD', barX + barW - 8, thumbCY);
+      } else {
+        ctx.textAlign = 'left';
+        ctx.fillText('▲ LEAD', barX + 8, thumbCY);
+      }
     }
   }
 
-  // Gap indicator between progress bars
+  // Gap indicator — centered between bars
   if(phase==='race'){
     const gap = Math.abs(pcts[0] - pcts[1]);
     ctx.textAlign = 'center';
-    ctx.font = '700 12px system-ui';
+    ctx.font = '700 13px system-ui';
     ctx.textBaseline = 'middle';
-    if(gap <= 3){
+    const gapY = barY + barH + 16;
+    if(gap < 3){
       ctx.fillStyle = '#ff4444';
-      ctx.fillText('NECK AND NECK', W/2, 14+barH/2);
-    } else if(gap > 5){
-      ctx.fillStyle = 'rgba(255,255,255,.7)';
-      ctx.fillText(`GAP: ${Math.round(gap)}%`, W/2, 14+barH/2);
+      ctx.fillText('NECK AND NECK', W/2, gapY);
+    } else if(gap <= 15){
+      ctx.fillStyle = 'rgba(255,255,255,.8)';
+      ctx.fillText(`GAP: ${Math.round(gap)}%`, W/2, gapY);
+    } else {
+      ctx.fillStyle = '#ff8c00';
+      ctx.fillText('RUNAWAY!', W/2, gapY);
     }
   }
 
@@ -864,16 +877,16 @@ function roundRect(x,y,w,h,r){
 function drawLeadChange(){
   if(leadChangeT <= 0) return;
   const elapsed = (performance.now() - leadChangeT) / 1000;
-  if(elapsed > 1.5){ leadChangeT = 0; return; }
-  const alpha = 1 - (elapsed / 1.5);
+  if(elapsed > 2){ leadChangeT = 0; return; }
+  const alpha = 1 - (elapsed / 2);
   ctx.save();
   ctx.globalAlpha = alpha;
-  ctx.font = `900 ${Math.round(W*0.1)}px system-ui`;
+  ctx.font = '900 52px system-ui';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = '#ffd700';
   ctx.shadowColor = '#000';
-  ctx.shadowBlur = 8;
+  ctx.shadowBlur = 10;
   ctx.fillText('LEAD CHANGE!', W/2, H*0.3);
   ctx.restore();
 }
@@ -881,17 +894,23 @@ function drawLeadChange(){
 function drawCheckpointFlash(){
   if(!checkpointFlash.active) return;
   const elapsed = (performance.now() - checkpointFlash.t) / 1000;
-  if(elapsed > 1){ checkpointFlash.active = false; return; }
-  const alpha = 1 - elapsed;
+  if(elapsed > 1.5){ checkpointFlash.active = false; return; }
+  const alpha = 1 - (elapsed / 1.5);
+  // Custom messages per checkpoint
+  let msg = '';
+  if(checkpointFlash.pct === 50) msg = 'HALFWAY!';
+  else if(checkpointFlash.pct === 75) msg = 'ALMOST THERE!';
+  else if(checkpointFlash.pct === 90) msg = 'FINAL STRETCH!';
+  else msg = `CHECKPOINT ${checkpointFlash.pct}%`;
   ctx.save();
   ctx.globalAlpha = alpha;
-  ctx.font = '900 28px system-ui';
+  ctx.font = '900 36px system-ui';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = checkpointFlash.color;
   ctx.shadowColor = '#000';
-  ctx.shadowBlur = 6;
-  ctx.fillText(`CHECKPOINT ${checkpointFlash.pct}%`, W/2, H*0.45);
+  ctx.shadowBlur = 8;
+  ctx.fillText(msg, W/2, H*0.45);
   ctx.restore();
 }
 
@@ -998,7 +1017,7 @@ function loop(now){
     lastLeader = curLeader;
 
     // Checkpoint detection
-    const cpThresholds = [25, 50, 75];
+    const cpThresholds = [50, 75, 90];
     for(let i=0; i<2; i++){
       const pct = Math.min(100, (tokenBodies[i].position.y / FINISH_Y) * 100);
       for(let c=0; c<3; c++){
@@ -1199,8 +1218,38 @@ function pickPlayer(name, imgUrl){
 // ════════════════════════════ INIT ════════════════════════════
 createPhysics();
 setupCollisionEvents();
-lastT = performance.now();
-requestAnimationFrame(loop);
+
+// Preload images before starting race — show loading screen
+let _preloadDone = false;
+const _preloadStart = performance.now();
+
+function drawLoadingScreen(){
+  ctx.fillStyle = '#0a0a1a';
+  ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#87CEEB';
+  ctx.font = '700 28px system-ui';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('Loading...', W/2, H/2);
+  ctx.font = '400 16px system-ui';
+  ctx.fillStyle = 'rgba(200,220,255,.5)';
+  ctx.fillText('Preparing headshots', W/2, H/2 + 40);
+}
+
+function preloadLoop(now){
+  const elapsed = now - _preloadStart;
+  const bothLoaded = imgsLoaded >= 2;
+  const timedOut = elapsed > 3000;
+  if(bothLoaded || timedOut){
+    _preloadDone = true;
+    lastT = performance.now();
+    requestAnimationFrame(loop);
+    return;
+  }
+  drawLoadingScreen();
+  requestAnimationFrame(preloadLoop);
+}
+requestAnimationFrame(preloadLoop);
 </script>
 </body>
 </html>
