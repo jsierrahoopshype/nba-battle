@@ -125,7 +125,7 @@ const CFG = {
     color: '#1D428A',
     winBias: 50
   },
-  gravity: 0.8,
+  gravity: 0.6,
   seed: 42
 };
 
@@ -284,9 +284,6 @@ function buildObstacles(){
   obs.push({type:'slope', x:CX, y:5300, w:100, angle:0.78, friction:0.08, restitution:0.2});
   obs.push({type:'slope', x:CX, y:5300, w:100, angle:-0.78, friction:0.08, restitution:0.2});
 
-  // Center divider wall creating two lanes
-  obs.push({type:'floor', x:CX, y:5550, w:14, h:400});
-
   // Left lane extra pegs (riskier path)
   obs.push({type:'peg', x:100, y:5450, r:10, restitution:0.7});
   obs.push({type:'peg', x:150, y:5650, r:10, restitution:0.7});
@@ -382,11 +379,11 @@ function createPhysics(){
 
   // Tokens — start close together at center, same Y
   const t1 = Bodies.circle(W/2-20, 80, BALL_RADIUS, {
-    restitution:0.3, friction:0.15, frictionAir:0.018, density:0.004, label:'p1',
+    restitution:0.2, friction:0.25, frictionAir:0.025, density:0.006, label:'p1',
     collisionFilter:{group:-1}
   });
   const t2 = Bodies.circle(W/2+20, 80, BALL_RADIUS, {
-    restitution:0.3, friction:0.15, frictionAir:0.018, density:0.004, label:'p2',
+    restitution:0.2, friction:0.25, frictionAir:0.025, density:0.006, label:'p2',
     collisionFilter:{group:-2}
   });
   tokenBodies = [t1, t2];
@@ -412,7 +409,7 @@ function createPhysics(){
         break;
       }
       case 'slope': {
-        body = Bodies.rectangle(o.x + (o.angle>0?o.w/2:-o.w/2), o.y, o.w, 12, {
+        body = Bodies.rectangle(o.x + (o.angle>0?o.w/2:-o.w/2), o.y, o.w, 16, {
           isStatic:true,
           restitution: o.restitution !== undefined ? o.restitution : 0.2,
           friction: o.friction !== undefined ? o.friction : 0.08,
@@ -421,7 +418,7 @@ function createPhysics(){
         break;
       }
       case 'paddle': {
-        body = Bodies.rectangle(o.x, o.y, o.w, 12, {
+        body = Bodies.rectangle(o.x, o.y, o.w, 16, {
           isStatic:true, restitution:0.5, friction:0.01, label:'paddle'
         });
         body._paddleSpeed = o.speed || 0.02;
@@ -429,7 +426,7 @@ function createPhysics(){
         break;
       }
       case 'seesaw': {
-        body = Bodies.rectangle(o.x, o.y, o.w, 12, {
+        body = Bodies.rectangle(o.x, o.y, o.w, 16, {
           isStatic:false, restitution:0.2, friction:0.3, frictionAir:0.05,
           density:0.01, label:'seesaw'
         });
@@ -697,27 +694,16 @@ function drawToken(body, cfg, idx){
   ctx.fillStyle = gg; ctx.fill();
   ctx.restore();
 
-  // Token circle with face crop
+  // Token circle — solid color + 2-letter initials
   ctx.save();
-  ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI*2); ctx.clip();
-  const imgKey = 'p'+(idx+1);
-  if(imgs[imgKey]){
-    const img = imgs[imgKey];
-    // Crop centered on top half: offset y by -15% of image height
-    const scale = Math.max(r*2/img.width, r*2/img.height);
-    const dw = img.width * scale;
-    const dh = img.height * scale;
-    const dx = px - dw/2;
-    const dy = py - dh/2 - img.height * scale * 0.15;
-    ctx.drawImage(img, dx, dy, dw, dh);
-  } else {
-    ctx.fillStyle = cfg.color;
-    ctx.fillRect(px-r, py-r, r*2, r*2);
-    ctx.fillStyle = '#fff';
-    ctx.font = '700 20px system-ui';
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(cfg.name[0], px, py);
-  }
+  ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI*2);
+  ctx.fillStyle = cfg.color; ctx.fill();
+  // Draw initials (first letter of each word, max 2)
+  const initials = cfg.name.split(/\s+/).map(w=>w[0]).slice(0,2).join('');
+  ctx.fillStyle = '#fff';
+  ctx.font = '700 18px system-ui';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(initials, px, py);
   ctx.restore();
 
   // 4px colored ring with outer glow
@@ -973,7 +959,7 @@ function loop(now){
     }
 
     // Max speed cap — keep action readable
-    const MAX_SPEED = 12;
+    const MAX_SPEED = 8;
     for(let i=0; i<2; i++){
       const tb = tokenBodies[i];
       const spd = Math.sqrt(tb.velocity.x*tb.velocity.x + tb.velocity.y*tb.velocity.y);
