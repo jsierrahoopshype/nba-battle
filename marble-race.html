@@ -411,6 +411,10 @@ for(let i=0; i<20; i++){
 let camY = 0, winner = -1, winnerT = 0, phase = 'race';
 let autoRestartT = 0;
 let trailHistory = [[],[]];
+// Drama state
+let lastLeader = -1, leadChangeT = 0;
+let checkpointsPassed = [[false,false,false],[false,false,false]]; // [p1,p2] x [25%,50%,75%]
+let checkpointFlash = {active:false, t:0, color:'', pct:0};
 
 function restartRace(){
   _seed = CFG.seed;
@@ -418,6 +422,9 @@ function restartRace(){
   winner = -1; phase = 'race';
   camY = 0;
   trailHistory = [[],[]];
+  lastLeader = -1; leadChangeT = 0;
+  checkpointsPassed = [[false,false,false],[false,false,false]];
+  checkpointFlash = {active:false, t:0, color:'', pct:0};
 
   createPhysics();
 
@@ -674,9 +681,11 @@ function drawHUD(){
   ctx.font = '700 14px system-ui';
   ctx.textBaseline = 'middle';
 
+  const pcts = [];
   for(let i=0; i<2; i++){
     const x = 16 + i*280;
     const pct = Math.min(100, Math.max(0, (positions[i]/FINISH_Y)*100));
+    pcts.push(pct);
 
     // Progress bar background
     ctx.fillStyle = 'rgba(0,0,0,.4)';
@@ -704,6 +713,21 @@ function drawHUD(){
       ctx.font = '700 14px system-ui';
     }
   }
+
+  // Gap indicator between progress bars
+  if(phase==='race'){
+    const gap = Math.abs(pcts[0] - pcts[1]);
+    ctx.textAlign = 'center';
+    ctx.font = '700 12px system-ui';
+    if(gap <= 3){
+      ctx.fillStyle = '#ff4444';
+      ctx.fillText('NECK AND NECK', W/2, 28);
+    } else if(gap > 5){
+      ctx.fillStyle = 'rgba(255,255,255,.7)';
+      ctx.fillText(`GAP: ${Math.round(gap)}%`, W/2, 28);
+    }
+  }
+
   ctx.restore();
 }
 
@@ -714,6 +738,55 @@ function roundRect(x,y,w,h,r){
   ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);
   ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);
   ctx.closePath();
+}
+
+// ════════════════════════════ DRAMA EFFECTS ════════════════════════════
+function drawLeadChange(){
+  if(leadChangeT <= 0) return;
+  const elapsed = (performance.now() - leadChangeT) / 1000;
+  if(elapsed > 1.5){ leadChangeT = 0; return; }
+  const alpha = 1 - (elapsed / 1.5);
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.font = `900 ${Math.round(W*0.1)}px system-ui`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#ffd700';
+  ctx.shadowColor = '#000';
+  ctx.shadowBlur = 8;
+  ctx.fillText('LEAD CHANGE!', W/2, H*0.3);
+  ctx.restore();
+}
+
+function drawCheckpointFlash(){
+  if(!checkpointFlash.active) return;
+  const elapsed = (performance.now() - checkpointFlash.t) / 1000;
+  if(elapsed > 1){ checkpointFlash.active = false; return; }
+  const alpha = 1 - elapsed;
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.font = '900 28px system-ui';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = checkpointFlash.color;
+  ctx.shadowColor = '#000';
+  ctx.shadowBlur = 6;
+  ctx.fillText(`CHECKPOINT ${checkpointFlash.pct}%`, W/2, H*0.45);
+  ctx.restore();
+}
+
+function drawVignette(){
+  const p0 = Math.min(100, Math.max(0, (tokenBodies[0].position.y/FINISH_Y)*100));
+  const p1 = Math.min(100, Math.max(0, (tokenBodies[1].position.y/FINISH_Y)*100));
+  if(p0 < 80 && p1 < 80) return;
+  const pulse = 0.3 + 0.15 * Math.sin(performance.now() / 400);
+  ctx.save();
+  const grad = ctx.createRadialGradient(W/2, H/2, H*0.35, W/2, H/2, H*0.75);
+  grad.addColorStop(0, 'rgba(255,0,0,0)');
+  grad.addColorStop(1, `rgba(180,0,0,${pulse})`);
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+  ctx.restore();
 }
 
 // ════════════════════════════ GAME LOOP ════════════════════════════
@@ -761,6 +834,25 @@ function loop(now){
       }
     }
 
+    // Lead change detection
+    const curLeader = tokenBodies[0].position.y > tokenBodies[1].position.y ? 0 : 1;
+    if(lastLeader >= 0 && curLeader !== lastLeader){
+      leadChangeT = performance.now();
+    }
+    lastLeader = curLeader;
+
+    // Checkpoint detection
+    const cpThresholds = [25, 50, 75];
+    for(let i=0; i<2; i++){
+      const pct = Math.min(100, (tokenBodies[i].position.y / FINISH_Y) * 100);
+      for(let c=0; c<3; c++){
+        if(!checkpointsPassed[i][c] && pct >= cpThresholds[c]){
+          checkpointsPassed[i][c] = true;
+          checkpointFlash = {active:true, t:performance.now(), color:i===0?CFG.p1.color:CFG.p2.color, pct:cpThresholds[c]};
+        }
+      }
+    }
+
     // Camera follows leading token
     const leadY = Math.max(tokenBodies[0].position.y, tokenBodies[1].position.y);
     const targetCam = Math.max(0, leadY - H*0.55);
@@ -781,6 +873,9 @@ function loop(now){
   drawToken(tokenBodies[1], CFG.p2, 1);
   drawParticlesOnScreen();
   drawHUD();
+  drawLeadChange();
+  drawCheckpointFlash();
+  drawVignette();
   if(phase==='win') drawWinnerScreen();
 
   requestAnimationFrame(loop);
