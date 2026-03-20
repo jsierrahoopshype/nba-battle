@@ -14,7 +14,7 @@ canvas{border-radius:6px;cursor:default;position:relative;z-index:1}
 #ui button:hover{background:rgba(40,40,80,.95);border-color:rgba(100,140,255,.5)}
 #recDot{display:none;position:fixed;top:14px;right:14px;width:14px;height:14px;background:#f33;border-radius:50%;z-index:20;animation:blink 1s infinite}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
-#modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+#modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
 #modal-overlay.open{display:flex}
 #modal{background:#0d1b3e;border:1px solid rgba(100,160,255,.25);border-radius:14px;width:92%;max-width:480px;max-height:88vh;overflow-y:auto;padding:20px;color:#cce}
 #modal h2{text-align:center;font:700 22px system-ui;color:#87CEEB;margin-bottom:14px}
@@ -71,7 +71,7 @@ canvas{border-radius:6px;cursor:default;position:relative;z-index:1}
 <label>Headshot URL</label>
 <input type="url" id="url1" oninput="document.getElementById('prev1').src=this.value">
 <label style="display:inline">or upload: </label>
-<input type="file" id="file1" accept="image/*" style="display:none" onchange="handleFile(1,this)">
+<input type="file" id="file1" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="handleFile(1,this)">
 <button class="file-btn" onclick="document.getElementById('file1').click()">Choose Image</button>
 <div style="display:flex;gap:16px;align-items:center;margin-top:6px">
 <div><label>Color</label><br><input type="color" id="color1"></div>
@@ -91,7 +91,7 @@ canvas{border-radius:6px;cursor:default;position:relative;z-index:1}
 <label>Headshot URL</label>
 <input type="url" id="url2" oninput="document.getElementById('prev2').src=this.value">
 <label style="display:inline">or upload: </label>
-<input type="file" id="file2" accept="image/*" style="display:none" onchange="handleFile(2,this)">
+<input type="file" id="file2" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="handleFile(2,this)">
 <button class="file-btn" onclick="document.getElementById('file2').click()">Choose Image</button>
 <div style="display:flex;gap:16px;align-items:center;margin-top:6px">
 <div><label>Color</label><br><input type="color" id="color2"></div>
@@ -1098,9 +1098,10 @@ function loop(now){
       if(tb.velocity.y < 1){
         Body.applyForce(tb, tb.position, {x:0, y:0.003});
       }
-      // Slight downward bias based on win% (max ±0.0008)
-      const bForce = (biases[i]-0.5)*0.0016;
-      if(Math.abs(bForce)>0.0001){
+      // Subtle downward bias: 50% = neutral (0 force), 99% = +0.001, 1% = -0.001
+      // Max difference between 99% and 1% players = 0.002
+      const bForce = (biases[i] - 0.5) * 0.002;
+      if(Math.abs(bForce) > 0.00005){
         Body.applyForce(tb, tb.position, {x:0, y:bForce});
       }
     }
@@ -1313,14 +1314,34 @@ function applyConfig(){
   CFG.p2.color = document.getElementById('color2').value;
   CFG.p2.winBias = parseInt(document.getElementById('win2').value)||50;
 
+  // Show loading overlay inside modal
+  const modal = document.getElementById('modal');
+  const loadingDiv = document.createElement('div');
+  loadingDiv.id = 'apply-loading';
+  loadingDiv.style.cssText = 'position:absolute;inset:0;background:rgba(13,27,62,.95);display:flex;align-items:center;justify-content:center;flex-direction:column;border-radius:14px;z-index:10';
+  loadingDiv.innerHTML = '<div style="color:#87CEEB;font:700 22px system-ui;margin-bottom:12px">Loading headshots...</div><div style="color:#6a8ab0;font:14px system-ui">Please wait</div>';
+  modal.style.position = 'relative';
+  modal.appendChild(loadingDiv);
+
   // Reload images
   imgs.p1 = null; imgs.p2 = null;
   imgsLoaded = 0;
   loadImg('p1', CFG.p1.img);
   loadImg('p2', CFG.p2.img);
 
-  closeModal();
-  restartRace();
+  // Wait for both images or 3s timeout, then start race
+  const applyStart = performance.now();
+  function checkReady(){
+    if(imgsLoaded >= 2 || performance.now() - applyStart > 3000){
+      const el = document.getElementById('apply-loading');
+      if(el) el.remove();
+      closeModal();
+      restartRace();
+      return;
+    }
+    requestAnimationFrame(checkReady);
+  }
+  requestAnimationFrame(checkReady);
 }
 
 // Player search
