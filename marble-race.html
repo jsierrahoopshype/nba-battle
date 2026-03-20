@@ -523,6 +523,9 @@ let trailHistory = [[],[]];
 let lastLeader = -1, leadChangeT = 0;
 let checkpointsPassed = [[false,false,false],[false,false,false]]; // [p1,p2] x [25%,50%,75%]
 let checkpointFlash = {active:false, t:0, color:'', pct:0};
+// Stuck detection: track positions every 3 seconds
+let stuckCheckTime = 0;
+let stuckLastPos = [{x:0,y:0},{x:0,y:0}];
 
 function restartRace(){
   _seed = CFG.seed;
@@ -533,6 +536,8 @@ function restartRace(){
   lastLeader = -1; leadChangeT = 0;
   checkpointsPassed = [[false,false,false],[false,false,false]];
   checkpointFlash = {active:false, t:0, color:'', pct:0};
+  stuckCheckTime = performance.now();
+  stuckLastPos = [{x:W/2,y:80},{x:W/2,y:80}];
 
   createPhysics();
 
@@ -990,6 +995,21 @@ function loop(now){
       if(Math.abs(bForce)>0.0001){
         Body.applyForce(tb, tb.position, {x:0, y:bForce});
       }
+    }
+
+    // Stuck prevention: if ball moved < 5px in 3 seconds, unstick it
+    if(now - stuckCheckTime > 3000){
+      for(let i=0; i<2; i++){
+        const tb = tokenBodies[i];
+        const dx = tb.position.x - stuckLastPos[i].x;
+        const dy = tb.position.y - stuckLastPos[i].y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if(dist < 5){
+          Body.setVelocity(tb, {x: (Math.random()*6)-3, y: -8});
+        }
+        stuckLastPos[i] = {x:tb.position.x, y:tb.position.y};
+      }
+      stuckCheckTime = now;
     }
 
     // Check winner
