@@ -125,7 +125,7 @@ const CFG = {
     color: '#1D428A',
     winBias: 50
   },
-  gravity: 2.5,
+  gravity: 1.2,
   seed: 42
 };
 
@@ -316,11 +316,11 @@ function createPhysics(){
   const bias1 = (w1-0.5)*-40; // +50% → -20px head start, -50% → +20px behind
   const bias2 = (w2-0.5)*-40;
   const t1 = Bodies.circle(200, 80+bias1, 22, {
-    restitution:0.5, friction:0.08, density:0.0018, label:'p1',
+    restitution:0.6, friction:0.05, frictionAir:0.008, density:0.0018, label:'p1',
     collisionFilter:{group:-1}
   });
   const t2 = Bodies.circle(340, 80+bias2, 22, {
-    restitution:0.5, friction:0.08, density:0.0018, label:'p2',
+    restitution:0.6, friction:0.05, frictionAir:0.008, density:0.0018, label:'p2',
     collisionFilter:{group:-2}
   });
   tokenBodies = [t1, t2];
@@ -410,12 +410,14 @@ for(let i=0; i<20; i++){
 // ════════════════════════════ GAME STATE ════════════════════════════
 let camY = 0, winner = -1, winnerT = 0, phase = 'race';
 let autoRestartT = 0;
+let trailHistory = [[],[]];
 
 function restartRace(){
   _seed = CFG.seed;
   particles = [];
   winner = -1; phase = 'race';
   camY = 0;
+  trailHistory = [[],[]];
 
   createPhysics();
 
@@ -536,12 +538,35 @@ function drawToken(body, cfg, idx){
   if(py < -60 || py > H+60) return;
 
   const r = 22;
+  const speed = Math.sqrt(body.velocity.x*body.velocity.x + body.velocity.y*body.velocity.y);
+  const fast = speed > 8;
 
-  // Glow
+  // Speed trail — fading circles from trail history
+  const trail = trailHistory[idx];
+  if(trail.length > 1){
+    ctx.save();
+    ctx.fillStyle = cfg.color;
+    const len = trail.length;
+    for(let i=0; i<len-1; i++){
+      const t = i / (len - 1); // 0 (oldest) to ~1 (newest)
+      const baseAlpha = 0.1 + t * 0.5; // 0.1 to 0.6
+      ctx.globalAlpha = fast ? Math.min(1, baseAlpha * 1.5) : baseAlpha;
+      const trailR = r * (0.3 + t * 0.5); // shrinks for older positions
+      const tx = trail[i].x;
+      const ty = trail[i].y - camY;
+      ctx.beginPath();
+      ctx.arc(tx, ty, trailR, 0, Math.PI*2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  // Glow — brighter when fast
   ctx.save();
-  ctx.globalAlpha = 0.3;
-  ctx.beginPath(); ctx.arc(px, py, r*2, 0, Math.PI*2);
-  const gg = ctx.createRadialGradient(px,py,0,px,py,r*2);
+  ctx.globalAlpha = fast ? 0.5 : 0.3;
+  const glowR = fast ? r*2.5 : r*2;
+  ctx.beginPath(); ctx.arc(px, py, glowR, 0, Math.PI*2);
+  const gg = ctx.createRadialGradient(px,py,0,px,py,glowR);
   gg.addColorStop(0, cfg.color); gg.addColorStop(1, 'transparent');
   ctx.fillStyle = gg; ctx.fill();
   ctx.restore();
@@ -561,10 +586,10 @@ function drawToken(body, cfg, idx){
   }
   ctx.restore();
 
-  // Ring
+  // Ring — brighter glow when fast
   ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI*2);
   ctx.strokeStyle = cfg.color; ctx.lineWidth = 3;
-  ctx.shadowColor = cfg.color; ctx.shadowBlur = 10;
+  ctx.shadowColor = cfg.color; ctx.shadowBlur = fast ? 20 : 10;
   ctx.stroke(); ctx.shadowBlur = 0;
 
   // Name label
@@ -701,6 +726,13 @@ function loop(now){
   // Physics
   if(phase==='race'){
     Engine.update(engine, dt*1000);
+
+    // Record trail positions
+    for(let i=0; i<2; i++){
+      const p = tokenBodies[i].position;
+      trailHistory[i].push({x:p.x, y:p.y});
+      if(trailHistory[i].length > 8) trailHistory[i].shift();
+    }
 
     // Downward nudge + win% bias force
     const biases = [(CFG.p1.winBias||50)/100, (CFG.p2.winBias||50)/100];
