@@ -331,9 +331,9 @@ function buildObstacles(){
   obs.push({type:'floor', x:CX-55, y:9200, w:20, h:300});
   obs.push({type:'floor', x:CX+55, y:9200, w:20, h:300});
 
-  // ── Boundaries ──
-  obs.push({type:'wall', x:-20, y:LEVEL_H/2, w:40, h:LEVEL_H});
-  obs.push({type:'wall', x:W+20, y:LEVEL_H/2, w:40, h:LEVEL_H});
+  // ── Boundaries — walls flush at x=0 and x=540 ──
+  obs.push({type:'wall', x:-10, y:LEVEL_H/2, w:20, h:LEVEL_H});
+  obs.push({type:'wall', x:W+10, y:LEVEL_H/2, w:20, h:LEVEL_H});
   obs.push({type:'floor', x:W/2, y:FINISH_Y+100, w:W, h:40});
 
   return obs;
@@ -691,7 +691,7 @@ function drawObstacles(){
     ctx.restore();
   });
 
-  // Finish line — thick checkered pattern at y=7400
+  // Finish line — thick checkered pattern at y=9800
   const fy = FINISH_Y - camY;
   if(fy > -80 && fy < H+80){
     const checkSize = 20;
@@ -791,52 +791,74 @@ function drawParticlesOnScreen(){
 
 function drawWinnerScreen(){
   if(winner<0) return;
-  const t = Math.min(1, (performance.now()-winnerT)/800);
+  const elapsed = (performance.now()-winnerT)/1000;
+  const t = Math.min(1, elapsed/0.8); // fade-in over 0.8s
   const cfg = winner===0 ? CFG.p1 : CFG.p2;
 
   ctx.save();
-  ctx.fillStyle = `rgba(0,0,0,${0.7*t})`;
+
+  // Background tint in player's color
+  ctx.fillStyle = `rgba(0,0,0,${0.6*t})`;
+  ctx.fillRect(0,0,W,H);
+  // Color overlay
+  const r = parseInt(cfg.color.slice(1,3),16)||0;
+  const g = parseInt(cfg.color.slice(3,5),16)||0;
+  const b = parseInt(cfg.color.slice(5,7),16)||0;
+  ctx.fillStyle = `rgba(${r},${g},${b},${0.2*t})`;
   ctx.fillRect(0,0,W,H);
 
   if(t>0.15){
     const t2 = Math.min(1,(t-0.15)/0.85);
     ctx.globalAlpha = t2;
 
-    // Winner face
-    const bigR = 80;
+    // Winner headshot (60px radius)
+    const bigR = 60;
+    const faceY = H/2 - 90;
     ctx.save();
-    ctx.beginPath(); ctx.arc(W/2, H/2-80, bigR, 0, Math.PI*2); ctx.clip();
+    ctx.beginPath(); ctx.arc(W/2, faceY, bigR, 0, Math.PI*2); ctx.clip();
     const key = winner===0?'p1':'p2';
     if(imgs[key]){
-      ctx.drawImage(imgs[key], W/2-bigR, H/2-80-bigR, bigR*2, bigR*2);
+      const img = imgs[key];
+      const scale = Math.max(bigR*2/img.width, bigR*2/img.height);
+      const dw = img.width * scale;
+      const dh = img.height * scale;
+      ctx.drawImage(img, W/2 - dw/2, faceY - dh/2 - dh*0.1, dw, dh);
     } else {
+      // Initials fallback
       ctx.fillStyle = cfg.color; ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.font = '700 36px system-ui';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      const initials = cfg.name.split(/\s+/).map(w=>w[0]).slice(0,2).join('');
+      ctx.fillText(initials, W/2, faceY);
     }
     ctx.restore();
 
-    ctx.beginPath(); ctx.arc(W/2, H/2-80, bigR, 0, Math.PI*2);
+    // Ring around headshot
+    ctx.beginPath(); ctx.arc(W/2, faceY, bigR, 0, Math.PI*2);
     ctx.strokeStyle = cfg.color; ctx.lineWidth = 5;
     ctx.shadowColor = cfg.color; ctx.shadowBlur = 40;
     ctx.stroke(); ctx.shadowBlur = 0;
 
-    // Text
+    // Player name — bold, large
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.font = '900 64px system-ui';
+    ctx.font = '700 32px system-ui';
+    ctx.fillStyle = '#fff';
+    ctx.fillText(cfg.name.toUpperCase(), W/2, H/2+10);
+
+    // "WINS THE RACE!" text
+    ctx.font = '900 52px system-ui';
     ctx.fillStyle = cfg.color;
-    ctx.shadowColor = cfg.color; ctx.shadowBlur = 50;
-    ctx.fillText('WINS!', W/2, H/2+40);
+    ctx.shadowColor = cfg.color; ctx.shadowBlur = 40;
+    ctx.fillText('WINS THE RACE!', W/2, H/2+65);
     ctx.shadowBlur = 0;
 
-    ctx.font = '700 28px system-ui';
-    ctx.fillStyle = '#fff';
-    ctx.fillText(cfg.name.toUpperCase(), W/2, H/2+90);
-
-    // Countdown
-    const remaining = Math.max(0, 5-(performance.now()-winnerT)/1000);
-    if(remaining>0){
+    // Countdown — 6 seconds total
+    const remaining = Math.max(0, 6 - elapsed);
+    if(remaining > 0){
       ctx.font = '600 18px system-ui';
       ctx.fillStyle = 'rgba(200,220,255,.6)';
-      ctx.fillText(`Restarting in ${Math.ceil(remaining)}...`, W/2, H/2+130);
+      ctx.fillText(`Restarting in ${Math.ceil(remaining)}...`, W/2, H/2+120);
     }
   }
   ctx.restore();
@@ -1047,10 +1069,31 @@ function drawVignette(){
   ctx.restore();
 }
 
+// ════════════════════════════ FPS COUNTER ════════════════════════════
+let _fpsFrames = 0, _fpsLast = 0, _fpsDisplay = 0;
+
+function drawFPS(){
+  ctx.save();
+  ctx.font = '600 12px system-ui';
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'bottom';
+  ctx.fillStyle = 'rgba(150,150,170,.5)';
+  ctx.fillText(`${_fpsDisplay} FPS`, W - 8, H - 8);
+  ctx.restore();
+}
+
 // ════════════════════════════ GAME LOOP ════════════════════════════
 let lastT = 0;
 
 function loop(now){
+  // FPS counter
+  _fpsFrames++;
+  if(now - _fpsLast >= 1000){
+    _fpsDisplay = _fpsFrames;
+    _fpsFrames = 0;
+    _fpsLast = now;
+  }
+
   const dt = Math.min((now-lastT)/1000, 0.05);
   lastT = now;
 
@@ -1106,15 +1149,18 @@ function loop(now){
       }
     }
 
-    // Stuck prevention: if ball moved < 5px in 3 seconds, unstick it
+    // Stuck prevention: if ball moved < 8px in 3 seconds, unstick it
     if(now - stuckCheckTime > 3000){
       for(let i=0; i<2; i++){
         const tb = tokenBodies[i];
         const dx = tb.position.x - stuckLastPos[i].x;
         const dy = tb.position.y - stuckLastPos[i].y;
         const dist = Math.sqrt(dx*dx + dy*dy);
-        if(dist < 5){
-          Body.setVelocity(tb, {x: (Math.random()*6)-3, y: -8});
+        if(dist < 8){
+          const impulseX = (Math.random()*8) - 4; // random(-4,4)
+          Body.setVelocity(tb, {x: impulseX, y: -10});
+          const section = Math.min(9, Math.max(1, Math.ceil(tb.position.y / 1100)));
+          console.log(`Ball ${i+1} unstuck at section ${section}`);
         }
         stuckLastPos[i] = {x:tb.position.x, y:tb.position.y};
       }
@@ -1171,7 +1217,7 @@ function loop(now){
         winner = i;
         winnerT = performance.now();
         phase = 'win';
-        autoRestartT = now + 5000;
+        autoRestartT = now + 6000;
 
         // Auto-stop recording if active
         if(rActive) setTimeout(()=>stopRec(), 1500);
@@ -1197,10 +1243,14 @@ function loop(now){
       }
     }
 
-    // Camera follows leading token
+    // Camera follows leading ball (furthest down), smooth lerp 0.08
     const leadY = Math.max(tokenBodies[0].position.y, tokenBodies[1].position.y);
-    const targetCam = Math.max(0, leadY - H*0.55);
-    camY += (targetCam - camY) * 0.06;
+    const trailY = Math.min(tokenBodies[0].position.y, tokenBodies[1].position.y);
+    let targetCam = Math.max(0, leadY - H*0.55);
+    // Never let camera outrun both balls — if trailing ball above screen, pull back
+    const maxCam = Math.max(0, trailY - H*0.15);
+    if(targetCam > maxCam) targetCam = maxCam;
+    camY += (targetCam - camY) * 0.08;
   }
 
   if(phase==='win' && now >= autoRestartT){
@@ -1223,6 +1273,7 @@ function loop(now){
   drawCheckpointFlash();
   drawVignette();
   if(phase==='win') drawWinnerScreen();
+  drawFPS();
 
   requestAnimationFrame(loop);
 }
