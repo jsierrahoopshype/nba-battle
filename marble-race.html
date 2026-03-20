@@ -147,210 +147,189 @@ function rng(){ _seed=((_seed*1103515245+12345)&0x7fffffff); return _seed/0x7fff
 function rngRange(a,b){ return a+rng()*(b-a); }
 
 // ════════════════════════════ LEVEL DESIGN ════════════════════════════
-const FINISH_Y = 8900;
-const LEVEL_H = 9500;
+const FINISH_Y = 9800;
+const LEVEL_H = 10000;
 const BALL_RADIUS = 28;
 
 function buildObstacles(){
   const obs = [];
   const CX = W/2; // 270
+  // Standard thick ramp params
+  const F = 0.12, R = 0.15;
 
-  // ══ SECTION 1 (y 150–900): Hook ══
+  // ══ SECTION 1 (y 200–900): Hook ══
 
-  // Wide V-funnel merging both balls immediately
-  obs.push({type:'slope', x:0, y:200, w:220, angle:0.78, friction:0.08, restitution:0.2});
-  obs.push({type:'slope', x:W, y:200, w:220, angle:-0.78, friction:0.08, restitution:0.2});
+  // Mirrored curved funnel (exit 120px) merging both balls
+  obs.push({type:'slope', x:0, y:250, w:200, angle:0.65, friction:F, restitution:R});
+  obs.push({type:'slope', x:W, y:250, w:200, angle:-0.65, friction:F, restitution:R});
+  obs.push({type:'slope', x:0, y:420, w:180, angle:0.78, friction:F, restitution:R});
+  obs.push({type:'slope', x:W, y:420, w:180, angle:-0.78, friction:F, restitution:R});
+
+  // Shared shallow bowl below (width 300px)
+  obs.push({type:'slope', x:CX-150, y:620, w:130, angle:0.65, friction:F, restitution:R});
+  obs.push({type:'slope', x:CX+150, y:620, w:130, angle:-0.65, friction:F, restitution:R});
+  obs.push({type:'floor', x:CX, y:700, w:100, h:20});
+
+  // One peg in center below bowl
+  obs.push({type:'peg', x:CX, y:830, r:12, restitution:0.5});
+
+  // ══ SECTION 2 (y 1000–1800): S-curve rolls ══
+
+  // Left ramp angled right (leads ball right)
+  obs.push({type:'slope', x:0, y:1050, w:220, angle:0.70, friction:F, restitution:R});
+
+  // Right ramp angled left (leads ball left)
+  obs.push({type:'slope', x:W, y:1300, w:220, angle:-0.70, friction:F, restitution:R});
+
+  // Bowl at bottom catching both
+  obs.push({type:'slope', x:CX-140, y:1530, w:120, angle:0.65, friction:F, restitution:R});
+  obs.push({type:'slope', x:CX+140, y:1530, w:120, angle:-0.65, friction:F, restitution:R});
+  obs.push({type:'floor', x:CX, y:1610, w:120, h:20});
+
+  // 2 pegs in bowl exit
+  obs.push({type:'peg', x:CX-50, y:1720, r:12, restitution:0.5});
+  obs.push({type:'peg', x:CX+50, y:1720, r:12, restitution:0.5});
+
+  // ══ SECTION 3 (y 1900–2700): First recompression ══
+
+  // Wide funnel (exit 90px) merging both lanes
+  obs.push({type:'slope', x:0, y:1950, w:240, angle:0.78, friction:F, restitution:R});
+  obs.push({type:'slope', x:W, y:1950, w:240, angle:-0.78, friction:F, restitution:R});
+
+  // Bowl below funnel
+  obs.push({type:'slope', x:CX-130, y:2200, w:110, angle:0.65, friction:F, restitution:R});
+  obs.push({type:'slope', x:CX+130, y:2200, w:110, angle:-0.65, friction:F, restitution:R});
+  obs.push({type:'floor', x:CX, y:2280, w:100, h:20});
+
+  // 3 pegs in triangle below bowl
+  obs.push({type:'peg', x:CX, y:2430, r:12, restitution:0.5});
+  obs.push({type:'peg', x:CX-70, y:2580, r:12, restitution:0.5});
+  obs.push({type:'peg', x:CX+70, y:2580, r:12, restitution:0.5});
+
+  // ══ SECTION 4 (y 2800–3800): First moving obstacle ══
+
+  // Wide landing ledge (bowl shape)
+  obs.push({type:'slope', x:0, y:2850, w:200, angle:0.65, friction:F, restitution:R});
+  obs.push({type:'slope', x:W, y:2850, w:200, angle:-0.65, friction:F, restitution:R});
+  obs.push({type:'floor', x:CX, y:2950, w:160, h:20});
+
+  // ONE slow sweeper arm (length 160px, speed 0.012 rad/frame)
+  obs.push({type:'paddle', x:CX, y:3150, w:160, speed:0.012});
+
+  // Two exit ramps below sweeper (each 100px wide, forming two channels)
+  obs.push({type:'slope', x:CX-120, y:3400, w:100, angle:0.65, friction:F, restitution:R});
+  obs.push({type:'slope', x:CX+120, y:3400, w:100, angle:-0.65, friction:F, restitution:R});
+  // Exit pegs
+  obs.push({type:'peg', x:CX-60, y:3600, r:12, restitution:0.5});
+  obs.push({type:'peg', x:CX+60, y:3600, r:12, restitution:0.5});
+
+  // Transition ramp
+  obs.push({type:'slope', x:0, y:3700, w:160, angle:0.70, friction:F, restitution:R});
+  obs.push({type:'slope', x:W, y:3700, w:160, angle:-0.70, friction:F, restitution:R});
+
+  // ══ SECTION 5 (y 3900–4800): Seesaw rivalry ══
+
+  // Landing ramps
+  obs.push({type:'slope', x:0, y:3950, w:180, angle:0.70, friction:F, restitution:R});
+  obs.push({type:'slope', x:W, y:3950, w:180, angle:-0.70, friction:F, restitution:R});
+
+  // Wide seesaw (240px beam)
+  obs.push({type:'seesaw', x:CX, y:4200, w:240});
+
+  // Two exit funnels below seesaw
+  obs.push({type:'slope', x:0, y:4400, w:160, angle:0.78, friction:F, restitution:R});
+  obs.push({type:'slope', x:W, y:4400, w:160, angle:-0.78, friction:F, restitution:R});
+  obs.push({type:'slope', x:0, y:4600, w:200, angle:0.70, friction:F, restitution:R});
+  obs.push({type:'slope', x:W, y:4600, w:200, angle:-0.70, friction:F, restitution:R});
+
+  // Peg below exit
+  obs.push({type:'peg', x:CX, y:4750, r:12, restitution:0.5});
+
+  // ══ SECTION 6 (y 4900–5900): Rolling machine ══
+
+  // S-curve of 3 large bowls alternating left/right
+
+  // Bowl 1 — left-leaning
+  obs.push({type:'slope', x:0, y:4950, w:250, angle:0.65, friction:F, restitution:R});
+  obs.push({type:'slope', x:CX+60, y:5050, w:120, angle:-0.65, friction:F, restitution:R});
+  obs.push({type:'floor', x:CX-30, y:5100, w:100, h:20});
+
+  // Bowl 2 — right-leaning
+  obs.push({type:'slope', x:W, y:5250, w:250, angle:-0.65, friction:F, restitution:R});
+  obs.push({type:'slope', x:CX-60, y:5350, w:120, angle:0.65, friction:F, restitution:R});
+  obs.push({type:'floor', x:CX+30, y:5400, w:100, h:20});
+
+  // Bowl 3 — centered
+  obs.push({type:'slope', x:0, y:5550, w:220, angle:0.65, friction:F, restitution:R});
+  obs.push({type:'slope', x:W, y:5550, w:220, angle:-0.65, friction:F, restitution:R});
+  obs.push({type:'floor', x:CX, y:5650, w:100, h:20});
 
   // Transition pegs
-  obs.push({type:'peg', x:CX-50, y:380, r:10, restitution:0.7});
-  obs.push({type:'peg', x:CX+50, y:380, r:10, restitution:0.7});
+  obs.push({type:'peg', x:CX-50, y:5800, r:12, restitution:0.5});
+  obs.push({type:'peg', x:CX+50, y:5800, r:12, restitution:0.5});
 
-  // Small peg cluster below funnel (2x3 grid)
-  for(let r=0; r<3; r++){
-    for(let c=0; c<2; c++){
-      obs.push({type:'peg', x:CX-45+c*90, y:480+r*80, r:10, restitution:0.7});
-    }
-  }
-
-  // Angled ramp pair redirecting balls inward
-  obs.push({type:'slope', x:0, y:760, w:170, angle:0.78, friction:0.08, restitution:0.2});
-  obs.push({type:'slope', x:W, y:760, w:170, angle:-0.78, friction:0.08, restitution:0.2});
-
-  // Transition peg
-  obs.push({type:'peg', x:CX, y:900, r:10, restitution:0.7});
-
-  // ══ SECTION 2 (y 1000–2000): First technical ══
-
-  // Bowl 1: 3 angled segments forming U-shape, exit gap ~90px
-  obs.push({type:'slope', x:0, y:1050, w:180, angle:0.78, friction:0.08, restitution:0.2});
-  obs.push({type:'slope', x:W, y:1050, w:180, angle:-0.78, friction:0.08, restitution:0.2});
-  obs.push({type:'slope', x:CX-100, y:1150, w:80, angle:0.7, friction:0.08, restitution:0.2});
-
-  // Narrow gate 1 (70px wide centered)
-  obs.push({type:'slope', x:0, y:1280, w:267, angle:0.78, friction:0.08, restitution:0.2});
-  obs.push({type:'slope', x:W, y:1280, w:267, angle:-0.78, friction:0.08, restitution:0.2});
-
-  // Bowl 2
-  obs.push({type:'slope', x:0, y:1430, w:180, angle:0.78, friction:0.08, restitution:0.2});
-  obs.push({type:'slope', x:W, y:1430, w:180, angle:-0.78, friction:0.08, restitution:0.2});
-  obs.push({type:'slope', x:CX-100, y:1530, w:80, angle:0.7, friction:0.08, restitution:0.2});
-
-  // Narrow gate 2
-  obs.push({type:'slope', x:0, y:1680, w:267, angle:0.78, friction:0.08, restitution:0.2});
-  obs.push({type:'slope', x:W, y:1680, w:267, angle:-0.78, friction:0.08, restitution:0.2});
-
-  // Bowl 3
-  obs.push({type:'slope', x:0, y:1830, w:180, angle:0.78, friction:0.08, restitution:0.2});
-  obs.push({type:'slope', x:W, y:1830, w:180, angle:-0.78, friction:0.08, restitution:0.2});
-  obs.push({type:'slope', x:CX-100, y:1930, w:80, angle:0.7, friction:0.08, restitution:0.2});
-
-  // ══ SECTION 3 (y 2100–3300): Recompression ══
-
-  // Transition ramps
-  obs.push({type:'slope', x:0, y:2100, w:160, angle:0.78, friction:0.08, restitution:0.2});
-  obs.push({type:'slope', x:W, y:2100, w:160, angle:-0.78, friction:0.08, restitution:0.2});
-
-  // Wide funnel re-merges both balls (exit 80px)
-  obs.push({type:'slope', x:0, y:2300, w:264, angle:0.78, friction:0.08, restitution:0.2});
-  obs.push({type:'slope', x:W, y:2300, w:264, angle:-0.78, friction:0.08, restitution:0.2});
-
-  // Transition pegs
-  obs.push({type:'peg', x:CX-50, y:2500, r:10, restitution:0.7});
-  obs.push({type:'peg', x:CX+50, y:2500, r:10, restitution:0.7});
-
-  // V-trap: two steep ramps forming V, slows balls before releasing
-  obs.push({type:'slope', x:0, y:2650, w:250, angle:0.78, friction:0.08, restitution:0.2});
-  obs.push({type:'slope', x:W, y:2650, w:250, angle:-0.78, friction:0.08, restitution:0.2});
-
-  // Redirect ramps
-  obs.push({type:'slope', x:0, y:2850, w:160, angle:0.78, friction:0.08, restitution:0.2});
-  obs.push({type:'slope', x:W, y:2850, w:160, angle:-0.78, friction:0.08, restitution:0.2});
-
-  // Pinball bumper triangle (3 pegs)
-  obs.push({type:'peg', x:CX, y:3020, r:12, restitution:0.7});
-  obs.push({type:'peg', x:CX-65, y:3140, r:12, restitution:0.7});
-  obs.push({type:'peg', x:CX+65, y:3140, r:12, restitution:0.7});
-
-  // Section exit ramps
-  obs.push({type:'slope', x:0, y:3260, w:160, angle:0.78, friction:0.08, restitution:0.2});
-  obs.push({type:'slope', x:W, y:3260, w:160, angle:-0.78, friction:0.08, restitution:0.2});
-
-  // ══ SECTION 4 (y 3400–5000): Chaos — moving obstacles ══
+  // ══ SECTION 7 (y 6000–7200): Comeback chaos ══
 
   // Entry ramps
-  obs.push({type:'slope', x:0, y:3450, w:150, angle:0.78, friction:0.08, restitution:0.2});
-  obs.push({type:'slope', x:W, y:3450, w:150, angle:-0.78, friction:0.08, restitution:0.2});
+  obs.push({type:'slope', x:0, y:6050, w:180, angle:0.70, friction:F, restitution:R});
+  obs.push({type:'slope', x:W, y:6050, w:180, angle:-0.70, friction:F, restitution:R});
 
-  // Rotating sweeper 1 (150px, slow 0.015 rad/frame)
-  obs.push({type:'paddle', x:CX, y:3600, w:150, speed:0.015});
+  // Oscillating gate (moves x 160-380, period 4 seconds)
+  obs.push({type:'oscgate', x:CX, y:6300, w:100, xMin:160, xMax:380, period:4});
 
-  // Redirect ramps
-  obs.push({type:'slope', x:0, y:3750, w:140, angle:0.78, friction:0.08, restitution:0.2});
-  obs.push({type:'slope', x:W, y:3750, w:140, angle:-0.78, friction:0.08, restitution:0.2});
+  // Wide catch bowl below gate
+  obs.push({type:'slope', x:CX-160, y:6500, w:130, angle:0.65, friction:F, restitution:R});
+  obs.push({type:'slope', x:CX+160, y:6500, w:130, angle:-0.65, friction:F, restitution:R});
+  obs.push({type:'floor', x:CX, y:6580, w:120, h:20});
 
-  // Rotating sweeper 2
-  obs.push({type:'paddle', x:CX, y:3900, w:150, speed:-0.015});
+  // One more sweeper arm (speed 0.010)
+  obs.push({type:'paddle', x:CX, y:6780, w:160, speed:0.010});
 
-  // Ramps
-  obs.push({type:'slope', x:0, y:4050, w:140, angle:0.78, friction:0.08, restitution:0.2});
-  obs.push({type:'slope', x:W, y:4050, w:140, angle:-0.78, friction:0.08, restitution:0.2});
+  // Recompression funnel (exit 80px)
+  obs.push({type:'slope', x:0, y:6980, w:260, angle:0.78, friction:F, restitution:R});
+  obs.push({type:'slope', x:W, y:6980, w:260, angle:-0.78, friction:F, restitution:R});
 
-  // Seesaw: 200px beam pivoting at center, high friction
-  obs.push({type:'seesaw', x:CX, y:4200, w:200});
+  // Peg below funnel
+  obs.push({type:'peg', x:CX, y:7130, r:12, restitution:0.5});
 
-  // Ramps
-  obs.push({type:'slope', x:0, y:4350, w:140, angle:0.78, friction:0.08, restitution:0.2});
-  obs.push({type:'slope', x:W, y:4350, w:140, angle:-0.78, friction:0.08, restitution:0.2});
+  // ══ SECTION 8 (y 7300–8400): Tension section ══
 
-  // Oscillating gate (moves x=180 to x=360, period 3s)
-  obs.push({type:'oscgate', x:CX, y:4500, w:80, xMin:180, xMax:360, period:3});
+  // Narrow alternating ramps forcing zigzag path
+  // Ramp 1 — from left
+  obs.push({type:'slope', x:0, y:7350, w:150, angle:0.70, friction:F, restitution:R});
+  obs.push({type:'peg', x:CX+40, y:7450, r:12, restitution:0.5});
+  obs.push({type:'peg', x:CX-40, y:7500, r:12, restitution:0.5});
 
-  // Ramps
-  obs.push({type:'slope', x:0, y:4650, w:150, angle:0.78, friction:0.08, restitution:0.2});
-  obs.push({type:'slope', x:W, y:4650, w:150, angle:-0.78, friction:0.08, restitution:0.2});
+  // Ramp 2 — from right
+  obs.push({type:'slope', x:W, y:7600, w:150, angle:-0.70, friction:F, restitution:R});
+  obs.push({type:'peg', x:CX-40, y:7700, r:12, restitution:0.5});
+  obs.push({type:'peg', x:CX+40, y:7750, r:12, restitution:0.5});
 
-  // Pegs
-  obs.push({type:'peg', x:CX-70, y:4800, r:10, restitution:0.7});
-  obs.push({type:'peg', x:CX+70, y:4800, r:10, restitution:0.7});
-  obs.push({type:'peg', x:CX, y:4950, r:10, restitution:0.7});
+  // Ramp 3 — from left
+  obs.push({type:'slope', x:0, y:7850, w:150, angle:0.70, friction:F, restitution:R});
+  obs.push({type:'peg', x:CX+40, y:7950, r:12, restitution:0.5});
+  obs.push({type:'peg', x:CX-40, y:8000, r:12, restitution:0.5});
 
-  // ══ SECTION 5 (y 5100–6500): Comeback zone ══
+  // Ramp 4 — from right
+  obs.push({type:'slope', x:W, y:8100, w:150, angle:-0.70, friction:F, restitution:R});
 
-  // Entry funnel into split
-  obs.push({type:'slope', x:0, y:5150, w:180, angle:0.78, friction:0.08, restitution:0.2});
-  obs.push({type:'slope', x:W, y:5150, w:180, angle:-0.78, friction:0.08, restitution:0.2});
+  // Final recompression bowl (exit 70px)
+  obs.push({type:'slope', x:0, y:8250, w:260, angle:0.78, friction:F, restitution:R});
+  obs.push({type:'slope', x:W, y:8250, w:260, angle:-0.78, friction:F, restitution:R});
 
-  // Path splitter (^ divider)
-  obs.push({type:'slope', x:CX, y:5300, w:100, angle:0.78, friction:0.08, restitution:0.2});
-  obs.push({type:'slope', x:CX, y:5300, w:100, angle:-0.78, friction:0.08, restitution:0.2});
+  // ══ SECTION 9 (y 8500–9700): Final sprint ══
 
-  // Left lane extra pegs (riskier path)
-  obs.push({type:'peg', x:100, y:5450, r:10, restitution:0.7});
-  obs.push({type:'peg', x:150, y:5650, r:10, restitution:0.7});
+  // Two angled deflectors
+  obs.push({type:'slope', x:0, y:8550, w:180, angle:0.70, friction:F, restitution:R});
+  obs.push({type:'slope', x:W, y:8750, w:180, angle:-0.70, friction:F, restitution:R});
 
-  // Lane ramps
-  obs.push({type:'slope', x:0, y:5500, w:100, angle:0.78, friction:0.08, restitution:0.2});
-  obs.push({type:'slope', x:W, y:5500, w:100, angle:-0.78, friction:0.08, restitution:0.2});
-  obs.push({type:'slope', x:0, y:5700, w:100, angle:0.78, friction:0.08, restitution:0.2});
-  obs.push({type:'slope', x:W, y:5700, w:100, angle:-0.78, friction:0.08, restitution:0.2});
+  // Pegs before finish chute
+  obs.push({type:'peg', x:CX-40, y:8950, r:12, restitution:0.5});
+  obs.push({type:'peg', x:CX+40, y:8950, r:12, restitution:0.5});
 
-  // More lane ramps (fill gap)
-  obs.push({type:'slope', x:0, y:5850, w:100, angle:0.78, friction:0.08, restitution:0.2});
-  obs.push({type:'slope', x:W, y:5850, w:100, angle:-0.78, friction:0.08, restitution:0.2});
-
-  // Slow rotating sweeper
-  obs.push({type:'paddle', x:CX, y:5950, w:150, speed:0.01});
-
-  // Ramps
-  obs.push({type:'slope', x:0, y:6100, w:140, angle:0.78, friction:0.08, restitution:0.2});
-  obs.push({type:'slope', x:W, y:6100, w:140, angle:-0.78, friction:0.08, restitution:0.2});
-
-  // Compression funnel re-merging both lanes (exit 80px)
-  obs.push({type:'slope', x:0, y:6300, w:264, angle:0.78, friction:0.08, restitution:0.2});
-  obs.push({type:'slope', x:W, y:6300, w:264, angle:-0.78, friction:0.08, restitution:0.2});
-
-  // Transition pegs
-  obs.push({type:'peg', x:CX-40, y:6450, r:10, restitution:0.7});
-  obs.push({type:'peg', x:CX+40, y:6450, r:10, restitution:0.7});
-
-  // ══ SECTION 6 (y 6600–8800): Final sprint ══
-
-  // Transition ramps
-  obs.push({type:'slope', x:0, y:6600, w:140, angle:0.78, friction:0.08, restitution:0.2});
-  obs.push({type:'slope', x:W, y:6600, w:140, angle:-0.78, friction:0.08, restitution:0.2});
-
-  // 4 alternating angled deflectors with fill pegs
-  obs.push({type:'slope', x:0, y:6780, w:170, angle:0.78, friction:0.08, restitution:0.2});
-  obs.push({type:'peg', x:CX, y:6880, r:10, restitution:0.7});
-  obs.push({type:'slope', x:W, y:6980, w:170, angle:-0.78, friction:0.08, restitution:0.2});
-  obs.push({type:'peg', x:CX, y:7080, r:10, restitution:0.7});
-  obs.push({type:'slope', x:0, y:7180, w:170, angle:0.78, friction:0.08, restitution:0.2});
-  obs.push({type:'peg', x:CX, y:7280, r:10, restitution:0.7});
-  obs.push({type:'slope', x:W, y:7380, w:170, angle:-0.78, friction:0.08, restitution:0.2});
-
-  // Last peg cluster (2x3)
-  for(let r=0; r<3; r++){
-    for(let c=0; c<2; c++){
-      obs.push({type:'peg', x:CX-45+c*90, y:7550+r*80, r:10, restitution:0.7});
-    }
-  }
-
-  // Ramps
-  obs.push({type:'slope', x:0, y:7800, w:160, angle:0.78, friction:0.08, restitution:0.2});
-  obs.push({type:'slope', x:W, y:7800, w:160, angle:-0.78, friction:0.08, restitution:0.2});
-
-  // Pegs
-  obs.push({type:'peg', x:CX-60, y:7950, r:10, restitution:0.7});
-  obs.push({type:'peg', x:CX+60, y:7950, r:10, restitution:0.7});
-  obs.push({type:'peg', x:CX, y:8100, r:10, restitution:0.7});
-
-  // Funnel into finish chute
-  obs.push({type:'slope', x:0, y:8250, w:210, angle:0.78, friction:0.08, restitution:0.2});
-  obs.push({type:'slope', x:W, y:8250, w:210, angle:-0.78, friction:0.08, restitution:0.2});
-
-  // Narrow finish chute (100px wide, 300px long)
-  obs.push({type:'floor', x:CX-58, y:8500, w:16, h:300});
-  obs.push({type:'floor', x:CX+58, y:8500, w:16, h:300});
+  // Narrow finish chute (walls 110px apart, 300px long, 20px thick walls)
+  obs.push({type:'floor', x:CX-55, y:9200, w:20, h:300});
+  obs.push({type:'floor', x:CX+55, y:9200, w:20, h:300});
 
   // ── Boundaries ──
   obs.push({type:'wall', x:-20, y:LEVEL_H/2, w:40, h:LEVEL_H});
@@ -1000,7 +979,7 @@ function loop(now){
 
     // Check winner
     for(let i=0; i<2; i++){
-      if(tokenBodies[i].position.y >= 8850 && winner<0){
+      if(tokenBodies[i].position.y >= 9750 && winner<0){
         winner = i;
         winnerT = performance.now();
         phase = 'win';
