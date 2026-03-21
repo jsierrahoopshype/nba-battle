@@ -84,20 +84,20 @@ canvas{border-radius:6px;cursor:default;position:relative;z-index:1}
 <script>
 // ════════════════════════════ CONFIGURATION ════════════════════════════
 const PALETTE = ['#552583','#1D428A','#CE1141','#007A33','#F58426','#5D76A9','#98002E','#00788C'];
-const DEFAULT_NAMES = ['LeBron James','Stephen Curry','Kevin Durant','Giannis Antetokounmpo','Luka Doncic','Jayson Tatum','Nikola Jokic','Joel Embiid'];
-const DEFAULT_SLUGS = ['2544-lebron-james','201939-stephen-curry','201142-kevin-durant','203507-giannis-antetokounmpo','1629029-luka-doncic','1628369-jayson-tatum','203999-nikola-jokic','203954-joel-embiid'];
+const DEFAULT_NAMES = ['LeBron James','Stephen Curry','Nikola Jokic','Giannis Antetokounmpo','Luka Doncic','Shai Gilgeous-Alexander','Jayson Tatum','Kevin Durant'];
+const DEFAULT_SLUGS = ['2544-lebron-james','201939-stephen-curry','203999-nikola-jokic','203507-giannis-antetokounmpo','1629029-luka-doncic','1628983-shai-gilgeous-alexander','1628369-jayson-tatum','201142-kevin-durant'];
 
 const CFG = {
   playerCount: 2,
   players: [
     {name:'LeBron James', img:'https://nba-battle.thejorgesierra.workers.dev/headshot/2544-lebron-james.png', color:'#552583', winBias:50},
     {name:'Stephen Curry', img:'https://nba-battle.thejorgesierra.workers.dev/headshot/201939-stephen-curry.png', color:'#1D428A', winBias:50},
-    {name:'Kevin Durant', img:'https://nba-battle.thejorgesierra.workers.dev/headshot/201142-kevin-durant.png', color:'#CE1141', winBias:50},
+    {name:'Nikola Jokic', img:'https://nba-battle.thejorgesierra.workers.dev/headshot/203999-nikola-jokic.png', color:'#CE1141', winBias:50},
     {name:'Giannis Antetokounmpo', img:'https://nba-battle.thejorgesierra.workers.dev/headshot/203507-giannis-antetokounmpo.png', color:'#007A33', winBias:50},
     {name:'Luka Doncic', img:'https://nba-battle.thejorgesierra.workers.dev/headshot/1629029-luka-doncic.png', color:'#F58426', winBias:50},
-    {name:'Jayson Tatum', img:'https://nba-battle.thejorgesierra.workers.dev/headshot/1628369-jayson-tatum.png', color:'#5D76A9', winBias:50},
-    {name:'Nikola Jokic', img:'https://nba-battle.thejorgesierra.workers.dev/headshot/203999-nikola-jokic.png', color:'#98002E', winBias:50},
-    {name:'Joel Embiid', img:'https://nba-battle.thejorgesierra.workers.dev/headshot/203954-joel-embiid.png', color:'#00788C', winBias:50}
+    {name:'Shai Gilgeous-Alexander', img:'https://nba-battle.thejorgesierra.workers.dev/headshot/1628983-shai-gilgeous-alexander.png', color:'#5D76A9', winBias:50},
+    {name:'Jayson Tatum', img:'https://nba-battle.thejorgesierra.workers.dev/headshot/1628369-jayson-tatum.png', color:'#98002E', winBias:50},
+    {name:'Kevin Durant', img:'https://nba-battle.thejorgesierra.workers.dev/headshot/201142-kevin-durant.png', color:'#00788C', winBias:50}
   ],
   gravity: 0.6,
   seed: 42
@@ -372,7 +372,9 @@ function loadImg(key, url, name){
 }
 function loadAllPlayerImgs(){
   imgsLoaded = 0;
-  for(let i=0; i<CFG.playerCount; i++){
+  // Always preload all 8 default headshots on startup
+  const count = CFG.players.length;
+  for(let i=0; i<count; i++){
     loadImg('p'+i, CFG.players[i].img, CFG.players[i].name);
   }
 }
@@ -739,8 +741,8 @@ function drawWinnerScreen(){
     const t2 = Math.min(1,(t-0.15)/0.85);
     ctx.globalAlpha = t2;
 
-    // Winner headshot (60px radius)
-    const bigR = 60;
+    // Winner headshot (55px radius)
+    const bigR = 55;
     const faceY = H/2 - 90;
     ctx.save();
     ctx.beginPath(); ctx.arc(W/2, faceY, bigR, 0, Math.PI*2); ctx.clip();
@@ -806,7 +808,7 @@ function drawHUD(){
 
   if(N <= 2){
     // ── 2-player bar HUD ──
-    const barH = 36, thumbR = 24, barY = 6;
+    const barH = 36, thumbR = 22, barY = 6;
     const barW = W/2 - 4;
     const leader = ranking[0];
 
@@ -893,14 +895,31 @@ function drawHUD(){
       ctx.font = '700 13px system-ui'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
       ctx.fillText(`${r+1}.`, lbX + 6, rowY + rowH/2);
 
-      // Color dot
-      ctx.beginPath(); ctx.arc(lbX + 28, rowY + rowH/2, 6, 0, Math.PI*2);
-      ctx.fillStyle = cfg.color; ctx.fill();
+      // Headshot thumbnail (14px radius) or initials fallback
+      const lbThumbR = 14;
+      const lbThumbCX = lbX + 28, lbThumbCY = rowY + rowH/2;
+      const lbImg = imgs['p'+idx];
+      ctx.save();
+      ctx.beginPath(); ctx.arc(lbThumbCX, lbThumbCY, lbThumbR, 0, Math.PI*2); ctx.clip();
+      if(lbImg && lbImg.naturalWidth > 0){
+        const sc = Math.max(lbThumbR*2/lbImg.naturalWidth, lbThumbR*2/lbImg.naturalHeight);
+        const dw2 = lbImg.naturalWidth * sc, dh2 = lbImg.naturalHeight * sc;
+        ctx.drawImage(lbImg, lbThumbCX - dw2/2, lbThumbCY - dh2/2 - dh2*0.1, dw2, dh2);
+      } else {
+        ctx.fillStyle = cfg.color;
+        ctx.fillRect(lbThumbCX-lbThumbR, lbThumbCY-lbThumbR, lbThumbR*2, lbThumbR*2);
+        ctx.fillStyle = '#fff'; ctx.font = '700 11px system-ui';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(cfg.name.split(/\s+/).map(w=>w[0]).slice(0,2).join(''), lbThumbCX, lbThumbCY);
+      }
+      ctx.restore();
+      ctx.beginPath(); ctx.arc(lbThumbCX, lbThumbCY, lbThumbR, 0, Math.PI*2);
+      ctx.strokeStyle = cfg.color; ctx.lineWidth = 1.5; ctx.stroke();
 
       // Name (truncated) + pct
       ctx.fillStyle = '#fff'; ctx.font = '600 12px system-ui'; ctx.textAlign = 'left';
       const shortName = cfg.name.length > 12 ? cfg.name.slice(0,11)+'…' : cfg.name;
-      ctx.fillText(shortName, lbX + 40, rowY + rowH/2);
+      ctx.fillText(shortName, lbX + 46, rowY + rowH/2);
 
       ctx.textAlign = 'right';
       ctx.fillText(`${Math.round(pct)}%`, lbX + lbW - 8, rowY + rowH/2);
@@ -1348,7 +1367,7 @@ function applyConfig(){
 
   const applyStart = performance.now();
   function checkReady(){
-    if(imgsLoaded >= CFG.playerCount || performance.now() - applyStart > 3000){
+    if(imgsLoaded >= CFG.players.length || performance.now() - applyStart > 3000){
       const el = document.getElementById('apply-loading');
       if(el) el.remove();
       closeModal();
@@ -1447,7 +1466,7 @@ function drawLoadingScreen(){
 
 function preloadLoop(now){
   const elapsed = now - _preloadStart;
-  const bothLoaded = imgsLoaded >= CFG.playerCount;
+  const bothLoaded = imgsLoaded >= CFG.players.length;
   const timedOut = elapsed > 3000;
   if(bothLoaded || timedOut){
     _preloadDone = true;
