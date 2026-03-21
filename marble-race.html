@@ -62,7 +62,7 @@ canvas{border-radius:6px;cursor:default;position:relative;z-index:1}
 <h3>Player 1</h3>
 <div class="search-for" onclick="showSearch(1)">🔍 Search NBA player...</div>
 <div class="preview-row">
-<img class="face-preview" id="prev1" src="">
+<img class="face-preview" id="prev1" crossorigin="anonymous" src="">
 <div style="flex:1">
 <label>Name</label>
 <input type="text" id="name1">
@@ -82,7 +82,7 @@ canvas{border-radius:6px;cursor:default;position:relative;z-index:1}
 <h3>Player 2</h3>
 <div class="search-for" onclick="showSearch(2)">🔍 Search NBA player...</div>
 <div class="preview-row">
-<img class="face-preview" id="prev2" src="">
+<img class="face-preview" id="prev2" crossorigin="anonymous" src="">
 <div style="flex:1">
 <label>Name</label>
 <input type="text" id="name2">
@@ -115,13 +115,13 @@ canvas{border-radius:6px;cursor:default;position:relative;z-index:1}
 const CFG = {
   p1: {
     name: 'LeBron James',
-    img: 'https://cdn.nba.com/headshots/nba/latest/260x190/2544.png',
+    img: 'https://nba-battle.thejorgesierra.workers.dev/headshot/2544-lebron-james.png',
     color: '#552583',
     winBias: 50
   },
   p2: {
     name: 'Stephen Curry',
-    img: 'https://cdn.nba.com/headshots/nba/latest/260x190/201939.png',
+    img: 'https://nba-battle.thejorgesierra.workers.dev/headshot/201939-stephen-curry.png',
     color: '#1D428A',
     winBias: 50
   },
@@ -154,180 +154,123 @@ const BALL_RADIUS = 28;
 function buildObstacles(){
   const obs = [];
   const CX = W/2; // 270
-  // Standard thick ramp params
+  // Standard ramp params — all angles exactly 40° (0.70 rad)
   const F = 0.12, R = 0.15;
+  const A = 0.70; // 40° — the only angle used
 
-  // ══ SECTION 1 (y 200–900): Hook ══
-
-  // Mirrored curved funnel (exit 120px) merging both balls
-  obs.push({type:'slope', x:0, y:250, w:200, angle:0.65, friction:F, restitution:R});
-  obs.push({type:'slope', x:W, y:250, w:200, angle:-0.65, friction:F, restitution:R});
-  obs.push({type:'slope', x:0, y:420, w:180, angle:0.78, friction:F, restitution:R});
-  obs.push({type:'slope', x:W, y:420, w:180, angle:-0.78, friction:F, restitution:R});
-
-  // Shared shallow bowl below (width 300px)
-  obs.push({type:'slope', x:CX-150, y:620, w:130, angle:0.65, friction:F, restitution:R});
-  obs.push({type:'slope', x:CX+150, y:620, w:130, angle:-0.65, friction:F, restitution:R});
-  obs.push({type:'floor', x:CX, y:700, w:100, h:20});
-
-  // One peg in center below bowl
+  // ══ SECTION 1 (y 200–900): Opening deflectors ══
+  // Short deflectors (100px max) redirect inward, no pocket, no floor
+  obs.push({type:'slope', x:0, y:280, w:100, angle:A, friction:F, restitution:R});
+  obs.push({type:'slope', x:W, y:280, w:100, angle:-A, friction:F, restitution:R});
+  obs.push({type:'slope', x:0, y:500, w:100, angle:A, friction:F, restitution:R});
+  obs.push({type:'slope', x:W, y:500, w:100, angle:-A, friction:F, restitution:R});
+  // Pegs to scatter — no bowl, no floor
+  obs.push({type:'peg', x:CX-60, y:700, r:12, restitution:0.5});
+  obs.push({type:'peg', x:CX+60, y:700, r:12, restitution:0.5});
   obs.push({type:'peg', x:CX, y:830, r:12, restitution:0.5});
 
   // ══ SECTION 2 (y 1000–1800): S-curve rolls ══
-
-  // Left ramp angled right (leads ball right)
-  obs.push({type:'slope', x:0, y:1050, w:220, angle:0.70, friction:F, restitution:R});
-
-  // Right ramp angled left (leads ball left)
-  obs.push({type:'slope', x:W, y:1300, w:220, angle:-0.70, friction:F, restitution:R});
-
-  // Bowl at bottom catching both
-  obs.push({type:'slope', x:CX-140, y:1530, w:120, angle:0.65, friction:F, restitution:R});
-  obs.push({type:'slope', x:CX+140, y:1530, w:120, angle:-0.65, friction:F, restitution:R});
-  obs.push({type:'floor', x:CX, y:1610, w:120, h:20});
-
-  // 2 pegs in bowl exit
+  // Alternating wall deflectors
+  obs.push({type:'slope', x:0, y:1050, w:120, angle:A, friction:F, restitution:R});
+  obs.push({type:'slope', x:W, y:1300, w:120, angle:-A, friction:F, restitution:R});
+  // Open V-deflectors (exit gap ~160px, no floor)
+  obs.push({type:'slope', x:CX-150, y:1530, w:80, angle:A, friction:F, restitution:R});
+  obs.push({type:'slope', x:CX+150, y:1530, w:80, angle:-A, friction:F, restitution:R});
+  // Pegs below
   obs.push({type:'peg', x:CX-50, y:1720, r:12, restitution:0.5});
   obs.push({type:'peg', x:CX+50, y:1720, r:12, restitution:0.5});
 
-  // ══ SECTION 3 (y 1900–2700): First recompression ══
-
-  // Wide funnel (exit 90px) merging both lanes
-  obs.push({type:'slope', x:0, y:1950, w:240, angle:0.78, friction:F, restitution:R});
-  obs.push({type:'slope', x:W, y:1950, w:240, angle:-0.78, friction:F, restitution:R});
-
-  // Bowl below funnel
-  obs.push({type:'slope', x:CX-130, y:2200, w:110, angle:0.65, friction:F, restitution:R});
-  obs.push({type:'slope', x:CX+130, y:2200, w:110, angle:-0.65, friction:F, restitution:R});
-  obs.push({type:'floor', x:CX, y:2280, w:100, h:20});
-
-  // 3 pegs in triangle below bowl
+  // ══ SECTION 3 (y 1900–2700): Compression deflectors ══
+  // Wall deflectors (120px max)
+  obs.push({type:'slope', x:0, y:1950, w:120, angle:A, friction:F, restitution:R});
+  obs.push({type:'slope', x:W, y:1950, w:120, angle:-A, friction:F, restitution:R});
+  // Center V (exit gap ~140px, no floor)
+  obs.push({type:'slope', x:CX-140, y:2200, w:80, angle:A, friction:F, restitution:R});
+  obs.push({type:'slope', x:CX+140, y:2200, w:80, angle:-A, friction:F, restitution:R});
+  // Pegs in triangle
   obs.push({type:'peg', x:CX, y:2430, r:12, restitution:0.5});
   obs.push({type:'peg', x:CX-70, y:2580, r:12, restitution:0.5});
   obs.push({type:'peg', x:CX+70, y:2580, r:12, restitution:0.5});
 
   // ══ SECTION 4 (y 2800–3800): First moving obstacle ══
-
-  // Wide landing ledge (bowl shape)
-  obs.push({type:'slope', x:0, y:2850, w:200, angle:0.65, friction:F, restitution:R});
-  obs.push({type:'slope', x:W, y:2850, w:200, angle:-0.65, friction:F, restitution:R});
-  obs.push({type:'floor', x:CX, y:2950, w:160, h:20});
-
-  // ONE slow sweeper arm (length 160px, speed 0.012 rad/frame)
+  // Landing V-deflectors (no floor)
+  obs.push({type:'slope', x:0, y:2850, w:120, angle:A, friction:F, restitution:R});
+  obs.push({type:'slope', x:W, y:2850, w:120, angle:-A, friction:F, restitution:R});
+  // Sweeper arm
   obs.push({type:'paddle', x:CX, y:3150, w:160, speed:0.012});
-
-  // Two exit ramps below sweeper (each 100px wide, forming two channels)
-  obs.push({type:'slope', x:CX-120, y:3400, w:100, angle:0.65, friction:F, restitution:R});
-  obs.push({type:'slope', x:CX+120, y:3400, w:100, angle:-0.65, friction:F, restitution:R});
-  // Exit pegs
+  // Exit deflectors (no floor)
+  obs.push({type:'slope', x:CX-140, y:3400, w:80, angle:A, friction:F, restitution:R});
+  obs.push({type:'slope', x:CX+140, y:3400, w:80, angle:-A, friction:F, restitution:R});
   obs.push({type:'peg', x:CX-60, y:3600, r:12, restitution:0.5});
   obs.push({type:'peg', x:CX+60, y:3600, r:12, restitution:0.5});
-
-  // Transition ramp
-  obs.push({type:'slope', x:0, y:3700, w:160, angle:0.70, friction:F, restitution:R});
-  obs.push({type:'slope', x:W, y:3700, w:160, angle:-0.70, friction:F, restitution:R});
+  // Transition deflectors
+  obs.push({type:'slope', x:0, y:3700, w:100, angle:A, friction:F, restitution:R});
+  obs.push({type:'slope', x:W, y:3700, w:100, angle:-A, friction:F, restitution:R});
 
   // ══ SECTION 5 (y 3900–4800): Seesaw rivalry ══
-
-  // Landing ramps
-  obs.push({type:'slope', x:0, y:3950, w:180, angle:0.70, friction:F, restitution:R});
-  obs.push({type:'slope', x:W, y:3950, w:180, angle:-0.70, friction:F, restitution:R});
-
-  // Wide seesaw (240px beam)
+  obs.push({type:'slope', x:0, y:3950, w:120, angle:A, friction:F, restitution:R});
+  obs.push({type:'slope', x:W, y:3950, w:120, angle:-A, friction:F, restitution:R});
+  // Seesaw (240px beam)
   obs.push({type:'seesaw', x:CX, y:4200, w:240});
-
-  // Two exit funnels below seesaw
-  obs.push({type:'slope', x:0, y:4400, w:160, angle:0.78, friction:F, restitution:R});
-  obs.push({type:'slope', x:W, y:4400, w:160, angle:-0.78, friction:F, restitution:R});
-  obs.push({type:'slope', x:0, y:4600, w:200, angle:0.70, friction:F, restitution:R});
-  obs.push({type:'slope', x:W, y:4600, w:200, angle:-0.70, friction:F, restitution:R});
-
-  // Peg below exit
+  // Exit deflectors (no floor, wide exit)
+  obs.push({type:'slope', x:0, y:4400, w:100, angle:A, friction:F, restitution:R});
+  obs.push({type:'slope', x:W, y:4400, w:100, angle:-A, friction:F, restitution:R});
+  obs.push({type:'slope', x:0, y:4600, w:120, angle:A, friction:F, restitution:R});
+  obs.push({type:'slope', x:W, y:4600, w:120, angle:-A, friction:F, restitution:R});
   obs.push({type:'peg', x:CX, y:4750, r:12, restitution:0.5});
 
   // ══ SECTION 6 (y 4900–5900): Rolling machine ══
-
-  // S-curve of 3 large bowls alternating left/right
-
-  // Bowl 1 — left-leaning
-  obs.push({type:'slope', x:0, y:4950, w:250, angle:0.65, friction:F, restitution:R});
-  obs.push({type:'slope', x:CX+60, y:5050, w:120, angle:-0.65, friction:F, restitution:R});
-  obs.push({type:'floor', x:CX-30, y:5100, w:100, h:20});
-
-  // Bowl 2 — right-leaning
-  obs.push({type:'slope', x:W, y:5250, w:250, angle:-0.65, friction:F, restitution:R});
-  obs.push({type:'slope', x:CX-60, y:5350, w:120, angle:0.65, friction:F, restitution:R});
-  obs.push({type:'floor', x:CX+30, y:5400, w:100, h:20});
-
-  // Bowl 3 — centered
-  obs.push({type:'slope', x:0, y:5550, w:220, angle:0.65, friction:F, restitution:R});
-  obs.push({type:'slope', x:W, y:5550, w:220, angle:-0.65, friction:F, restitution:R});
-  obs.push({type:'floor', x:CX, y:5650, w:100, h:20});
-
+  // S-curve of deflector pairs — no floors anywhere
+  // Deflector 1 — left-leaning
+  obs.push({type:'slope', x:0, y:4950, w:120, angle:A, friction:F, restitution:R});
+  obs.push({type:'slope', x:CX+80, y:5050, w:80, angle:-A, friction:F, restitution:R});
+  // Deflector 2 — right-leaning
+  obs.push({type:'slope', x:W, y:5250, w:120, angle:-A, friction:F, restitution:R});
+  obs.push({type:'slope', x:CX-80, y:5350, w:80, angle:A, friction:F, restitution:R});
+  // Deflector 3 — centered V (no floor)
+  obs.push({type:'slope', x:0, y:5550, w:120, angle:A, friction:F, restitution:R});
+  obs.push({type:'slope', x:W, y:5550, w:120, angle:-A, friction:F, restitution:R});
   // Transition pegs
   obs.push({type:'peg', x:CX-50, y:5800, r:12, restitution:0.5});
   obs.push({type:'peg', x:CX+50, y:5800, r:12, restitution:0.5});
 
   // ══ SECTION 7 (y 6000–7200): Comeback chaos ══
-
-  // Entry ramps
-  obs.push({type:'slope', x:0, y:6050, w:180, angle:0.70, friction:F, restitution:R});
-  obs.push({type:'slope', x:W, y:6050, w:180, angle:-0.70, friction:F, restitution:R});
-
-  // Oscillating gate (moves x 160-380, period 4 seconds)
+  obs.push({type:'slope', x:0, y:6050, w:120, angle:A, friction:F, restitution:R});
+  obs.push({type:'slope', x:W, y:6050, w:120, angle:-A, friction:F, restitution:R});
+  // Oscillating gate
   obs.push({type:'oscgate', x:CX, y:6300, w:100, xMin:160, xMax:380, period:4});
-
-  // Wide catch bowl below gate
-  obs.push({type:'slope', x:CX-160, y:6500, w:130, angle:0.65, friction:F, restitution:R});
-  obs.push({type:'slope', x:CX+160, y:6500, w:130, angle:-0.65, friction:F, restitution:R});
-  obs.push({type:'floor', x:CX, y:6580, w:120, h:20});
-
-  // One more sweeper arm (speed 0.010)
+  // Wide V below gate (no floor, exit ~160px)
+  obs.push({type:'slope', x:CX-150, y:6500, w:80, angle:A, friction:F, restitution:R});
+  obs.push({type:'slope', x:CX+150, y:6500, w:80, angle:-A, friction:F, restitution:R});
+  // Sweeper arm
   obs.push({type:'paddle', x:CX, y:6780, w:160, speed:0.010});
-
-  // Recompression funnel (exit 80px)
-  obs.push({type:'slope', x:0, y:6980, w:260, angle:0.78, friction:F, restitution:R});
-  obs.push({type:'slope', x:W, y:6980, w:260, angle:-0.78, friction:F, restitution:R});
-
-  // Peg below funnel
+  // Compression V (no floor, exit ~280px)
+  obs.push({type:'slope', x:0, y:6980, w:120, angle:A, friction:F, restitution:R});
+  obs.push({type:'slope', x:W, y:6980, w:120, angle:-A, friction:F, restitution:R});
   obs.push({type:'peg', x:CX, y:7130, r:12, restitution:0.5});
 
-  // ══ SECTION 8 (y 7300–8400): Tension section ══
-
-  // Narrow alternating ramps forcing zigzag path
-  // Ramp 1 — from left
-  obs.push({type:'slope', x:0, y:7350, w:150, angle:0.70, friction:F, restitution:R});
+  // ══ SECTION 8 (y 7300–8400): Tension zigzag ══
+  // Short alternating ramps (100px max) + pegs
+  obs.push({type:'slope', x:0, y:7350, w:100, angle:A, friction:F, restitution:R});
   obs.push({type:'peg', x:CX+40, y:7450, r:12, restitution:0.5});
   obs.push({type:'peg', x:CX-40, y:7500, r:12, restitution:0.5});
-
-  // Ramp 2 — from right
-  obs.push({type:'slope', x:W, y:7600, w:150, angle:-0.70, friction:F, restitution:R});
+  obs.push({type:'slope', x:W, y:7600, w:100, angle:-A, friction:F, restitution:R});
   obs.push({type:'peg', x:CX-40, y:7700, r:12, restitution:0.5});
   obs.push({type:'peg', x:CX+40, y:7750, r:12, restitution:0.5});
-
-  // Ramp 3 — from left
-  obs.push({type:'slope', x:0, y:7850, w:150, angle:0.70, friction:F, restitution:R});
+  obs.push({type:'slope', x:0, y:7850, w:100, angle:A, friction:F, restitution:R});
   obs.push({type:'peg', x:CX+40, y:7950, r:12, restitution:0.5});
   obs.push({type:'peg', x:CX-40, y:8000, r:12, restitution:0.5});
-
-  // Ramp 4 — from right
-  obs.push({type:'slope', x:W, y:8100, w:150, angle:-0.70, friction:F, restitution:R});
-
-  // Final recompression bowl (exit 70px)
-  obs.push({type:'slope', x:0, y:8250, w:260, angle:0.78, friction:F, restitution:R});
-  obs.push({type:'slope', x:W, y:8250, w:260, angle:-0.78, friction:F, restitution:R});
+  obs.push({type:'slope', x:W, y:8100, w:100, angle:-A, friction:F, restitution:R});
+  // Exit V (no floor, wide exit)
+  obs.push({type:'slope', x:0, y:8250, w:120, angle:A, friction:F, restitution:R});
+  obs.push({type:'slope', x:W, y:8250, w:120, angle:-A, friction:F, restitution:R});
 
   // ══ SECTION 9 (y 8500–9700): Final sprint ══
-
-  // Two angled deflectors
-  obs.push({type:'slope', x:0, y:8550, w:180, angle:0.70, friction:F, restitution:R});
-  obs.push({type:'slope', x:W, y:8750, w:180, angle:-0.70, friction:F, restitution:R});
-
-  // Pegs before finish chute
+  obs.push({type:'slope', x:0, y:8550, w:120, angle:A, friction:F, restitution:R});
+  obs.push({type:'slope', x:W, y:8750, w:120, angle:-A, friction:F, restitution:R});
   obs.push({type:'peg', x:CX-40, y:8950, r:12, restitution:0.5});
   obs.push({type:'peg', x:CX+40, y:8950, r:12, restitution:0.5});
-
-  // Narrow finish chute (walls 110px apart, 300px long, 20px thick walls)
+  // Finish chute (walls 110px apart)
   obs.push({type:'floor', x:CX-55, y:9200, w:20, h:300});
   obs.push({type:'floor', x:CX+55, y:9200, w:20, h:300});
 
@@ -446,15 +389,15 @@ function createPhysics(){
 const imgs = {};
 let imgsLoaded = 0;
 
-function loadImg(key, url){
+function loadImg(key, url, name){
   const img = new Image();
   img.crossOrigin = 'anonymous';
-  img.onload = ()=>{ imgs[key] = img; imgsLoaded++; };
-  img.onerror = ()=>{ imgs[key] = null; imgsLoaded++; };
+  img.onload = ()=>{ imgs[key] = img; imgsLoaded++; console.log(`[IMG] ${name} loaded OK`); };
+  img.onerror = ()=>{ imgs[key] = null; imgsLoaded++; console.log(`[IMG] ${name} FAILED — using initials`); };
   img.src = url;
 }
-loadImg('p1', CFG.p1.img);
-loadImg('p2', CFG.p2.img);
+loadImg('p1', CFG.p1.img, CFG.p1.name);
+loadImg('p2', CFG.p2.img, CFG.p2.name);
 
 // ════════════════════════════ PARTICLES ════════════════════════════
 let particles = [];
@@ -499,9 +442,6 @@ let trailHistory = [[],[]];
 let lastLeader = -1, leadChangeT = 0;
 let checkpointsPassed = [[false,false,false],[false,false,false]]; // [p1,p2] x [50%,75%,90%]
 let checkpointFlash = {active:false, t:0, color:'', pct:0};
-// Stuck detection: track positions every 3 seconds
-let stuckCheckTime = 0;
-let stuckLastPos = [{x:0,y:0},{x:0,y:0}];
 // Danger warnings — each entry: {x, y, t (start time)}
 let dangerWarnings = [];
 // Slow-mo tension effect
@@ -516,8 +456,6 @@ function restartRace(){
   lastLeader = -1; leadChangeT = 0;
   checkpointsPassed = [[false,false,false],[false,false,false]];
   checkpointFlash = {active:false, t:0, color:'', pct:0};
-  stuckCheckTime = performance.now();
-  stuckLastPos = [{x:W/2,y:80},{x:W/2,y:80}];
   dangerWarnings = [];
   slowMoActive = false; slowMoEnd = 0; slowMoScale = 1;
 
@@ -817,12 +755,12 @@ function drawWinnerScreen(){
     ctx.save();
     ctx.beginPath(); ctx.arc(W/2, faceY, bigR, 0, Math.PI*2); ctx.clip();
     const key = winner===0?'p1':'p2';
-    if(imgs[key]){
-      const img = imgs[key];
-      const scale = Math.max(bigR*2/img.width, bigR*2/img.height);
-      const dw = img.width * scale;
-      const dh = img.height * scale;
-      ctx.drawImage(img, W/2 - dw/2, faceY - dh/2 - dh*0.1, dw, dh);
+    const winImg = imgs[key];
+    if(winImg && winImg.naturalWidth > 0){
+      const scale = Math.max(bigR*2/winImg.naturalWidth, bigR*2/winImg.naturalHeight);
+      const dw = winImg.naturalWidth * scale;
+      const dh = winImg.naturalHeight * scale;
+      ctx.drawImage(winImg, W/2 - dw/2, faceY - dh/2 - dh*0.1, dw, dh);
     } else {
       // Initials fallback
       ctx.fillStyle = cfg.color; ctx.fill();
@@ -899,15 +837,15 @@ function drawHUD(){
     // Headshot thumbnail (24px radius)
     const thumbCX = i === 0 ? barX + 8 + thumbR : barX + barW - 8 - thumbR;
     const thumbCY = barY + barH/2;
+    const imgKey = 'p'+(i+1);
+    const thumbImg = imgs[imgKey];
     ctx.save();
     ctx.beginPath(); ctx.arc(thumbCX, thumbCY, thumbR, 0, Math.PI*2); ctx.clip();
-    const imgKey = 'p'+(i+1);
-    if(imgs[imgKey]){
-      const img = imgs[imgKey];
-      const scale = Math.max(thumbR*2/img.width, thumbR*2/img.height);
-      const dw = img.width * scale;
-      const dh = img.height * scale;
-      ctx.drawImage(img, thumbCX - dw/2, thumbCY - dh/2 - dh*0.15, dw, dh);
+    if(thumbImg && thumbImg.naturalWidth > 0){
+      const scale = Math.max(thumbR*2/thumbImg.naturalWidth, thumbR*2/thumbImg.naturalHeight);
+      const dw = thumbImg.naturalWidth * scale;
+      const dh = thumbImg.naturalHeight * scale;
+      ctx.drawImage(thumbImg, thumbCX - dw/2, thumbCY - dh/2 - dh*0.15, dw, dh);
     } else {
       ctx.fillStyle = cfgs[i].color;
       ctx.fillRect(thumbCX-thumbR, thumbCY-thumbR, thumbR*2, thumbR*2);
@@ -1138,8 +1076,8 @@ function loop(now){
     const biases = [(CFG.p1.winBias||50)/100, (CFG.p2.winBias||50)/100];
     for(let i=0; i<2; i++){
       const tb = tokenBodies[i];
-      if(tb.velocity.y < 1){
-        Body.applyForce(tb, tb.position, {x:0, y:0.003});
+      if(tb.velocity.y < 2){
+        Body.applyForce(tb, tb.position, {x:0, y:0.006});
       }
       // Subtle downward bias: 50% = neutral (0 force), 99% = +0.001, 1% = -0.001
       // Max difference between 99% and 1% players = 0.002
@@ -1147,24 +1085,6 @@ function loop(now){
       if(Math.abs(bForce) > 0.00005){
         Body.applyForce(tb, tb.position, {x:0, y:bForce});
       }
-    }
-
-    // Stuck prevention: if ball moved < 8px in 3 seconds, unstick it
-    if(now - stuckCheckTime > 3000){
-      for(let i=0; i<2; i++){
-        const tb = tokenBodies[i];
-        const dx = tb.position.x - stuckLastPos[i].x;
-        const dy = tb.position.y - stuckLastPos[i].y;
-        const dist = Math.sqrt(dx*dx + dy*dy);
-        if(dist < 8){
-          const impulseX = (Math.random()*8) - 4; // random(-4,4)
-          Body.setVelocity(tb, {x: impulseX, y: -10});
-          const section = Math.min(9, Math.max(1, Math.ceil(tb.position.y / 1100)));
-          console.log(`Ball ${i+1} unstuck at section ${section}`);
-        }
-        stuckLastPos[i] = {x:tb.position.x, y:tb.position.y};
-      }
-      stuckCheckTime = now;
     }
 
     // Danger proximity warnings — check ball distance to moving obstacles
@@ -1377,8 +1297,8 @@ function applyConfig(){
   // Reload images
   imgs.p1 = null; imgs.p2 = null;
   imgsLoaded = 0;
-  loadImg('p1', CFG.p1.img);
-  loadImg('p2', CFG.p2.img);
+  loadImg('p1', CFG.p1.img, CFG.p1.name);
+  loadImg('p2', CFG.p2.img, CFG.p2.name);
 
   // Wait for both images or 3s timeout, then start race
   const applyStart = performance.now();
@@ -1443,7 +1363,7 @@ function filterPlayers(query){
     const slug = p.slug || p.id || '';
     const imgUrl = slug ? `https://nba-battle.thejorgesierra.workers.dev/headshot/${slug}.png` : '';
     return `<div class="sr-item" onclick="pickPlayer('${(p.name||'').replace(/'/g,"\\'")}','${imgUrl}')">
-      <img src="${imgUrl}" onerror="this.style.display='none'">
+      <img src="${imgUrl}" crossorigin="anonymous" onerror="this.style.display='none'">
       <span>${p.name||'Unknown'}</span>
     </div>`;
   }).join('');
@@ -1453,7 +1373,9 @@ function pickPlayer(name, imgUrl){
   const idx = _searchTarget;
   document.getElementById('name'+idx).value = name;
   document.getElementById('url'+idx).value = imgUrl;
-  document.getElementById('prev'+idx).src = imgUrl;
+  const prevEl = document.getElementById('prev'+idx);
+  prevEl.crossOrigin = 'anonymous';
+  prevEl.src = imgUrl;
   hideSearch();
 }
 
