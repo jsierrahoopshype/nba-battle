@@ -62,7 +62,7 @@ canvas{border-radius:6px;cursor:default;position:relative;z-index:1}
 <h3>Player 1</h3>
 <div class="search-for" onclick="showSearch(1)">🔍 Search NBA player...</div>
 <div class="preview-row">
-<img class="face-preview" id="prev1" src="">
+<img class="face-preview" id="prev1" crossorigin="anonymous" src="">
 <div style="flex:1">
 <label>Name</label>
 <input type="text" id="name1">
@@ -82,7 +82,7 @@ canvas{border-radius:6px;cursor:default;position:relative;z-index:1}
 <h3>Player 2</h3>
 <div class="search-for" onclick="showSearch(2)">🔍 Search NBA player...</div>
 <div class="preview-row">
-<img class="face-preview" id="prev2" src="">
+<img class="face-preview" id="prev2" crossorigin="anonymous" src="">
 <div style="flex:1">
 <label>Name</label>
 <input type="text" id="name2">
@@ -115,13 +115,13 @@ canvas{border-radius:6px;cursor:default;position:relative;z-index:1}
 const CFG = {
   p1: {
     name: 'LeBron James',
-    img: 'https://cdn.nba.com/headshots/nba/latest/260x190/2544.png',
+    img: 'https://nba-battle.thejorgesierra.workers.dev/headshot/2544-lebron-james.png',
     color: '#552583',
     winBias: 50
   },
   p2: {
     name: 'Stephen Curry',
-    img: 'https://cdn.nba.com/headshots/nba/latest/260x190/201939.png',
+    img: 'https://nba-battle.thejorgesierra.workers.dev/headshot/201939-stephen-curry.png',
     color: '#1D428A',
     winBias: 50
   },
@@ -389,15 +389,15 @@ function createPhysics(){
 const imgs = {};
 let imgsLoaded = 0;
 
-function loadImg(key, url){
+function loadImg(key, url, name){
   const img = new Image();
   img.crossOrigin = 'anonymous';
-  img.onload = ()=>{ imgs[key] = img; imgsLoaded++; };
-  img.onerror = ()=>{ imgs[key] = null; imgsLoaded++; };
+  img.onload = ()=>{ imgs[key] = img; imgsLoaded++; console.log(`[IMG] ${name} loaded OK`); };
+  img.onerror = ()=>{ imgs[key] = null; imgsLoaded++; console.log(`[IMG] ${name} FAILED — using initials`); };
   img.src = url;
 }
-loadImg('p1', CFG.p1.img);
-loadImg('p2', CFG.p2.img);
+loadImg('p1', CFG.p1.img, CFG.p1.name);
+loadImg('p2', CFG.p2.img, CFG.p2.name);
 
 // ════════════════════════════ PARTICLES ════════════════════════════
 let particles = [];
@@ -755,12 +755,12 @@ function drawWinnerScreen(){
     ctx.save();
     ctx.beginPath(); ctx.arc(W/2, faceY, bigR, 0, Math.PI*2); ctx.clip();
     const key = winner===0?'p1':'p2';
-    if(imgs[key]){
-      const img = imgs[key];
-      const scale = Math.max(bigR*2/img.width, bigR*2/img.height);
-      const dw = img.width * scale;
-      const dh = img.height * scale;
-      ctx.drawImage(img, W/2 - dw/2, faceY - dh/2 - dh*0.1, dw, dh);
+    const winImg = imgs[key];
+    if(winImg && winImg.naturalWidth > 0){
+      const scale = Math.max(bigR*2/winImg.naturalWidth, bigR*2/winImg.naturalHeight);
+      const dw = winImg.naturalWidth * scale;
+      const dh = winImg.naturalHeight * scale;
+      ctx.drawImage(winImg, W/2 - dw/2, faceY - dh/2 - dh*0.1, dw, dh);
     } else {
       // Initials fallback
       ctx.fillStyle = cfg.color; ctx.fill();
@@ -837,15 +837,15 @@ function drawHUD(){
     // Headshot thumbnail (24px radius)
     const thumbCX = i === 0 ? barX + 8 + thumbR : barX + barW - 8 - thumbR;
     const thumbCY = barY + barH/2;
+    const imgKey = 'p'+(i+1);
+    const thumbImg = imgs[imgKey];
     ctx.save();
     ctx.beginPath(); ctx.arc(thumbCX, thumbCY, thumbR, 0, Math.PI*2); ctx.clip();
-    const imgKey = 'p'+(i+1);
-    if(imgs[imgKey]){
-      const img = imgs[imgKey];
-      const scale = Math.max(thumbR*2/img.width, thumbR*2/img.height);
-      const dw = img.width * scale;
-      const dh = img.height * scale;
-      ctx.drawImage(img, thumbCX - dw/2, thumbCY - dh/2 - dh*0.15, dw, dh);
+    if(thumbImg && thumbImg.naturalWidth > 0){
+      const scale = Math.max(thumbR*2/thumbImg.naturalWidth, thumbR*2/thumbImg.naturalHeight);
+      const dw = thumbImg.naturalWidth * scale;
+      const dh = thumbImg.naturalHeight * scale;
+      ctx.drawImage(thumbImg, thumbCX - dw/2, thumbCY - dh/2 - dh*0.15, dw, dh);
     } else {
       ctx.fillStyle = cfgs[i].color;
       ctx.fillRect(thumbCX-thumbR, thumbCY-thumbR, thumbR*2, thumbR*2);
@@ -1297,8 +1297,8 @@ function applyConfig(){
   // Reload images
   imgs.p1 = null; imgs.p2 = null;
   imgsLoaded = 0;
-  loadImg('p1', CFG.p1.img);
-  loadImg('p2', CFG.p2.img);
+  loadImg('p1', CFG.p1.img, CFG.p1.name);
+  loadImg('p2', CFG.p2.img, CFG.p2.name);
 
   // Wait for both images or 3s timeout, then start race
   const applyStart = performance.now();
@@ -1363,7 +1363,7 @@ function filterPlayers(query){
     const slug = p.slug || p.id || '';
     const imgUrl = slug ? `https://nba-battle.thejorgesierra.workers.dev/headshot/${slug}.png` : '';
     return `<div class="sr-item" onclick="pickPlayer('${(p.name||'').replace(/'/g,"\\'")}','${imgUrl}')">
-      <img src="${imgUrl}" onerror="this.style.display='none'">
+      <img src="${imgUrl}" crossorigin="anonymous" onerror="this.style.display='none'">
       <span>${p.name||'Unknown'}</span>
     </div>`;
   }).join('');
@@ -1373,7 +1373,9 @@ function pickPlayer(name, imgUrl){
   const idx = _searchTarget;
   document.getElementById('name'+idx).value = name;
   document.getElementById('url'+idx).value = imgUrl;
-  document.getElementById('prev'+idx).src = imgUrl;
+  const prevEl = document.getElementById('prev'+idx);
+  prevEl.crossOrigin = 'anonymous';
+  prevEl.src = imgUrl;
   hideSearch();
 }
 
