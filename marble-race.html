@@ -76,6 +76,9 @@ canvas{border-radius:6px;cursor:default;position:relative;z-index:1}
 <div id="search-results"></div>
 <button class="file-btn" style="margin-top:4px" onclick="hideSearch()">Cancel Search</button>
 </div>
+<div style="text-align:center;margin:10px 0">
+<label style="font:600 13px system-ui;color:#9bc;cursor:pointer"><input type="checkbox" id="facesToggle" checked style="accent-color:#2a6fff;margin-right:6px">Show faces in balls</label>
+</div>
 <div class="btn-row">
 <button class="btn-cancel" onclick="closeModal()">Cancel</button>
 <button class="btn-apply" onclick="applyConfig()">Apply &amp; Restart</button>
@@ -86,19 +89,21 @@ canvas{border-radius:6px;cursor:default;position:relative;z-index:1}
 // ════════════════════════════ CONFIGURATION ════════════════════════════
 const PALETTE = ['#552583','#1D428A','#CE1141','#007A33','#F58426','#5D76A9','#98002E','#00788C'];
 const DEFAULT_NAMES = ['LeBron James','Stephen Curry','Nikola Jokic','Giannis Antetokounmpo','Luka Doncic','Shai Gilgeous-Alexander','Jayson Tatum','Kevin Durant'];
+const DEFAULT_IDS = ['2544','201939','203999','203507','1629029','1628983','1628369','201142'];
 const DEFAULT_SLUGS = ['2544-lebron-james','201939-stephen-curry','203999-nikola-joki','203507-giannis-antetokounmpo','1629029-luka-doni','1628983-shai-gilgeous-alexander','1628369-jayson-tatum','201142-kevin-durant'];
 
 const CFG = {
   playerCount: 2,
+  facesInBalls: true,
   players: [
-    {name:'LeBron James', img:'https://nba-battle.thejorgesierra.workers.dev/headshot/2544-lebron-james.png', color:'#552583', winBias:50},
-    {name:'Stephen Curry', img:'https://nba-battle.thejorgesierra.workers.dev/headshot/201939-stephen-curry.png', color:'#1D428A', winBias:50},
-    {name:'Nikola Jokic', img:'https://nba-battle.thejorgesierra.workers.dev/headshot/203999-nikola-joki.png', color:'#CE1141', winBias:50},
-    {name:'Giannis Antetokounmpo', img:'https://nba-battle.thejorgesierra.workers.dev/headshot/203507-giannis-antetokounmpo.png', color:'#007A33', winBias:50},
-    {name:'Luka Doncic', img:'https://nba-battle.thejorgesierra.workers.dev/headshot/1629029-luka-doni.png', color:'#F58426', winBias:50},
-    {name:'Shai Gilgeous-Alexander', img:'https://nba-battle.thejorgesierra.workers.dev/headshot/1628983-shai-gilgeous-alexander.png', color:'#5D76A9', winBias:50},
-    {name:'Jayson Tatum', img:'https://nba-battle.thejorgesierra.workers.dev/headshot/1628369-jayson-tatum.png', color:'#98002E', winBias:50},
-    {name:'Kevin Durant', img:'https://nba-battle.thejorgesierra.workers.dev/headshot/201142-kevin-durant.png', color:'#00788C', winBias:50}
+    {name:'LeBron James', img:'https://nba-battle.thejorgesierra.workers.dev/nba-headshot/2544', color:'#552583', winBias:50},
+    {name:'Stephen Curry', img:'https://nba-battle.thejorgesierra.workers.dev/nba-headshot/201939', color:'#1D428A', winBias:50},
+    {name:'Nikola Jokic', img:'https://nba-battle.thejorgesierra.workers.dev/nba-headshot/203999', color:'#CE1141', winBias:50},
+    {name:'Giannis Antetokounmpo', img:'https://nba-battle.thejorgesierra.workers.dev/nba-headshot/203507', color:'#007A33', winBias:50},
+    {name:'Luka Doncic', img:'https://nba-battle.thejorgesierra.workers.dev/nba-headshot/1629029', color:'#F58426', winBias:50},
+    {name:'Shai Gilgeous-Alexander', img:'https://nba-battle.thejorgesierra.workers.dev/nba-headshot/1628983', color:'#5D76A9', winBias:50},
+    {name:'Jayson Tatum', img:'https://nba-battle.thejorgesierra.workers.dev/nba-headshot/1628369', color:'#98002E', winBias:50},
+    {name:'Kevin Durant', img:'https://nba-battle.thejorgesierra.workers.dev/nba-headshot/201142', color:'#00788C', winBias:50}
   ],
   gravity: 0.7,
   seed: 42
@@ -226,48 +231,49 @@ const SECTIONS = [
       {type:'peg', x:270, y:4120, r:14, friction:0.05, restitution:0.65}
     ]
   },
-  // ══ SECTION 6: Gate Zone — oscillating gate + bumper gauntlet + bouncePad exit ══
+  // ══ SECTION 6: Machine — conveyor + trapdoor + pendulum ══
   {
-    id: 'gate_zone', yStart: 4250, yEnd: 5100,
+    id: 'machine', yStart: 4250, yEnd: 5200,
     obstacles: [
       // Entry bumpers
       {type:'bumper', x:160, y:4300, radius:20, color:'#ff6600'},
       {type:'bumper', x:380, y:4300, radius:20, color:'#ff6600'},
-      // Oscillating gate (period:3s, x range 160-380)
-      {type:'gate', x:270, y:4450, w:100, xMin:160, xMax:380, period:3.0},
-      // 4 bumpers below gate y:4580-4900
-      {type:'bumper', x:140, y:4580, radius:22, color:'#ff4400'},
-      {type:'bumper', x:400, y:4700, radius:22, color:'#ff8800'},
-      {type:'bumper', x:270, y:4800, radius:24, color:'#ff6600'},
-      {type:'bumper', x:180, y:4900, radius:20, color:'#ff4400'},
-      // 2 bouncePads as exit guides
-      {type:'bouncePad', x:0, y:5000, w:200, angle:STD.angle, thickness:STD.thickness},
-      {type:'bouncePad', x:540, y:5000, w:200, angle:-STD.angle, thickness:STD.thickness}
+      // Conveyor strip (leftward) at y:4400, full width
+      {type:'conveyorStrip', x:270, y:4450, w:460, dir:-1},
+      // Bumper after conveyor
+      {type:'bumper', x:120, y:4560, radius:18, color:'#ff8800'},
+      // Trapdoor at y:4700 — holds balls briefly then drops them
+      {type:'trapdoor', x:270, y:4700, w:360, gap:50, holdTime:2, openDur:1.5},
+      // Bumper below trapdoor
+      {type:'bumper', x:270, y:4830, radius:22, color:'#ff4400'},
+      // Pendulum at y:4950 guarding center
+      {type:'pendulum', x:270, y:4950, length:120, initSpin:0.03},
+      // Wide exit bouncePads at y:5100
+      {type:'bouncePad', x:0, y:5100, w:220, angle:STD.angle, thickness:STD.thickness},
+      {type:'bouncePad', x:540, y:5100, w:220, angle:-STD.angle, thickness:STD.thickness}
     ]
   },
-  // ══ SECTION 7: Chaos — sweeper + bumpers + spinner ══
+  // ══ SECTION 7: Comeback — jawGate gamble + split lanes ══
   {
-    id: 'chaos', yStart: 5150, yEnd: 6100,
+    id: 'comeback', yStart: 5250, yEnd: 6200,
     obstacles: [
-      // Entry bumper
-      {type:'bumper', x:270, y:5200, radius:20, color:'#ff8800'},
-      // Sweeper at y:5300
-      {type:'sweeper', x:270, y:5350, w:200, speed:0.012},
-      // Bumper to fill gap
-      {type:'bumper', x:160, y:5480, radius:18, color:'#ff6600'},
-      // 3 bumpers at y:5600
-      {type:'bumper', x:140, y:5600, radius:24, color:'#ff4400'},
-      {type:'bumper', x:270, y:5600, radius:24, color:'#ff6600'},
-      {type:'bumper', x:400, y:5600, radius:24, color:'#ff4400'},
-      // Bumper to fill gap
-      {type:'bumper', x:380, y:5700, radius:18, color:'#ff8800'},
-      // Spinner at y:5850
-      {type:'spinner', x:270, y:5800, speed:0.020},
-      // Wide exit bumpers
-      {type:'bumper', x:160, y:5960, radius:20, color:'#ff6600'},
-      {type:'bumper', x:380, y:5960, radius:20, color:'#ff6600'},
+      // Entry bumpers
+      {type:'bumper', x:160, y:5300, radius:20, color:'#ff6600'},
+      {type:'bumper', x:380, y:5300, radius:20, color:'#ff6600'},
+      // JawGate at y:5400 — dangerous fast route through center
+      {type:'jawGate', x:270, y:5450, armLen:100, period:3},
+      // Left lane: 3 bumpers (slower but safe)
+      {type:'bumper', x:100, y:5550, radius:22, color:'#ff8800'},
+      {type:'bumper', x:80, y:5700, radius:24, color:'#ff6600'},
+      {type:'bumper', x:110, y:5850, radius:22, color:'#ff4400'},
+      // Right lane: cleaner (faster but jawGate risk)
+      {type:'peg', x:440, y:5600, r:14, friction:0.05, restitution:0.65},
+      {type:'peg', x:460, y:5750, r:14, friction:0.05, restitution:0.65},
+      // Recompression funnel at y:6000
+      {type:'bouncePad', x:0, y:6000, w:220, angle:STD.angle, thickness:STD.thickness},
+      {type:'bouncePad', x:540, y:6000, w:220, angle:-STD.angle, thickness:STD.thickness},
       // Exit peg
-      {type:'peg', x:270, y:6060, r:14, friction:0.05, restitution:0.65}
+      {type:'peg', x:270, y:6150, r:14, friction:0.05, restitution:0.65}
     ]
   },
   // ══ SECTION 8: Tension — 4 alternating bouncePads + bumper pairs ══
@@ -298,25 +304,32 @@ const SECTIONS = [
       {type:'peg', x:270, y:7160, r:14, friction:0.05, restitution:0.65}
     ]
   },
-  // ══ SECTION 9: Finish — bouncePad guides + bumpers + chute ══
+  // ══ SECTION 9: Finish — pendulum + jawGate + dense chute ══
   {
     id: 'finish', yStart: 7250, yEnd: 8800,
     obstacles: [
-      // 2 bouncePads as final guides
+      // 2 bouncePads as initial guides
       {type:'bouncePad', x:0, y:7320, w:240, angle:STD.angle, thickness:STD.thickness},
-      {type:'bouncePad', x:540, y:7500, w:240, angle:-STD.angle, thickness:STD.thickness},
-      // 3 bumpers to scatter before chute
-      {type:'bumper', x:200, y:7680, radius:22, color:'#ff6600'},
-      {type:'bumper', x:340, y:7680, radius:22, color:'#ff6600'},
-      {type:'bumper', x:270, y:7850, radius:24, color:'#ff4400'},
+      {type:'bouncePad', x:540, y:7450, w:240, angle:-STD.angle, thickness:STD.thickness},
+      // Pendulum at y:7600 guarding chute entry
+      {type:'pendulum', x:270, y:7580, length:100, initSpin:0.04},
+      // Bumpers around pendulum
+      {type:'bumper', x:120, y:7700, radius:20, color:'#ff6600'},
+      {type:'bumper', x:420, y:7700, radius:20, color:'#ff6600'},
+      // Bumper to fill gap before jawGate
+      {type:'bumper', x:270, y:7790, radius:18, color:'#ff8800'},
+      // JawGate at y:7900 — final gamble
+      {type:'jawGate', x:270, y:7880, armLen:90, period:2.5},
+      // Bumper below jaw
+      {type:'bumper', x:270, y:8000, radius:22, color:'#ff4400'},
       // Peg pair above chute
-      {type:'peg', x:220, y:8020, r:14, friction:0.05, restitution:0.65},
-      {type:'peg', x:320, y:8020, r:14, friction:0.05, restitution:0.65},
-      // Bumper to guide into chute — fills 8020-8300 gap
-      {type:'bumper', x:270, y:8160, radius:20, color:'#ff8800'},
+      {type:'peg', x:220, y:8100, r:14, friction:0.05, restitution:0.65},
+      {type:'peg', x:320, y:8100, r:14, friction:0.05, restitution:0.65},
+      // Bumper to guide into chute
+      {type:'bumper', x:270, y:8200, radius:20, color:'#ff8800'},
       // Finish chute walls — 140px wide gap (200 to 340)
-      {type:'floor', x:200, y:8300, w:22, h:300},
-      {type:'floor', x:340, y:8300, w:22, h:300}
+      {type:'floor', x:200, y:8350, w:22, h:300},
+      {type:'floor', x:340, y:8350, w:22, h:300}
     ]
   }
 ];
@@ -454,6 +467,96 @@ function obstacleFactory(spec, courseScale){
       }
       break;
     }
+    case 'trapdoor': {
+      const tdW = (spec.w || 200) * cs;
+      const gap = (spec.gap || 40) * cs;
+      const tdX = sx(spec.x);
+      const halfW = (tdW - gap) / 2;
+      const tdH = 18;
+      // Left platform
+      const leftBody = Bodies.rectangle(tdX - gap/2 - halfW/2, spec.y, halfW, tdH, {
+        isStatic:true, restitution:0.2, friction:0.3, label:'trapdoor'
+      });
+      leftBody._w = halfW; leftBody._h = tdH;
+      leftBody._tdOpen = false; leftBody._tdTimer = 0; leftBody._tdHoldTime = spec.holdTime || 2;
+      leftBody._tdOpenDur = spec.openDur || 1.5;
+      // Right platform
+      const rightBody = Bodies.rectangle(tdX + gap/2 + halfW/2, spec.y, halfW, tdH, {
+        isStatic:true, restitution:0.2, friction:0.3, label:'trapdoor'
+      });
+      rightBody._w = halfW; rightBody._h = tdH;
+      rightBody._tdOpen = false; rightBody._tdTimer = 0; rightBody._tdHoldTime = spec.holdTime || 2;
+      rightBody._tdOpenDur = spec.openDur || 1.5;
+      // Link them for synchronized opening
+      leftBody._tdPartner = rightBody;
+      rightBody._tdPartner = leftBody;
+      result.body = leftBody;
+      result.extraBodies.push(rightBody);
+      result.trapdoor = [leftBody, rightBody];
+      break;
+    }
+    case 'pendulum': {
+      const pLen = (spec.length || 120) * cs;
+      const pX = sx(spec.x);
+      const pW = 20, pH = pLen;
+      const anchorY = spec.y;
+      const bodyY = anchorY + pLen / 2;
+      const pendBody = Bodies.rectangle(pX, bodyY, pW, pH, {
+        isStatic:false, restitution:0.3, friction:0.1, density:0.05, frictionAir:0.005,
+        label:'pendulum'
+      });
+      pendBody._w = pW; pendBody._h = pH;
+      pendBody._anchorX = pX; pendBody._anchorY = anchorY;
+      result.body = pendBody;
+      result.pendulum = true;
+      result.constraint = Constraint.create({
+        pointA:{x:pX, y:anchorY}, bodyB:pendBody,
+        pointB:{x:0, y:-pLen/2}, stiffness:1, length:0
+      });
+      // Give initial angular push
+      Body.setAngularVelocity(pendBody, spec.initSpin || 0.03);
+      break;
+    }
+    case 'conveyorStrip': {
+      const cvW = (spec.w || 400) * cs;
+      const cvX = sx(spec.x);
+      const cvH = 18;
+      const cvBody = Bodies.rectangle(cvX, spec.y, cvW, cvH, {
+        isStatic:true, restitution:0.1, friction:0.5, label:'conveyor'
+      });
+      cvBody._w = cvW; cvBody._h = cvH;
+      cvBody._cvDir = spec.dir || -1; // -1 = left, 1 = right
+      cvBody._cvForce = spec.force || 1.5;
+      result.body = cvBody;
+      result.conveyor = true;
+      break;
+    }
+    case 'jawGate': {
+      const jX = sx(spec.x);
+      const armLen = (spec.armLen || 100) * cs;
+      const armT = 16;
+      const period = spec.period || 3;
+      // Left jaw — anchored at left edge
+      const leftJaw = Bodies.rectangle(jX - armLen/2, spec.y, armLen, armT, {
+        isStatic:true, restitution:0.3, friction:0.1, label:'jawgate'
+      });
+      leftJaw._w = armLen; leftJaw._h = armT;
+      leftJaw._jawSide = -1; leftJaw._jawCenterX = jX;
+      leftJaw._jawBaseX = jX - armLen; leftJaw._jawBaseY = spec.y;
+      leftJaw._jawPeriod = period; leftJaw._jawLen = armLen;
+      // Right jaw — anchored at right edge
+      const rightJaw = Bodies.rectangle(jX + armLen/2, spec.y, armLen, armT, {
+        isStatic:true, restitution:0.3, friction:0.1, label:'jawgate'
+      });
+      rightJaw._w = armLen; rightJaw._h = armT;
+      rightJaw._jawSide = 1; rightJaw._jawCenterX = jX;
+      rightJaw._jawBaseX = jX + armLen; rightJaw._jawBaseY = spec.y;
+      rightJaw._jawPeriod = period; rightJaw._jawLen = armLen;
+      result.body = leftJaw;
+      result.extraBodies.push(rightJaw);
+      result.jawgate = [leftJaw, rightJaw];
+      break;
+    }
   }
   return result;
 }
@@ -470,10 +573,17 @@ function buildLevel(courseScale){
         if(res.paddle) paddles.push(res.body);
         if(res.oscgate) gates.push(res.body);
         if(res.constraint) constraints.push(res.constraint);
+        if(res.trapdoor) trapdoorBodies.push(...res.trapdoor);
+        if(res.pendulum) pendulumBodies.push(res.body);
+        if(res.conveyor) conveyorBodies.push(res.body);
+        if(res.jawgate) jawGateBodies.push(...res.jawgate);
       }
       if(res.extraBodies.length){
         res.extraBodies.forEach(eb => allBodies.push(eb));
         res.extraPaddles.forEach(ep => paddles.push(ep));
+      }
+      if(res.extraConstraints){
+        res.extraConstraints.forEach(c => constraints.push(c));
       }
     });
   });
@@ -495,6 +605,7 @@ function buildLevel(courseScale){
 // ════════════════════════════ MATTER.JS SETUP ════════════════════════════
 const {Engine, World, Bodies, Body, Composite, Events, Constraint} = Matter;
 let engine, world, tokenBodies=[], obsBodies=[], paddleBodies=[], oscGateBodies=[];
+let trapdoorBodies=[], pendulumBodies=[], conveyorBodies=[], jawGateBodies=[];
 
 function createPhysics(){
   // Gravity scales with player count
@@ -510,6 +621,10 @@ function createPhysics(){
   obsBodies = [];
   paddleBodies = [];
   oscGateBodies = [];
+  trapdoorBodies = [];
+  pendulumBodies = [];
+  conveyorBodies = [];
+  jawGateBodies = [];
 
   // Tokens — spread evenly across width at same Y
   const n = CFG.playerCount;
@@ -606,17 +721,17 @@ let trailHistory = [];
 // Drama state
 let lastLeader = -1, leadChangeT = 0;
 let checkpointsPassed = [];
-// Safety stall timers — track how long each ball has had vy < 1.5
-let stallTimers = [];
+// Anti-stuck system — progressive 3-stage recovery
+let stuckTrackers = []; // {lastY, lastProgressT, stage2Until}
 
 function initPlayerArrays(){
   trailHistory = [];
   checkpointsPassed = [];
-  stallTimers = [];
+  stuckTrackers = [];
   for(let i=0; i<CFG.playerCount; i++){
     trailHistory.push([]);
     checkpointsPassed.push([false,false,false]);
-    stallTimers.push(0);
+    stuckTrackers.push({lastY:0, lastProgressT:0, stage2Until:0});
   }
 }
 initPlayerArrays();
@@ -840,6 +955,82 @@ function drawObstacles(){
       ctx.strokeStyle = 'rgba(255,102,0,.4)';
       ctx.lineWidth = 1;
       ctx.strokeRect(-armW/2, -armH/2, armW, armH);
+    } else if(b.label==='trapdoor'){
+      const tdW = b._w || 80, tdH = b._h || 18;
+      const isOpen = b._tdOpen;
+      // Dark wood color, glowing edges when about to open
+      ctx.fillStyle = isOpen ? 'rgba(60,30,10,0.3)' : '#5c3d1e';
+      ctx.beginPath();
+      ctx.roundRect(-tdW/2, -tdH/2, tdW, tdH, 3);
+      ctx.fill();
+      if(!isOpen){
+        const warn = b._tdTimer / b._tdHoldTime;
+        if(warn > 0.5){
+          const glow = (warn - 0.5) * 2; // 0→1 as getting close
+          ctx.strokeStyle = `rgba(255,100,0,${glow * 0.8})`;
+          ctx.lineWidth = 2;
+          ctx.shadowColor = '#ff6600'; ctx.shadowBlur = glow * 15;
+          ctx.strokeRect(-tdW/2, -tdH/2, tdW, tdH);
+          ctx.shadowBlur = 0;
+        } else {
+          ctx.strokeStyle = 'rgba(200,160,100,.4)';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(-tdW/2, -tdH/2, tdW, tdH);
+        }
+      }
+    } else if(b.label==='pendulum'){
+      const pW = b._w || 20, pH = b._h || 120;
+      // Dark arm
+      ctx.fillStyle = '#1a1a2e';
+      ctx.beginPath();
+      ctx.roundRect(-pW/2, -pH/2, pW, pH, 4);
+      ctx.fill();
+      // Orange tip at bottom
+      ctx.fillStyle = '#ff6600';
+      ctx.beginPath();
+      ctx.roundRect(-pW/2, pH/2 - 25, pW, 25, [0,0,4,4]);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,102,0,.4)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(-pW/2, -pH/2, pW, pH);
+      // Anchor point (un-rotated)
+      ctx.restore();
+      ctx.save();
+      ctx.translate(b._anchorX, b._anchorY);
+      ctx.beginPath(); ctx.arc(0, 0, 6, 0, Math.PI*2);
+      ctx.fillStyle = '#ff6600'; ctx.fill();
+      ctx.strokeStyle = '#1a1a2e'; ctx.lineWidth = 2; ctx.stroke();
+    } else if(b.label==='conveyor'){
+      const cvW = b._w || 400, cvH = b._h || 18;
+      ctx.fillStyle = '#2a2a4e';
+      ctx.fillRect(-cvW/2, -cvH/2, cvW, cvH);
+      // Animated arrows
+      const dir = b._cvDir || -1;
+      const arrowOff = (Date.now() / 200 * dir) % 30;
+      ctx.strokeStyle = 'rgba(100,200,255,0.6)';
+      ctx.lineWidth = 2;
+      for(let ax = -cvW/2 + 10 + arrowOff; ax < cvW/2 - 10; ax += 30){
+        const tipX = ax + dir * 8;
+        ctx.beginPath();
+        ctx.moveTo(ax, 0); ctx.lineTo(tipX, 0);
+        ctx.moveTo(tipX, 0); ctx.lineTo(tipX - dir*5, -4);
+        ctx.moveTo(tipX, 0); ctx.lineTo(tipX - dir*5, 4);
+        ctx.stroke();
+      }
+      ctx.strokeStyle = 'rgba(100,200,255,0.3)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(-cvW/2, -cvH/2, cvW, cvH);
+    } else if(b.label==='jawgate'){
+      const jW = b._w || 100, jH = b._h || 16;
+      ctx.fillStyle = '#cc2200';
+      ctx.beginPath();
+      ctx.roundRect(-jW/2, -jH/2, jW, jH, 3);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,50,0,0.5)';
+      ctx.lineWidth = 2;
+      ctx.shadowColor = '#cc2200'; ctx.shadowBlur = 8;
+      ctx.strokeRect(-jW/2, -jH/2, jW, jH);
+      ctx.shadowBlur = 0;
     } else {
       // Rectangle-based obstacles (slopes, floors) — draw from body dims
       const bw = b._w || 60, bh = b._h || 22;
@@ -927,22 +1118,41 @@ function drawToken(body, cfg, idx){
   ctx.fillStyle = gg; ctx.fill();
   ctx.restore();
 
-  // Token circle — solid color + 2-letter initials
+  // Token circle — face or initials
+  const faceImg = imgs['p'+idx];
+  const hasFace = CFG.facesInBalls && faceImg && faceImg.naturalWidth > 0;
+
   ctx.save();
   ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI*2);
   ctx.fillStyle = cfg.color; ctx.fill();
-  // Draw initials (first letter of each word, max 2)
-  const initials = cfg.name.split(/\s+/).map(w=>w[0]).slice(0,2).join('');
-  ctx.fillStyle = '#fff';
-  ctx.font = '700 18px system-ui';
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText(initials, px, py);
+
+  if(hasFace){
+    // Draw headshot clipped to circle, cropping top 60% (face area)
+    const clipR = r - 2;
+    ctx.save();
+    ctx.beginPath(); ctx.arc(px, py, clipR, 0, Math.PI*2); ctx.clip();
+    const iw = faceImg.naturalWidth, ih = faceImg.naturalHeight;
+    // Crop centered on top 60% of image
+    const cropH = ih * 0.6;
+    const cropW = Math.min(iw, cropH); // square-ish crop
+    const sx = (iw - cropW) / 2, sy = 0;
+    const dSize = clipR * 2;
+    ctx.drawImage(faceImg, sx, sy, cropW, cropH, px - clipR, py - clipR, dSize, dSize);
+    ctx.restore();
+  } else {
+    // Draw initials (first letter of each word, max 2)
+    const initials = cfg.name.split(/\s+/).map(w=>w[0]).slice(0,2).join('');
+    ctx.fillStyle = '#fff';
+    ctx.font = '700 18px system-ui';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(initials, px, py);
+  }
   ctx.restore();
 
-  // 4px colored ring with outer glow
+  // 3px colored ring with outer glow
   ctx.save();
   ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI*2);
-  ctx.strokeStyle = cfg.color; ctx.lineWidth = 4;
+  ctx.strokeStyle = cfg.color; ctx.lineWidth = 3;
   ctx.shadowColor = cfg.color; ctx.shadowBlur = 12;
   ctx.stroke();
   ctx.restore();
@@ -1561,6 +1771,60 @@ function loop(now){
       Body.setPosition(b, {x:nx, y:b._oscY});
     });
 
+    // Trapdoor timers — hold then open
+    const tdDt = 1/60;
+    trapdoorBodies.forEach(b => {
+      if(b._tdPartner && b._tdPartner._tdTimer > b._tdTimer) return; // sync: only process once per pair
+      if(!b._tdOpen){
+        // Check if any ball is resting on trapdoor
+        let ballOnTop = false;
+        for(const tb of tokenBodies){
+          const dx = Math.abs(tb.position.x - b.position.x);
+          const dy = tb.position.y - b.position.y;
+          if(dx < b._w/2 + 30 && dy < 0 && dy > -50) ballOnTop = true;
+        }
+        if(ballOnTop) b._tdTimer += tdDt;
+        else b._tdTimer = Math.max(0, b._tdTimer - tdDt * 2);
+        if(b._tdTimer >= b._tdHoldTime){
+          b._tdOpen = true; b._tdTimer = 0;
+          b.collisionFilter = {mask:0};
+          if(b._tdPartner){ b._tdPartner._tdOpen = true; b._tdPartner._tdTimer = 0; b._tdPartner.collisionFilter = {mask:0}; }
+        }
+      } else {
+        b._tdTimer += tdDt;
+        if(b._tdTimer >= b._tdOpenDur){
+          b._tdOpen = false; b._tdTimer = 0;
+          b.collisionFilter = {mask:0xFFFFFFFF};
+          if(b._tdPartner){ b._tdPartner._tdOpen = false; b._tdPartner._tdTimer = 0; b._tdPartner.collisionFilter = {mask:0xFFFFFFFF}; }
+        }
+      }
+    });
+
+    // JawGate animation — close/open on timer
+    jawGateBodies.forEach(jaw => {
+      const t = performance.now()/1000;
+      const cycle = (t % jaw._jawPeriod) / jaw._jawPeriod; // 0→1
+      // 0-0.4: closed (blocking), 0.4-0.6: opening, 0.6-1.0: open
+      let angle;
+      if(cycle < 0.4){
+        angle = jaw._jawSide * 0.5; // closed angle
+      } else if(cycle < 0.6){
+        const openT = (cycle - 0.4) / 0.2;
+        angle = jaw._jawSide * 0.5 * (1 - openT);
+      } else {
+        angle = 0; // open
+      }
+      Body.setAngle(jaw, angle);
+      // Reposition to pivot from base edge
+      const pivotX = jaw._jawBaseX;
+      const pivotY = jaw._jawBaseY;
+      const halfLen = jaw._jawLen / 2;
+      Body.setPosition(jaw, {
+        x: pivotX - jaw._jawSide * Math.cos(angle) * halfLen,
+        y: pivotY + Math.sin(Math.abs(angle)) * halfLen
+      });
+    });
+
     const N = tokenBodies.length;
 
     // Record trail positions
@@ -1581,19 +1845,64 @@ function loop(now){
       }
     }
 
-    // Safety nudge — if ball vy < 1.5 for more than 1 second, apply downward force
-    const fixedDtSec = 1/60;
+    // Anti-stuck system — progressive 3-stage recovery
     for(let i=0; i<N; i++){
       const tb = tokenBodies[i];
-      if(tb.velocity.y < 1.5){
-        stallTimers[i] += fixedDtSec;
-        if(stallTimers[i] > 1.0){
-          Body.applyForce(tb, tb.position, {x:0, y:0.005});
+      const st = stuckTrackers[i];
+      const curY = tb.position.y;
+
+      // Initialize on first frame
+      if(st.lastProgressT === 0){ st.lastY = curY; st.lastProgressT = now; }
+
+      // Check if ball made 30px progress — reset timer
+      if(curY - st.lastY >= 30){
+        st.lastY = curY;
+        st.lastProgressT = now;
+      }
+
+      const stuckDuration = (now - st.lastProgressT) / 1000;
+
+      // Temporarily reduce friction during stage 2
+      if(st.stage2Until > 0 && now > st.stage2Until){
+        tb.friction = 0.12;
+        st.stage2Until = 0;
+      }
+
+      if(stuckDuration >= 6){
+        // STAGE 3 — teleport 50px down, set velocity
+        console.log(`[STUCK] Player ${i} STAGE 3 — teleport (stuck ${stuckDuration.toFixed(1)}s)`);
+        Body.setPosition(tb, {x:tb.position.x, y:curY + 50});
+        Body.setVelocity(tb, {x:(Math.random()-0.5)*4, y:3});
+        st.lastY = curY + 50;
+        st.lastProgressT = now;
+      } else if(stuckDuration >= 4){
+        // STAGE 2 — low friction + impulse (once per stuck episode)
+        if(st.stage2Until === 0){
+          console.log(`[STUCK] Player ${i} STAGE 2 — friction drop + impulse (stuck ${stuckDuration.toFixed(1)}s)`);
+          tb.friction = 0.01;
+          st.stage2Until = now + 1000;
+          Body.setVelocity(tb, {x:(Math.random()-0.5)*6, y:-6});
         }
-      } else {
-        stallTimers[i] = 0;
+      } else if(stuckDuration >= 2){
+        // STAGE 1 — gentle downward nudge
+        Body.applyForce(tb, tb.position, {x:0, y:0.004});
       }
     }
+
+    // Conveyor strip — apply sideways force to overlapping balls
+    conveyorBodies.forEach(cv => {
+      const cvLeft = cv.position.x - cv._w/2;
+      const cvRight = cv.position.x + cv._w/2;
+      const cvTop = cv.position.y - cv._h/2 - BALL_RADIUS;
+      const cvBot = cv.position.y + cv._h/2;
+      for(let i=0; i<N; i++){
+        const tb = tokenBodies[i];
+        if(tb.position.x > cvLeft && tb.position.x < cvRight &&
+           tb.position.y > cvTop && tb.position.y < cvBot + 5){
+          Body.applyForce(tb, tb.position, {x: cv._cvDir * 0.0015, y:0});
+        }
+      }
+    });
 
     // Win% bias force
     for(let i=0; i<N; i++){
@@ -1699,39 +2008,44 @@ function loop(now){
       }
     }
 
-    // Camera follows leading ball during race, last racing ball during finishing
-    let leadY = -Infinity, trailYVal = Infinity;
+    // Camera — weighted focus, never follows trailers upward
+    let targetCam;
     if(phase === 'finishing'){
-      // Follow the last ball still racing (not yet finished)
+      // Follow last unfinished ball, or hold at finish
+      let bestUnfinished = -Infinity;
       let hasUnfinished = false;
       for(let i=0; i<N; i++){
         if(!finishedSet.has(i)){
           const py = tokenBodies[i].position.y;
-          if(py > leadY) leadY = py;
-          if(py < trailYVal) trailYVal = py;
+          if(py > bestUnfinished) bestUnfinished = py;
           hasUnfinished = true;
         }
       }
       if(!hasUnfinished){
-        // All finished — hold at finish line area
-        leadY = FINISH_Y;
-        trailYVal = FINISH_Y;
+        targetCam = Math.max(0, FINISH_Y - 200);
+      } else {
+        targetCam = Math.max(0, bestUnfinished - H * 0.35 + 200);
       }
+    } else if(N <= 2){
+      // 2-ball mode: weighted 70% leader + 30% trailer
+      const ys = tokenBodies.map(b => b.position.y);
+      const leaderY = Math.max(...ys);
+      const trailerY = Math.min(...ys);
+      const focusY = leaderY * 0.70 + trailerY * 0.30;
+      targetCam = Math.max(0, focusY - H * 0.35 + 200);
     } else {
-      for(let i=0; i<N; i++){
-        const py = tokenBodies[i].position.y;
-        if(py > leadY) leadY = py;
-        if(py < trailYVal) trailYVal = py;
-      }
+      // 3+ ball mode: weighted center of front 50% of balls
+      const ys = tokenBodies.map(b => b.position.y).sort((a, b) => b - a);
+      const frontCount = Math.max(1, Math.ceil(N / 2));
+      let sumY = 0;
+      for(let i = 0; i < frontCount; i++) sumY += ys[i];
+      const focusY = sumY / frontCount;
+      targetCam = Math.max(0, focusY - H * 0.35 + 200);
     }
-    let targetCam = Math.max(0, leadY - H*0.55);
-    if(phase === 'finishing' && leadY === FINISH_Y){
-      targetCam = Math.max(0, FINISH_Y - 200);
-    } else {
-      const maxCam = Math.max(0, trailYVal - H*0.15);
-      if(targetCam > maxCam) targetCam = maxCam;
-    }
-    camY += (targetCam - camY) * 0.08;
+
+    // Asymmetric lerp: fast downward, slow upward (don't chase trailers up)
+    const lerpSpeed = targetCam >= camY ? 0.08 : 0.08 * 0.20;
+    camY += (targetCam - camY) * lerpSpeed;
   }
 
   if(phase==='results' && now >= autoRestartT){
@@ -1853,6 +2167,7 @@ function openModal(){
   });
   buildPlayerCards();
   hideSearch();
+  document.getElementById('facesToggle').checked = CFG.facesInBalls;
   document.getElementById('modal-overlay').classList.add('open');
 }
 
@@ -1873,10 +2188,11 @@ function handleFile(idx, input){
 
 function applyConfig(){
   CFG.playerCount = _modalPlayerCount;
+  CFG.facesInBalls = document.getElementById('facesToggle').checked;
   // Ensure players array is big enough
   while(CFG.players.length < CFG.playerCount){
     const i = CFG.players.length;
-    CFG.players.push({name:DEFAULT_NAMES[i]||'Player '+(i+1), img:DEFAULT_SLUGS[i]?'https://nba-battle.thejorgesierra.workers.dev/headshot/'+DEFAULT_SLUGS[i]+'.png':'', color:PALETTE[i]||'#888', winBias:50});
+    CFG.players.push({name:DEFAULT_NAMES[i]||'Player '+(i+1), img:DEFAULT_IDS[i]?'https://nba-battle.thejorgesierra.workers.dev/nba-headshot/'+DEFAULT_IDS[i]:'', color:PALETTE[i]||'#888', winBias:50});
   }
   // Read values from modal inputs
   for(let i=0; i<CFG.playerCount; i++){
