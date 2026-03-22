@@ -127,7 +127,7 @@ const LEVEL_H = 9000;
 const BALL_RADIUS = 26;
 
 // Standard obstacle params
-const STD = {friction:0.10, restitution:0.15, thickness:22, angle:0.611};
+const STD = {friction:0.06, restitution:0.22, thickness:22, angle:0.611};
 
 const SECTIONS = [
   // ══ SECTION 1: Hook — two short deflectors, NO closing bottom ══
@@ -141,8 +141,8 @@ const SECTIONS = [
       {type:'ramp', x:0, y:380, w:260, angle:STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
       {type:'ramp', x:540, y:530, w:260, angle:-STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
       // 2 pegs to add chaos
-      {type:'peg', x:220, y:700, r:14, friction:0.05, restitution:0.5},
-      {type:'peg', x:320, y:700, r:14, friction:0.05, restitution:0.5},
+      {type:'peg', x:220, y:700, r:14, friction:0.05, restitution:0.65},
+      {type:'peg', x:320, y:700, r:14, friction:0.05, restitution:0.65},
       // Catch ramp into next section
       {type:'ramp', x:540, y:830, w:260, angle:-STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness}
     ]
@@ -159,8 +159,8 @@ const SECTIONS = [
       {type:'ramp', x:0, y:1310, w:260, angle:STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
       {type:'ramp', x:540, y:1460, w:260, angle:-STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
       // 2 pegs
-      {type:'peg', x:200, y:1600, r:14, friction:0.05, restitution:0.5},
-      {type:'peg', x:340, y:1600, r:14, friction:0.05, restitution:0.5},
+      {type:'peg', x:200, y:1600, r:14, friction:0.05, restitution:0.65},
+      {type:'peg', x:340, y:1600, r:14, friction:0.05, restitution:0.65},
       // Transition ramp
       {type:'ramp', x:0, y:1700, w:260, angle:STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness}
     ]
@@ -176,9 +176,9 @@ const SECTIONS = [
       {type:'ramp', x:540, y:2080, w:260, angle:-STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
       {type:'ramp', x:0, y:2230, w:260, angle:STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
       // 3 pegs in triangle pattern
-      {type:'peg', x:210, y:2380, r:14, friction:0.05, restitution:0.5},
-      {type:'peg', x:330, y:2380, r:14, friction:0.05, restitution:0.5},
-      {type:'peg', x:270, y:2450, r:14, friction:0.05, restitution:0.5},
+      {type:'peg', x:210, y:2380, r:14, friction:0.05, restitution:0.65},
+      {type:'peg', x:330, y:2380, r:14, friction:0.05, restitution:0.65},
+      {type:'peg', x:270, y:2450, r:14, friction:0.05, restitution:0.65},
       // Catch ramp
       {type:'ramp', x:540, y:2560, w:260, angle:-STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness}
     ]
@@ -222,15 +222,15 @@ const SECTIONS = [
       // Ramp 1 — left to right
       {type:'ramp', x:0, y:4430, w:280, angle:STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
       // Peg between ramp 1 and 2
-      {type:'peg', x:460, y:4570, r:14, friction:0.05, restitution:0.5},
+      {type:'peg', x:460, y:4570, r:14, friction:0.05, restitution:0.65},
       // Ramp 2 — right to left
       {type:'ramp', x:540, y:4610, w:280, angle:-STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
       // Peg between ramp 2 and 3
-      {type:'peg', x:80, y:4750, r:14, friction:0.05, restitution:0.5},
+      {type:'peg', x:80, y:4750, r:14, friction:0.05, restitution:0.65},
       // Ramp 3 — left to right
       {type:'ramp', x:0, y:4790, w:280, angle:STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
       // Catch ramps
-      {type:'peg', x:460, y:4930, r:14, friction:0.05, restitution:0.5},
+      {type:'peg', x:460, y:4930, r:14, friction:0.05, restitution:0.65},
       {type:'ramp', x:540, y:4970, w:280, angle:-STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
       {type:'ramp', x:0, y:5120, w:280, angle:STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
       {type:'ramp', x:540, y:5270, w:280, angle:-STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness}
@@ -261,20 +261,20 @@ const SECTIONS = [
     obstacles: [
       // Zigzag ramp 1 — left to right
       {type:'ramp', x:0, y:6480, w:280, angle:STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
-      {type:'peg', x:420, y:6560, r:14, friction:0.05, restitution:0.5},
-      {type:'peg', x:480, y:6620, r:14, friction:0.05, restitution:0.5},
+      {type:'peg', x:420, y:6560, r:14, friction:0.05, restitution:0.65},
+      {type:'peg', x:480, y:6620, r:14, friction:0.05, restitution:0.65},
       // Zigzag ramp 2 — right to left
       {type:'ramp', x:540, y:6650, w:280, angle:-STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
-      {type:'peg', x:120, y:6730, r:14, friction:0.05, restitution:0.5},
-      {type:'peg', x:60, y:6790, r:14, friction:0.05, restitution:0.5},
+      {type:'peg', x:120, y:6730, r:14, friction:0.05, restitution:0.65},
+      {type:'peg', x:60, y:6790, r:14, friction:0.05, restitution:0.65},
       // Zigzag ramp 3 — left to right
       {type:'ramp', x:0, y:6820, w:280, angle:STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
-      {type:'peg', x:420, y:6900, r:14, friction:0.05, restitution:0.5},
-      {type:'peg', x:480, y:6960, r:14, friction:0.05, restitution:0.5},
+      {type:'peg', x:420, y:6900, r:14, friction:0.05, restitution:0.65},
+      {type:'peg', x:480, y:6960, r:14, friction:0.05, restitution:0.65},
       // Zigzag ramp 4 — right to left
       {type:'ramp', x:540, y:6990, w:280, angle:-STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
-      {type:'peg', x:120, y:7070, r:14, friction:0.05, restitution:0.5},
-      {type:'peg', x:60, y:7130, r:14, friction:0.05, restitution:0.5},
+      {type:'peg', x:120, y:7070, r:14, friction:0.05, restitution:0.65},
+      {type:'peg', x:60, y:7130, r:14, friction:0.05, restitution:0.65},
       // Alternating exit ramps — NO closing bowl
       {type:'ramp', x:0, y:7200, w:260, angle:STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
       {type:'ramp', x:540, y:7350, w:260, angle:-STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness}
@@ -291,8 +291,8 @@ const SECTIONS = [
       {type:'ramp', x:0, y:7880, w:220, angle:STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
       {type:'ramp', x:540, y:7960, w:220, angle:-STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
       // 2 pegs above chute
-      {type:'peg', x:220, y:8080, r:14, friction:0.05, restitution:0.5},
-      {type:'peg', x:320, y:8080, r:14, friction:0.05, restitution:0.5},
+      {type:'peg', x:220, y:8080, r:14, friction:0.05, restitution:0.65},
+      {type:'peg', x:320, y:8080, r:14, friction:0.05, restitution:0.65},
       // Narrow finish chute — 150px wide, 300px long
       {type:'floor', x:195, y:8300, w:22, h:300},
       {type:'floor', x:345, y:8300, w:22, h:300}
@@ -445,7 +445,7 @@ function createPhysics(){
   for(let i=0; i<n; i++){
     const x = (W/(n+1))*(i+1);
     const tb = Bodies.circle(x, 80, BALL_RADIUS, {
-      restitution:0.15, friction:0.22, frictionAir:0.022, density:0.005, label:'p'+i,
+      restitution:0.35, friction:0.12, frictionAir:0.022, density:0.005, label:'p'+i,
       collisionFilter:{group:-(i+1)}
     });
     tokenBodies.push(tb);
@@ -526,6 +526,11 @@ for(let i=0; i<20; i++){
 // ════════════════════════════ GAME STATE ════════════════════════════
 let camY = 0, winner = -1, winnerT = 0, phase = 'race';
 let autoRestartT = 0;
+let finishOrder = []; // {idx, name, color, time}
+let firstFinishT = 0; // timestamp of first finish
+let finishedSet = new Set(); // track which balls have finished
+let finishFlashes = []; // {text, color, t} for position flash
+const DNF_CUTOFF = 25000; // 25s after first finish
 let trailHistory = [];
 // Drama state
 let lastLeader = -1, leadChangeT = 0;
@@ -555,6 +560,10 @@ function restartRace(){
   particles = [];
   winner = -1; phase = 'race';
   camY = 0;
+  finishOrder = [];
+  firstFinishT = 0;
+  finishedSet = new Set();
+  finishFlashes = [];
   initPlayerArrays();
   lastLeader = -1; leadChangeT = 0;
   checkpointFlash = {active:false, t:0, color:'', pct:0};
@@ -827,78 +836,162 @@ function drawParticlesOnScreen(){
   ctx.restore();
 }
 
-function drawWinnerScreen(){
-  if(winner<0) return;
-  const elapsed = (performance.now()-winnerT)/1000;
-  const t = Math.min(1, elapsed/0.8); // fade-in over 0.8s
-  const cfg = CFG.players[winner];
+function drawFinishFlashes(now){
+  if(finishFlashes.length === 0) return;
+  ctx.save();
+  for(let i = finishFlashes.length - 1; i >= 0; i--){
+    const f = finishFlashes[i];
+    const elapsed = (now - f.t) / 1000;
+    if(elapsed > 1.5){ finishFlashes.splice(i, 1); continue; }
+    const alpha = 1 - (elapsed / 1.5);
+    const scale = 1 + elapsed * 0.3; // slight grow
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.font = `900 ${Math.round(52 * scale)}px system-ui`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = f.color;
+    ctx.shadowColor = '#000';
+    ctx.shadowBlur = 12;
+    ctx.fillText(f.text, W/2, H * 0.35);
+    ctx.restore();
+  }
+  ctx.restore();
+}
+
+function drawResultsScreen(){
+  if(phase !== 'results') return;
+  const elapsed = (performance.now() - (autoRestartT - 12000)) / 1000;
+  const fadeT = Math.min(1, elapsed / 0.6);
 
   ctx.save();
 
-  // Background tint in player's color
-  ctx.fillStyle = `rgba(0,0,0,${0.6*t})`;
-  ctx.fillRect(0,0,W,H);
-  // Color overlay
-  const r = parseInt(cfg.color.slice(1,3),16)||0;
-  const g = parseInt(cfg.color.slice(3,5),16)||0;
-  const b = parseInt(cfg.color.slice(5,7),16)||0;
-  ctx.fillStyle = `rgba(${r},${g},${b},${0.2*t})`;
-  ctx.fillRect(0,0,W,H);
+  // Dark overlay
+  ctx.fillStyle = `rgba(0,0,0,${0.88 * fadeT})`;
+  ctx.fillRect(0, 0, W, H);
 
-  if(t>0.15){
-    const t2 = Math.min(1,(t-0.15)/0.85);
-    ctx.globalAlpha = t2;
+  if(fadeT < 0.1){ ctx.restore(); return; }
+  ctx.globalAlpha = Math.min(1, (fadeT - 0.1) / 0.9);
 
-    // Winner headshot (60px radius)
-    const bigR = 60;
-    const faceY = H/2 - 90;
+  // Title
+  ctx.font = '900 42px system-ui';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.fillStyle = '#fff';
+  ctx.shadowColor = '#000'; ctx.shadowBlur = 8;
+  ctx.fillText('FINAL RESULTS', W/2, 60);
+  ctx.shadowBlur = 0;
+
+  // Finishers list
+  const rowH = 52;
+  const startY = 140;
+  const N = CFG.playerCount;
+
+  for(let i = 0; i < finishOrder.length; i++){
+    const f = finishOrder[i];
+    const rowY = startY + i * rowH;
+    const timeSec = ((f.time - firstFinishT) / 1000);
+    const timeStr = i === 0 ? '0.000s' : '+' + timeSec.toFixed(3) + 's';
+    const ordinal = i===0?'1ST':i===1?'2ND':i===2?'3RD':(i+1)+'TH';
+
+    // Position badge
+    ctx.font = '900 22px system-ui';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = i === 0 ? '#ffd700' : i === 1 ? '#c0c0c0' : i === 2 ? '#cd7f32' : '#8899aa';
+    ctx.fillText(ordinal, 40, rowY + rowH/2);
+
+    // Headshot thumbnail
+    const thumbR = 18;
+    const thumbCX = 120, thumbCY = rowY + rowH/2;
+    const thumbImg = imgs['p' + f.idx];
     ctx.save();
-    ctx.beginPath(); ctx.arc(W/2, faceY, bigR, 0, Math.PI*2); ctx.clip();
-    const key = 'p'+winner;
-    const winImg = imgs[key];
-    if(winImg && winImg.naturalWidth > 0){
-      const scale = Math.max(bigR*2/winImg.naturalWidth, bigR*2/winImg.naturalHeight);
-      const dw = winImg.naturalWidth * scale;
-      const dh = winImg.naturalHeight * scale;
-      ctx.drawImage(winImg, W/2 - dw/2, faceY - dh/2 - dh*0.1, dw, dh);
+    ctx.beginPath(); ctx.arc(thumbCX, thumbCY, thumbR, 0, Math.PI*2); ctx.clip();
+    if(thumbImg && thumbImg.naturalWidth > 0){
+      const sc = Math.max(thumbR*2/thumbImg.naturalWidth, thumbR*2/thumbImg.naturalHeight);
+      const dw = thumbImg.naturalWidth * sc, dh = thumbImg.naturalHeight * sc;
+      ctx.drawImage(thumbImg, thumbCX - dw/2, thumbCY - dh/2 - dh*0.1, dw, dh);
     } else {
-      // Initials fallback
-      ctx.fillStyle = cfg.color; ctx.fill();
-      ctx.fillStyle = '#fff';
-      ctx.font = '700 36px system-ui';
+      ctx.fillStyle = f.color;
+      ctx.fillRect(thumbCX-thumbR, thumbCY-thumbR, thumbR*2, thumbR*2);
+      ctx.fillStyle = '#fff'; ctx.font = '700 14px system-ui';
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      const initials = cfg.name.split(/\s+/).map(w=>w[0]).slice(0,2).join('');
-      ctx.fillText(initials, W/2, faceY);
+      ctx.fillText(f.name.split(/\s+/).map(w=>w[0]).slice(0,2).join(''), thumbCX, thumbCY);
     }
     ctx.restore();
+    ctx.beginPath(); ctx.arc(thumbCX, thumbCY, thumbR, 0, Math.PI*2);
+    ctx.strokeStyle = f.color; ctx.lineWidth = 2.5; ctx.stroke();
 
-    // Ring around headshot
-    ctx.beginPath(); ctx.arc(W/2, faceY, bigR, 0, Math.PI*2);
-    ctx.strokeStyle = cfg.color; ctx.lineWidth = 5;
-    ctx.shadowColor = cfg.color; ctx.shadowBlur = 40;
-    ctx.stroke(); ctx.shadowBlur = 0;
-
-    // Player name — bold, large
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.font = '700 36px system-ui';
+    // Name
+    ctx.font = '700 20px system-ui';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
     ctx.fillStyle = '#fff';
-    ctx.fillText(cfg.name.toUpperCase(), W/2, H/2+10);
+    ctx.fillText(f.name, 148, rowY + rowH/2);
 
-    // "WINS THE RACE!" text
-    ctx.font = '900 56px system-ui';
-    ctx.fillStyle = cfg.color;
-    ctx.shadowColor = cfg.color; ctx.shadowBlur = 40;
-    ctx.fillText('WINS THE RACE!', W/2, H/2+65);
-    ctx.shadowBlur = 0;
+    // Time
+    ctx.font = '600 17px system-ui';
+    ctx.textAlign = 'right';
+    ctx.fillStyle = i === 0 ? '#ffd700' : 'rgba(200,220,255,.7)';
+    ctx.fillText(timeStr, W - 40, rowY + rowH/2);
+  }
 
-    // Countdown — 6 seconds total
-    const remaining = Math.max(0, 6 - elapsed);
-    if(remaining > 0){
-      ctx.font = '600 18px system-ui';
-      ctx.fillStyle = 'rgba(200,220,255,.6)';
-      ctx.fillText(`Restarting in ${Math.ceil(remaining)}...`, W/2, H/2+120);
+  // DNF players
+  const finishedIdxs = new Set(finishOrder.map(f=>f.idx));
+  let dnfY = startY + finishOrder.length * rowH;
+  for(let i = 0; i < N; i++){
+    if(!finishedIdxs.has(i)){
+      const rowY = dnfY;
+      dnfY += rowH;
+      ctx.font = '700 20px system-ui';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#556';
+      ctx.fillText('DNF', 40, rowY + rowH/2);
+
+      // Thumbnail
+      const thumbR = 18;
+      const thumbCX = 120, thumbCY = rowY + rowH/2;
+      const thumbImg = imgs['p' + i];
+      ctx.save();
+      ctx.globalAlpha = 0.5;
+      ctx.beginPath(); ctx.arc(thumbCX, thumbCY, thumbR, 0, Math.PI*2); ctx.clip();
+      if(thumbImg && thumbImg.naturalWidth > 0){
+        const sc = Math.max(thumbR*2/thumbImg.naturalWidth, thumbR*2/thumbImg.naturalHeight);
+        const dw = thumbImg.naturalWidth * sc, dh = thumbImg.naturalHeight * sc;
+        ctx.drawImage(thumbImg, thumbCX - dw/2, thumbCY - dh/2 - dh*0.1, dw, dh);
+      } else {
+        ctx.fillStyle = CFG.players[i].color;
+        ctx.fillRect(thumbCX-thumbR, thumbCY-thumbR, thumbR*2, thumbR*2);
+        ctx.fillStyle = '#fff'; ctx.font = '700 14px system-ui';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(CFG.players[i].name.split(/\s+/).map(w=>w[0]).slice(0,2).join(''), thumbCX, thumbCY);
+      }
+      ctx.restore();
+      ctx.beginPath(); ctx.arc(thumbCX, thumbCY, thumbR, 0, Math.PI*2);
+      ctx.strokeStyle = '#445'; ctx.lineWidth = 2; ctx.stroke();
+
+      // Name
+      ctx.font = '700 20px system-ui';
+      ctx.textAlign = 'left';
+      ctx.fillStyle = '#556';
+      ctx.fillText(CFG.players[i].name, 148, rowY + rowH/2);
+
+      ctx.font = '600 17px system-ui';
+      ctx.textAlign = 'right';
+      ctx.fillStyle = '#445';
+      ctx.fillText('DNF', W - 40, rowY + rowH/2);
     }
   }
+
+  // Auto-restart countdown
+  const remaining = Math.max(0, (autoRestartT - performance.now()) / 1000);
+  ctx.font = '600 18px system-ui';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'bottom';
+  ctx.fillStyle = 'rgba(200,220,255,.5)';
+  ctx.fillText(`Restarting in ${Math.ceil(remaining)}...`, W/2, H - 40);
+
   ctx.restore();
 }
 
@@ -1265,8 +1358,8 @@ function loop(now){
   const dt = Math.min((now-lastT)/1000, 0.05);
   lastT = now;
 
-  // Physics — fixed timestep 16.67ms
-  if(phase==='race'){
+  // Physics — fixed timestep 16.67ms (run during race AND finishing)
+  if(phase==='race' || phase==='finishing'){
     // Slow-mo effect — decay back to 1x
     if(slowMoActive && now >= slowMoEnd){
       slowMoActive = false; slowMoScale = 1;
@@ -1370,15 +1463,35 @@ function loop(now){
       }
     }
 
-    // Check winner
+    // Check finishers — track ALL balls crossing finish
     for(let i=0; i<N; i++){
-      if(tokenBodies[i].position.y >= FINISH_Y - 50 && winner<0){
-        winner = i;
-        winnerT = performance.now();
-        phase = 'win';
-        autoRestartT = now + 6000;
-        if(rActive) setTimeout(()=>stopRec(), 1500);
+      if(tokenBodies[i].position.y >= FINISH_Y - 50 && !finishedSet.has(i)){
+        finishedSet.add(i);
+        const pos = finishOrder.length + 1;
+        finishOrder.push({idx:i, name:CFG.players[i].name, color:CFG.players[i].color, time:performance.now()});
+        // Position flash
+        const ordinal = pos===1?'1ST!':pos===2?'2ND!':pos===3?'3RD!':pos+'TH!';
+        finishFlashes.push({text:ordinal, color:CFG.players[i].color, t:performance.now()});
+        if(pos === 1){
+          // First finisher
+          winner = i;
+          winnerT = performance.now();
+          firstFinishT = performance.now();
+          phase = 'finishing';
+        }
+        if(finishedSet.size === N){
+          // All finished
+          phase = 'results';
+          autoRestartT = now + 12000;
+          if(rActive) setTimeout(()=>stopRec(), 2000);
+        }
       }
+    }
+    // DNF cutoff — 25s after first finish
+    if(phase === 'finishing' && firstFinishT > 0 && performance.now() - firstFinishT >= DNF_CUTOFF){
+      phase = 'results';
+      autoRestartT = now + 12000;
+      if(rActive) setTimeout(()=>stopRec(), 2000);
     }
 
     // Lead change detection
@@ -1416,7 +1529,7 @@ function loop(now){
     camY += (targetCam - camY) * 0.08;
   }
 
-  if(phase==='win' && now >= autoRestartT){
+  if(phase==='results' && now >= autoRestartT){
     restartRace();
   }
 
@@ -1434,7 +1547,8 @@ function loop(now){
   drawLeadChange();
   drawCheckpointFlash();
   drawVignette();
-  if(phase==='win') drawWinnerScreen();
+  drawFinishFlashes(now);
+  if(phase==='results') drawResultsScreen();
   drawFPS();
   drawDebugOverlay();
 
