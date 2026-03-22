@@ -76,6 +76,9 @@ canvas{border-radius:6px;cursor:default;position:relative;z-index:1}
 <div id="search-results"></div>
 <button class="file-btn" style="margin-top:4px" onclick="hideSearch()">Cancel Search</button>
 </div>
+<div style="text-align:center;margin:10px 0">
+<label style="font:600 13px system-ui;color:#9bc;cursor:pointer"><input type="checkbox" id="facesToggle" checked style="accent-color:#2a6fff;margin-right:6px">Show faces in balls</label>
+</div>
 <div class="btn-row">
 <button class="btn-cancel" onclick="closeModal()">Cancel</button>
 <button class="btn-apply" onclick="applyConfig()">Apply &amp; Restart</button>
@@ -86,19 +89,21 @@ canvas{border-radius:6px;cursor:default;position:relative;z-index:1}
 // ════════════════════════════ CONFIGURATION ════════════════════════════
 const PALETTE = ['#552583','#1D428A','#CE1141','#007A33','#F58426','#5D76A9','#98002E','#00788C'];
 const DEFAULT_NAMES = ['LeBron James','Stephen Curry','Nikola Jokic','Giannis Antetokounmpo','Luka Doncic','Shai Gilgeous-Alexander','Jayson Tatum','Kevin Durant'];
+const DEFAULT_IDS = ['2544','201939','203999','203507','1629029','1628983','1628369','201142'];
 const DEFAULT_SLUGS = ['2544-lebron-james','201939-stephen-curry','203999-nikola-joki','203507-giannis-antetokounmpo','1629029-luka-doni','1628983-shai-gilgeous-alexander','1628369-jayson-tatum','201142-kevin-durant'];
 
 const CFG = {
   playerCount: 2,
+  facesInBalls: true,
   players: [
-    {name:'LeBron James', img:'https://nba-battle.thejorgesierra.workers.dev/headshot/2544-lebron-james.png', color:'#552583', winBias:50},
-    {name:'Stephen Curry', img:'https://nba-battle.thejorgesierra.workers.dev/headshot/201939-stephen-curry.png', color:'#1D428A', winBias:50},
-    {name:'Nikola Jokic', img:'https://nba-battle.thejorgesierra.workers.dev/headshot/203999-nikola-joki.png', color:'#CE1141', winBias:50},
-    {name:'Giannis Antetokounmpo', img:'https://nba-battle.thejorgesierra.workers.dev/headshot/203507-giannis-antetokounmpo.png', color:'#007A33', winBias:50},
-    {name:'Luka Doncic', img:'https://nba-battle.thejorgesierra.workers.dev/headshot/1629029-luka-doni.png', color:'#F58426', winBias:50},
-    {name:'Shai Gilgeous-Alexander', img:'https://nba-battle.thejorgesierra.workers.dev/headshot/1628983-shai-gilgeous-alexander.png', color:'#5D76A9', winBias:50},
-    {name:'Jayson Tatum', img:'https://nba-battle.thejorgesierra.workers.dev/headshot/1628369-jayson-tatum.png', color:'#98002E', winBias:50},
-    {name:'Kevin Durant', img:'https://nba-battle.thejorgesierra.workers.dev/headshot/201142-kevin-durant.png', color:'#00788C', winBias:50}
+    {name:'LeBron James', img:'https://nba-battle.thejorgesierra.workers.dev/nba-headshot/2544', color:'#552583', winBias:50},
+    {name:'Stephen Curry', img:'https://nba-battle.thejorgesierra.workers.dev/nba-headshot/201939', color:'#1D428A', winBias:50},
+    {name:'Nikola Jokic', img:'https://nba-battle.thejorgesierra.workers.dev/nba-headshot/203999', color:'#CE1141', winBias:50},
+    {name:'Giannis Antetokounmpo', img:'https://nba-battle.thejorgesierra.workers.dev/nba-headshot/203507', color:'#007A33', winBias:50},
+    {name:'Luka Doncic', img:'https://nba-battle.thejorgesierra.workers.dev/nba-headshot/1629029', color:'#F58426', winBias:50},
+    {name:'Shai Gilgeous-Alexander', img:'https://nba-battle.thejorgesierra.workers.dev/nba-headshot/1628983', color:'#5D76A9', winBias:50},
+    {name:'Jayson Tatum', img:'https://nba-battle.thejorgesierra.workers.dev/nba-headshot/1628369', color:'#98002E', winBias:50},
+    {name:'Kevin Durant', img:'https://nba-battle.thejorgesierra.workers.dev/nba-headshot/201142', color:'#00788C', winBias:50}
   ],
   gravity: 0.7,
   seed: 42
@@ -927,22 +932,41 @@ function drawToken(body, cfg, idx){
   ctx.fillStyle = gg; ctx.fill();
   ctx.restore();
 
-  // Token circle — solid color + 2-letter initials
+  // Token circle — face or initials
+  const faceImg = imgs['p'+idx];
+  const hasFace = CFG.facesInBalls && faceImg && faceImg.naturalWidth > 0;
+
   ctx.save();
   ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI*2);
   ctx.fillStyle = cfg.color; ctx.fill();
-  // Draw initials (first letter of each word, max 2)
-  const initials = cfg.name.split(/\s+/).map(w=>w[0]).slice(0,2).join('');
-  ctx.fillStyle = '#fff';
-  ctx.font = '700 18px system-ui';
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText(initials, px, py);
+
+  if(hasFace){
+    // Draw headshot clipped to circle, cropping top 60% (face area)
+    const clipR = r - 2;
+    ctx.save();
+    ctx.beginPath(); ctx.arc(px, py, clipR, 0, Math.PI*2); ctx.clip();
+    const iw = faceImg.naturalWidth, ih = faceImg.naturalHeight;
+    // Crop centered on top 60% of image
+    const cropH = ih * 0.6;
+    const cropW = Math.min(iw, cropH); // square-ish crop
+    const sx = (iw - cropW) / 2, sy = 0;
+    const dSize = clipR * 2;
+    ctx.drawImage(faceImg, sx, sy, cropW, cropH, px - clipR, py - clipR, dSize, dSize);
+    ctx.restore();
+  } else {
+    // Draw initials (first letter of each word, max 2)
+    const initials = cfg.name.split(/\s+/).map(w=>w[0]).slice(0,2).join('');
+    ctx.fillStyle = '#fff';
+    ctx.font = '700 18px system-ui';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(initials, px, py);
+  }
   ctx.restore();
 
-  // 4px colored ring with outer glow
+  // 3px colored ring with outer glow
   ctx.save();
   ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI*2);
-  ctx.strokeStyle = cfg.color; ctx.lineWidth = 4;
+  ctx.strokeStyle = cfg.color; ctx.lineWidth = 3;
   ctx.shadowColor = cfg.color; ctx.shadowBlur = 12;
   ctx.stroke();
   ctx.restore();
@@ -1853,6 +1877,7 @@ function openModal(){
   });
   buildPlayerCards();
   hideSearch();
+  document.getElementById('facesToggle').checked = CFG.facesInBalls;
   document.getElementById('modal-overlay').classList.add('open');
 }
 
@@ -1873,10 +1898,11 @@ function handleFile(idx, input){
 
 function applyConfig(){
   CFG.playerCount = _modalPlayerCount;
+  CFG.facesInBalls = document.getElementById('facesToggle').checked;
   // Ensure players array is big enough
   while(CFG.players.length < CFG.playerCount){
     const i = CFG.players.length;
-    CFG.players.push({name:DEFAULT_NAMES[i]||'Player '+(i+1), img:DEFAULT_SLUGS[i]?'https://nba-battle.thejorgesierra.workers.dev/headshot/'+DEFAULT_SLUGS[i]+'.png':'', color:PALETTE[i]||'#888', winBias:50});
+    CFG.players.push({name:DEFAULT_NAMES[i]||'Player '+(i+1), img:DEFAULT_IDS[i]?'https://nba-battle.thejorgesierra.workers.dev/nba-headshot/'+DEFAULT_IDS[i]:'', color:PALETTE[i]||'#888', winBias:50});
   }
   // Read values from modal inputs
   for(let i=0; i<CFG.playerCount; i++){
