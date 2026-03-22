@@ -63,10 +63,11 @@ canvas{border-radius:6px;cursor:default;position:relative;z-index:1}
 <div id="modal">
 <h2>⚙ Configure Players</h2>
 <div class="cnt-row">
-<div class="cnt-btn active" onclick="setPlayerCount(2)">2 PLAYERS</div>
-<div class="cnt-btn" onclick="setPlayerCount(4)">4 PLAYERS</div>
-<div class="cnt-btn" onclick="setPlayerCount(6)">6 PLAYERS</div>
-<div class="cnt-btn" onclick="setPlayerCount(8)">8 PLAYERS</div>
+<div class="cnt-btn active" onclick="setPlayerCount(2)">2</div>
+<div class="cnt-btn" onclick="setPlayerCount(3)">3</div>
+<div class="cnt-btn" onclick="setPlayerCount(4)">4</div>
+<div class="cnt-btn" onclick="setPlayerCount(6)">6</div>
+<div class="cnt-btn" onclick="setPlayerCount(8)">8</div>
 </div>
 <div id="player-cards"></div>
 <div id="search-panel" style="display:none">
@@ -99,7 +100,7 @@ const CFG = {
     {name:'Jayson Tatum', img:'https://nba-battle.thejorgesierra.workers.dev/headshot/1628369-jayson-tatum.png', color:'#98002E', winBias:50},
     {name:'Kevin Durant', img:'https://nba-battle.thejorgesierra.workers.dev/headshot/201142-kevin-durant.png', color:'#00788C', winBias:50}
   ],
-  gravity: 0.6,
+  gravity: 0.7,
   seed: 42
 };
 
@@ -121,138 +122,312 @@ function rng(){ _seed=((_seed*1103515245+12345)&0x7fffffff); return _seed/0x7fff
 function rngRange(a,b){ return a+rng()*(b-a); }
 
 // ════════════════════════════ LEVEL DESIGN ════════════════════════════
-const FINISH_Y = 7800;
-const LEVEL_H = 8000;
-const BALL_RADIUS = 28;
+const FINISH_Y = 8800;
+const LEVEL_H = 9000;
+const BALL_RADIUS = 26;
 
-function buildObstacles(){
-  const obs = [];
-  const CX = W/2; // 270
-  // Standard params — 35° angle, 22px thick, friction 0.10, restitution 0.15
-  const F = 0.10, R = 0.15, T = 22;
-  const A = 0.611; // 35° in radians
+// Standard obstacle params
+const STD = {friction:0.10, restitution:0.15, thickness:22, angle:0.611};
 
-  // ══ SECTION 1 (y 150–700): Wide S-curve entry ══
-  // Long left ramp — ball rolls right across 300px
-  obs.push({type:'slope', x:CX, y:200, w:300, angle:A, friction:F, restitution:R, thickness:T});
-  // Peg at end of ramp to redirect
-  obs.push({type:'peg', x:W-40, y:370, r:14, restitution:0.4});
-  // Long right ramp — ball rolls left across 300px
-  obs.push({type:'slope', x:CX, y:430, w:300, angle:-A, friction:F, restitution:R, thickness:T});
-  // Peg at end of ramp
-  obs.push({type:'peg', x:40, y:600, r:14, restitution:0.4});
-  // Short catch ramp to feed into section 2
-  obs.push({type:'slope', x:0, y:650, w:200, angle:A, friction:F, restitution:R, thickness:T});
+const SECTIONS = [
+  // ══ SECTION 1: Hook — mirrored funnel, wide bowl, 2 pegs at exit ══
+  {
+    id: 'hook', yStart: 150, yEnd: 900,
+    obstacles: [
+      // Mirrored funnel — two ramps angled inward, exit gap 130px
+      {type:'ramp', x:540, y:180, w:280, angle:-STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
+      {type:'ramp', x:0, y:180, w:280, angle:STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
+      // Wide bowl below (3 segments forming U)
+      {type:'ramp', x:0, y:370, w:280, angle:STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
+      {type:'ramp', x:540, y:500, w:280, angle:-STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
+      {type:'ramp', x:0, y:640, w:280, angle:STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
+      // 2 pegs at bowl exit
+      {type:'peg', x:220, y:790, r:14, friction:0.05, restitution:0.5},
+      {type:'peg', x:320, y:790, r:14, friction:0.05, restitution:0.5},
+      // Catch ramp into next section
+      {type:'ramp', x:540, y:860, w:280, angle:-STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness}
+    ]
+  },
+  // ══ SECTION 2: S-Curve — left ramp, right ramp, bowl, 2 pegs ══
+  {
+    id: 'scurve', yStart: 950, yEnd: 1750,
+    obstacles: [
+      // Left ramp (300px, angles ball right)
+      {type:'ramp', x:0, y:980, w:300, angle:STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
+      // Right ramp (300px, angles ball left)
+      {type:'ramp', x:540, y:1130, w:300, angle:-STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
+      // Bowl at bottom — 3 segments
+      {type:'ramp', x:0, y:1280, w:280, angle:STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
+      {type:'ramp', x:540, y:1420, w:280, angle:-STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
+      {type:'ramp', x:0, y:1560, w:260, angle:STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
+      // 2 pegs
+      {type:'peg', x:200, y:1680, r:14, friction:0.05, restitution:0.5},
+      {type:'peg', x:340, y:1680, r:14, friction:0.05, restitution:0.5},
+      // Transition ramp
+      {type:'ramp', x:540, y:1720, w:280, angle:-STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness}
+    ]
+  },
+  // ══ SECTION 3: Recompression — wide funnel (exit 140px), bowl, 3 triangle pegs ══
+  {
+    id: 'recompression1', yStart: 1800, yEnd: 2600,
+    obstacles: [
+      // Wide funnel — two ramps angled inward, exit gap 140px
+      {type:'ramp', x:540, y:1830, w:280, angle:-STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
+      {type:'ramp', x:0, y:1830, w:280, angle:STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
+      // Bowl below
+      {type:'ramp', x:0, y:1980, w:300, angle:STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
+      {type:'ramp', x:540, y:2130, w:300, angle:-STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
+      {type:'ramp', x:0, y:2280, w:280, angle:STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
+      // 3 pegs in triangle pattern
+      {type:'peg', x:210, y:2420, r:14, friction:0.05, restitution:0.5},
+      {type:'peg', x:330, y:2420, r:14, friction:0.05, restitution:0.5},
+      {type:'peg', x:270, y:2490, r:14, friction:0.05, restitution:0.5},
+      // Catch ramp
+      {type:'ramp', x:540, y:2560, w:280, angle:-STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness}
+    ]
+  },
+  // ══ SECTION 4: Sweeper — wide landing bowl, ONE sweeper, two exit ramps ══
+  {
+    id: 'sweeper1', yStart: 2650, yEnd: 3500,
+    obstacles: [
+      // Wide landing bowl — 3 ramps
+      {type:'ramp', x:0, y:2680, w:300, angle:STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
+      {type:'ramp', x:540, y:2830, w:300, angle:-STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
+      {type:'ramp', x:0, y:2970, w:280, angle:STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
+      // ONE sweeper (180px, speed 0.010)
+      {type:'sweeper', x:270, y:3100, w:180, speed:0.010},
+      // Two exit ramps (one left, one right)
+      {type:'ramp', x:0, y:3230, w:280, angle:STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
+      {type:'ramp', x:540, y:3230, w:280, angle:-STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
+      // Transition ramp
+      {type:'ramp', x:540, y:3380, w:280, angle:-STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
+      {type:'ramp', x:0, y:3470, w:260, angle:STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness}
+    ]
+  },
+  // ══ SECTION 5: Seesaw — two entry ramps, 280px seesaw, two wide exit funnels ══
+  {
+    id: 'seesaw', yStart: 3550, yEnd: 4350,
+    obstacles: [
+      // Two angled entry ramps leading to center
+      {type:'ramp', x:540, y:3580, w:280, angle:-STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
+      {type:'ramp', x:0, y:3720, w:280, angle:STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
+      // 280px seesaw beam
+      {type:'seesaw', x:270, y:3870, w:280},
+      // Two wide exit funnels
+      {type:'ramp', x:0, y:4000, w:280, angle:STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
+      {type:'ramp', x:540, y:4000, w:280, angle:-STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
+      // Catch ramp below exit
+      {type:'ramp', x:540, y:4150, w:280, angle:-STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
+      {type:'ramp', x:0, y:4300, w:280, angle:STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness}
+    ]
+  },
+  // ══ SECTION 6: Rolling — three alternating ramps with pegs between ══
+  {
+    id: 'rolling', yStart: 4400, yEnd: 5300,
+    obstacles: [
+      // Ramp 1 — left to right
+      {type:'ramp', x:0, y:4430, w:280, angle:STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
+      // Peg between ramp 1 and 2
+      {type:'peg', x:460, y:4570, r:14, friction:0.05, restitution:0.5},
+      // Ramp 2 — right to left
+      {type:'ramp', x:540, y:4610, w:280, angle:-STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
+      // Peg between ramp 2 and 3
+      {type:'peg', x:80, y:4750, r:14, friction:0.05, restitution:0.5},
+      // Ramp 3 — left to right
+      {type:'ramp', x:0, y:4790, w:280, angle:STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
+      // Catch ramps
+      {type:'peg', x:460, y:4930, r:14, friction:0.05, restitution:0.5},
+      {type:'ramp', x:540, y:4970, w:280, angle:-STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
+      {type:'ramp', x:0, y:5120, w:280, angle:STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
+      {type:'ramp', x:540, y:5270, w:280, angle:-STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness}
+    ]
+  },
+  // ══ SECTION 7: Chaos — bowl, oscillating gate, sweeper, recompression funnel ══
+  {
+    id: 'chaos', yStart: 5350, yEnd: 6400,
+    obstacles: [
+      // Wide catch bowl (300px ramps)
+      {type:'ramp', x:0, y:5380, w:300, angle:STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
+      {type:'ramp', x:540, y:5530, w:300, angle:-STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
+      {type:'ramp', x:0, y:5670, w:280, angle:STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
+      // Oscillating gate (period 3.5s)
+      {type:'gate', x:270, y:5800, w:100, xMin:130, xMax:410, period:3.5},
+      // Sweeper below gate (speed 0.008)
+      {type:'sweeper', x:270, y:5930, w:180, speed:0.008},
+      // Recompression funnel (exit gap 120px)
+      {type:'ramp', x:540, y:6060, w:280, angle:-STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
+      {type:'ramp', x:0, y:6060, w:280, angle:STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
+      // Catch ramp
+      {type:'ramp', x:0, y:6210, w:280, angle:STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
+      {type:'ramp', x:540, y:6360, w:280, angle:-STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness}
+    ]
+  },
+  // ══ SECTION 8: Tension — 4 zigzag ramps, 2 pegs per ramp, final bowl ══
+  {
+    id: 'tension', yStart: 6450, yEnd: 7500,
+    obstacles: [
+      // Zigzag ramp 1 — left to right
+      {type:'ramp', x:0, y:6480, w:280, angle:STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
+      {type:'peg', x:420, y:6560, r:14, friction:0.05, restitution:0.5},
+      {type:'peg', x:480, y:6620, r:14, friction:0.05, restitution:0.5},
+      // Zigzag ramp 2 — right to left
+      {type:'ramp', x:540, y:6630, w:280, angle:-STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
+      {type:'peg', x:120, y:6710, r:14, friction:0.05, restitution:0.5},
+      {type:'peg', x:60, y:6770, r:14, friction:0.05, restitution:0.5},
+      // Zigzag ramp 3 — left to right
+      {type:'ramp', x:0, y:6780, w:280, angle:STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
+      {type:'peg', x:420, y:6860, r:14, friction:0.05, restitution:0.5},
+      {type:'peg', x:480, y:6920, r:14, friction:0.05, restitution:0.5},
+      // Zigzag ramp 4 — right to left
+      {type:'ramp', x:540, y:6930, w:280, angle:-STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
+      {type:'peg', x:120, y:7010, r:14, friction:0.05, restitution:0.5},
+      {type:'peg', x:60, y:7070, r:14, friction:0.05, restitution:0.5},
+      // Final recompression bowl
+      {type:'ramp', x:0, y:7100, w:300, angle:STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
+      {type:'ramp', x:540, y:7250, w:300, angle:-STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
+      {type:'ramp', x:0, y:7400, w:280, angle:STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
+      {type:'ramp', x:540, y:7470, w:260, angle:-STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness}
+    ]
+  },
+  // ══ SECTION 9: Finish — 2 deflectors, narrow chute (130px walls), finish line ══
+  {
+    id: 'finish', yStart: 7550, yEnd: 8800,
+    obstacles: [
+      // 2 deflector ramps to slow and redirect
+      {type:'ramp', x:0, y:7580, w:280, angle:STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
+      {type:'ramp', x:540, y:7730, w:280, angle:-STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
+      // Funnel into chute
+      {type:'ramp', x:0, y:7880, w:260, angle:STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
+      {type:'ramp', x:540, y:7880, w:260, angle:-STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
+      // 2 pegs above chute
+      {type:'peg', x:220, y:8020, r:14, friction:0.05, restitution:0.5},
+      {type:'peg', x:320, y:8020, r:14, friction:0.05, restitution:0.5},
+      // Narrow finish chute — 130px wide, 300px long
+      {type:'floor', x:205, y:8300, w:22, h:300},
+      {type:'floor', x:335, y:8300, w:22, h:300}
+    ]
+  }
+];
 
-  // ══ SECTION 2 (y 750–1400): Half-pipe valley ══
-  // Left wall curving inward (250px)
-  obs.push({type:'slope', x:0, y:800, w:250, angle:A, friction:F, restitution:R, thickness:T});
-  // Right wall curving inward (250px)
-  obs.push({type:'slope', x:W, y:950, w:250, angle:-A, friction:F, restitution:R, thickness:T});
-  // Mid-section catch ramp to prevent >150px free fall
-  obs.push({type:'slope', x:W, y:1100, w:250, angle:-A, friction:F, restitution:R, thickness:T});
-  obs.push({type:'slope', x:0, y:1200, w:200, angle:A, friction:F, restitution:R, thickness:T});
-  // Two pegs above exit to slow balls (exit gap ~150px)
-  obs.push({type:'peg', x:CX-50, y:1310, r:14, restitution:0.4});
-  obs.push({type:'peg', x:CX+50, y:1310, r:14, restitution:0.4});
-  // Wide catch ramp into section 3
-  obs.push({type:'slope', x:W, y:1380, w:200, angle:-A, friction:F, restitution:R, thickness:T});
+function obstacleFactory(spec, courseScale){
+  const {Bodies, Constraint} = Matter;
+  const result = {body:null, paddle:false, oscgate:false, constraint:null};
+  const cs = courseScale || 1;
+  const mid = W / 2; // 270
 
-  // ══ SECTION 3 (y 1450–2100): Sweeper section ══
-  // Wide landing ramp (300px)
-  obs.push({type:'slope', x:0, y:1500, w:300, angle:A, friction:F, restitution:R, thickness:T});
-  // Catch ramp before sweeper
-  obs.push({type:'slope', x:W, y:1650, w:250, angle:-A, friction:F, restitution:R, thickness:T});
-  // ONE slow sweeper (180px, speed 0.010)
-  obs.push({type:'paddle', x:CX, y:1800, w:180, speed:0.010});
-  // Two wide exit channels (each 150px ramp)
-  obs.push({type:'slope', x:0, y:1920, w:200, angle:A, friction:F, restitution:R, thickness:T});
-  obs.push({type:'slope', x:W, y:1920, w:200, angle:-A, friction:F, restitution:R, thickness:T});
-  // Transition ramp
-  obs.push({type:'slope', x:0, y:2060, w:250, angle:A, friction:F, restitution:R, thickness:T});
+  // Scale x position toward center proportionally
+  function sx(x){ return mid + (x - mid) * cs; }
 
-  // ══ SECTION 4 (y 2150–2800): Seesaw ══
-  // Landing ramps from both sides
-  obs.push({type:'slope', x:W, y:2200, w:250, angle:-A, friction:F, restitution:R, thickness:T});
-  obs.push({type:'slope', x:0, y:2300, w:200, angle:A, friction:F, restitution:R, thickness:T});
-  // Wide seesaw (280px beam)
-  obs.push({type:'seesaw', x:CX, y:2450, w:280});
-  // Wide exit funnels (150px each side)
-  obs.push({type:'slope', x:0, y:2580, w:200, angle:A, friction:F, restitution:R, thickness:T});
-  obs.push({type:'slope', x:W, y:2580, w:200, angle:-A, friction:F, restitution:R, thickness:T});
-  // Catch ramp before section 5
-  obs.push({type:'slope', x:W, y:2730, w:250, angle:-A, friction:F, restitution:R, thickness:T});
+  switch(spec.type){
+    case 'ramp': {
+      const slopeT = spec.thickness || 22;
+      const scaledW = spec.w * cs;
+      const baseX = sx(spec.x);
+      result.body = Bodies.rectangle(
+        baseX + (spec.angle>0?scaledW/2:-scaledW/2), spec.y, scaledW, slopeT,
+        {isStatic:true, restitution:spec.restitution!==undefined?spec.restitution:0.2,
+         friction:spec.friction!==undefined?spec.friction:0.08, angle:spec.angle, label:'slope'}
+      );
+      result.body._w = scaledW;
+      result.body._h = slopeT;
+      break;
+    }
+    case 'peg': {
+      const r = spec.r || 10;
+      result.body = Bodies.circle(sx(spec.x), spec.y, r, {
+        isStatic:true, restitution:spec.restitution!==undefined?spec.restitution:0.7,
+        friction:spec.friction!==undefined?spec.friction:0.08, label:'peg', _pegR:r
+      });
+      break;
+    }
+    case 'floor': {
+      const scaledW = spec.w * cs;
+      result.body = Bodies.rectangle(sx(spec.x), spec.y, scaledW, spec.h, {isStatic:true, restitution:0.3, label:'floor'});
+      result.body._w = scaledW;
+      result.body._h = spec.h;
+      break;
+    }
+    case 'wall': {
+      result.body = Bodies.rectangle(spec.x, spec.y, spec.w, spec.h, {isStatic:true, label:'wall'});
+      result.body._w = spec.w;
+      result.body._h = spec.h;
+      break;
+    }
+    case 'sweeper': {
+      const swW = (spec.w || 180) * cs;
+      result.body = Bodies.rectangle(sx(spec.x), spec.y, swW, 22, {
+        isStatic:true, restitution:0.5, friction:0.01, label:'paddle'
+      });
+      result.body._rotSpeed = spec.speed || 0.02;
+      result.body._w = swW;
+      result.body._h = 22;
+      result.paddle = true;
+      break;
+    }
+    case 'seesaw': {
+      const ssW = (spec.w || 280) * cs;
+      const ssX = sx(spec.x);
+      result.body = Bodies.rectangle(ssX, spec.y, ssW, 22, {
+        isStatic:false, restitution:0.2, friction:0.35, frictionAir:0.05,
+        density:0.01, label:'seesaw'
+      });
+      result.body._w = ssW;
+      result.body._h = 22;
+      result.constraint = Constraint.create({
+        pointA:{x:ssX, y:spec.y}, bodyB:result.body,
+        pointB:{x:0, y:0}, stiffness:1, length:0
+      });
+      break;
+    }
+    case 'gate': {
+      const gW = (spec.w || 80) * cs;
+      const gH = spec.h || 22;
+      const gX = sx(spec.x);
+      result.body = Bodies.rectangle(gX, spec.y, gW, gH, {
+        isStatic:true, restitution:0.3, friction:0.1, label:'oscgate'
+      });
+      result.body._w = gW;
+      result.body._h = gH;
+      result.body._oscXCenter = sx((spec.xMin + spec.xMax) / 2);
+      result.body._oscXRange = ((spec.xMax - spec.xMin) / 2) * cs;
+      result.body._oscY = spec.y;
+      result.body._oscPeriod = spec.period || 3;
+      result.body._oscPhase = spec.phase || 0;
+      result.oscgate = true;
+      break;
+    }
+  }
+  return result;
+}
 
-  // ══ SECTION 5 (y 2850–3500): Rolling S-curve ══
-  // Three large alternating ramps (280px each) — balls travel side to side
-  obs.push({type:'slope', x:0, y:2900, w:280, angle:A, friction:F, restitution:R, thickness:T});
-  obs.push({type:'slope', x:W, y:3060, w:280, angle:-A, friction:F, restitution:R, thickness:T});
-  obs.push({type:'slope', x:0, y:3220, w:280, angle:A, friction:F, restitution:R, thickness:T});
-  // Transition ramp
-  obs.push({type:'slope', x:W, y:3380, w:250, angle:-A, friction:F, restitution:R, thickness:T});
+function buildLevel(courseScale){
+  const allBodies = [], paddles = [], gates = [], constraints = [];
 
-  // ══ SECTION 6 (y 3550–4300): Oscillating gate chaos ══
-  // Wide landing ramp (300px)
-  obs.push({type:'slope', x:0, y:3600, w:300, angle:A, friction:F, restitution:R, thickness:T});
-  // Catch ramp
-  obs.push({type:'slope', x:W, y:3750, w:250, angle:-A, friction:F, restitution:R, thickness:T});
-  // Oscillating gate (moves x=140 to x=400, period 3s)
-  obs.push({type:'oscgate', x:CX, y:3900, w:100, xMin:140, xMax:400, period:3});
-  // Wide exit ramps (140px+ gap)
-  obs.push({type:'slope', x:0, y:4020, w:200, angle:A, friction:F, restitution:R, thickness:T});
-  obs.push({type:'slope', x:W, y:4020, w:200, angle:-A, friction:F, restitution:R, thickness:T});
-  // Transition ramp
-  obs.push({type:'slope', x:0, y:4180, w:250, angle:A, friction:F, restitution:R, thickness:T});
+  // Process all sections
+  SECTIONS.forEach(section => {
+    section.obstacles.forEach(spec => {
+      const res = obstacleFactory(spec, courseScale);
+      if(res.body){
+        allBodies.push(res.body);
+        if(res.paddle) paddles.push(res.body);
+        if(res.oscgate) gates.push(res.body);
+        if(res.constraint) constraints.push(res.constraint);
+      }
+    });
+  });
 
-  // ══ SECTION 7 (y 4350–5200): Double sweeper ══
-  // Landing ramp
-  obs.push({type:'slope', x:W, y:4400, w:280, angle:-A, friction:F, restitution:R, thickness:T});
-  // First sweeper (slow: 0.008)
-  obs.push({type:'paddle', x:CX, y:4560, w:180, speed:0.008});
-  // Wide bowl ramp between sweepers
-  obs.push({type:'slope', x:0, y:4660, w:280, angle:A, friction:F, restitution:R, thickness:T});
-  obs.push({type:'slope', x:W, y:4810, w:250, angle:-A, friction:F, restitution:R, thickness:T});
-  // Second sweeper (fast: 0.013)
-  obs.push({type:'paddle', x:CX, y:4960, w:180, speed:0.013});
-  // Exit ramps
-  obs.push({type:'slope', x:0, y:5060, w:250, angle:A, friction:F, restitution:R, thickness:T});
+  // Boundaries — walls flush at x=0 and x=540
+  const wallSpecs = [
+    {type:'wall', x:-10, y:LEVEL_H/2, w:20, h:LEVEL_H},
+    {type:'wall', x:W+10, y:LEVEL_H/2, w:20, h:LEVEL_H},
+    {type:'floor', x:W/2, y:FINISH_Y+100, w:W, h:40}
+  ];
+  wallSpecs.forEach(spec => {
+    const res = obstacleFactory(spec, courseScale);
+    if(res.body) allBodies.push(res.body);
+  });
 
-  // ══ SECTION 8 (y 5250–6000): Final recompression ══
-  // Wide merging funnel — two long ramps converging
-  obs.push({type:'slope', x:W, y:5300, w:250, angle:-A, friction:F, restitution:R, thickness:T});
-  obs.push({type:'slope', x:0, y:5450, w:250, angle:A, friction:F, restitution:R, thickness:T});
-  // 3 pegs in a row to create randomness
-  obs.push({type:'peg', x:CX-80, y:5600, r:14, restitution:0.4});
-  obs.push({type:'peg', x:CX, y:5600, r:14, restitution:0.4});
-  obs.push({type:'peg', x:CX+80, y:5600, r:14, restitution:0.4});
-  // Short half-pipe
-  obs.push({type:'slope', x:0, y:5720, w:200, angle:A, friction:F, restitution:R, thickness:T});
-  obs.push({type:'slope', x:W, y:5720, w:200, angle:-A, friction:F, restitution:R, thickness:T});
-  // Transition ramp
-  obs.push({type:'slope', x:0, y:5880, w:250, angle:A, friction:F, restitution:R, thickness:T});
-
-  // ══ SECTION 9 (y 6050–7600): Sprint finish ══
-  // Alternating ramps — 4 total, 200px each
-  obs.push({type:'slope', x:W, y:6100, w:200, angle:-A, friction:F, restitution:R, thickness:T});
-  obs.push({type:'slope', x:0, y:6250, w:200, angle:A, friction:F, restitution:R, thickness:T});
-  obs.push({type:'slope', x:W, y:6400, w:200, angle:-A, friction:F, restitution:R, thickness:T});
-  obs.push({type:'slope', x:0, y:6550, w:200, angle:A, friction:F, restitution:R, thickness:T});
-  // Pegs to add unpredictability before chute
-  obs.push({type:'peg', x:CX-60, y:6700, r:14, restitution:0.4});
-  obs.push({type:'peg', x:CX+60, y:6700, r:14, restitution:0.4});
-  // Final catch ramp
-  obs.push({type:'slope', x:W, y:6800, w:250, angle:-A, friction:F, restitution:R, thickness:T});
-  obs.push({type:'slope', x:0, y:6950, w:200, angle:A, friction:F, restitution:R, thickness:T});
-  // Narrow finish chute (130px wide, 400px tall)
-  obs.push({type:'floor', x:CX-65, y:7200, w:22, h:400});
-  obs.push({type:'floor', x:CX+65, y:7200, w:22, h:400});
-
-  // ── Boundaries — walls flush at x=0 and x=540 ──
-  obs.push({type:'wall', x:-10, y:LEVEL_H/2, w:20, h:LEVEL_H});
-  obs.push({type:'wall', x:W+10, y:LEVEL_H/2, w:20, h:LEVEL_H});
-  obs.push({type:'floor', x:W/2, y:FINISH_Y+100, w:W, h:40});
-
-  return obs;
+  return {bodies:allBodies, paddles, gates, constraints};
 }
 
 // ════════════════════════════ MATTER.JS SETUP ════════════════════════════
@@ -260,11 +435,13 @@ const {Engine, World, Bodies, Body, Composite, Events, Constraint} = Matter;
 let engine, world, tokenBodies=[], obsBodies=[], paddleBodies=[], oscGateBodies=[];
 
 function createPhysics(){
+  // Gravity scales with player count
+  const grav = CFG.playerCount <= 2 ? 0.7 : CFG.playerCount <= 4 ? 0.8 : 0.9;
   if(!engine){
-    engine = Engine.create({gravity:{x:0, y:CFG.gravity}});
+    engine = Engine.create({gravity:{x:0, y:grav}});
   } else {
     Composite.clear(engine.world);
-    engine.gravity.y = CFG.gravity;
+    engine.gravity.y = grav;
   }
   world = engine.world;
   tokenBodies = [];
@@ -277,86 +454,22 @@ function createPhysics(){
   for(let i=0; i<n; i++){
     const x = (W/(n+1))*(i+1);
     const tb = Bodies.circle(x, 80, BALL_RADIUS, {
-      restitution:0.2, friction:0.25, frictionAir:0.025, density:0.006, label:'p'+i,
+      restitution:0.15, friction:0.22, frictionAir:0.022, density:0.005, label:'p'+i,
       collisionFilter:{group:-(i+1)}
     });
     tokenBodies.push(tb);
     World.add(world, tb);
   }
 
-  // Build obstacles
-  const obstacles = buildObstacles();
-  obstacles.forEach(o => {
-    let body;
-    switch(o.type){
-      case 'peg': {
-        const r = o.r || 10;
-        body = Bodies.circle(o.x, o.y, r, {
-          isStatic:true,
-          restitution: o.restitution !== undefined ? o.restitution : 0.7,
-          friction: o.friction !== undefined ? o.friction : 0.08,
-          label:'peg', _pegR:r
-        });
-        break;
-      }
-      case 'floor': {
-        body = Bodies.rectangle(o.x, o.y, o.w, o.h, {isStatic:true, restitution:0.3, label:'floor'});
-        break;
-      }
-      case 'slope': {
-        const slopeT = o.thickness || 16;
-        body = Bodies.rectangle(o.x + (o.angle>0?o.w/2:-o.w/2), o.y, o.w, slopeT, {
-          isStatic:true,
-          restitution: o.restitution !== undefined ? o.restitution : 0.2,
-          friction: o.friction !== undefined ? o.friction : 0.08,
-          angle:o.angle, label:'slope'
-        });
-        break;
-      }
-      case 'paddle': {
-        body = Bodies.rectangle(o.x, o.y, o.w, 16, {
-          isStatic:true, restitution:0.5, friction:0.01, label:'paddle'
-        });
-        body._paddleSpeed = o.speed || 0.02;
-        paddleBodies.push(body);
-        break;
-      }
-      case 'seesaw': {
-        body = Bodies.rectangle(o.x, o.y, o.w, 16, {
-          isStatic:false, restitution:0.2, friction:0.3, frictionAir:0.05,
-          density:0.01, label:'seesaw'
-        });
-        body._pivotConstraint = Constraint.create({
-          pointA:{x:o.x, y:o.y},
-          bodyB:body,
-          pointB:{x:0, y:0},
-          stiffness:1, length:0
-        });
-        break;
-      }
-      case 'oscgate': {
-        body = Bodies.rectangle(o.x, o.y, o.w || 80, o.h || 16, {
-          isStatic:true, restitution:0.3, friction:0.1, label:'oscgate'
-        });
-        body._oscXMin = o.xMin;
-        body._oscXMax = o.xMax;
-        body._oscY = o.y;
-        body._oscPeriod = o.period || 3;
-        body._oscPhase = o.phase || 0;
-        oscGateBodies.push(body);
-        break;
-      }
-      case 'wall': {
-        body = Bodies.rectangle(o.x, o.y, o.w, o.h, {isStatic:true, label:'wall'});
-        break;
-      }
-    }
-    if(body){
-      obsBodies.push(body);
-      World.add(world, body);
-      if(body._pivotConstraint) World.add(world, body._pivotConstraint);
-    }
-  });
+  // Build level from data-driven sections
+  const courseScale = CFG.playerCount <= 2 ? 1.0 : CFG.playerCount <= 4 ? 1.35 : 1.7;
+  const level = buildLevel(courseScale);
+  obsBodies = level.bodies;
+  paddleBodies = level.paddles;
+  oscGateBodies = level.gates;
+
+  World.add(world, obsBodies);
+  level.constraints.forEach(c => World.add(world, c));
 }
 
 // ════════════════════════════ IMAGES ════════════════════════════
@@ -366,8 +479,12 @@ let imgsLoaded = 0;
 function loadImg(key, url, name){
   const img = new Image();
   img.crossOrigin = 'anonymous';
-  img.onload = ()=>{ imgs[key] = img; imgsLoaded++; console.log(`[IMG] ${name} loaded OK`); };
-  img.onerror = ()=>{ imgs[key] = null; imgsLoaded++; console.log(`[IMG] ${name} FAILED — using initials`); };
+  let done = false;
+  const timeout = setTimeout(()=>{
+    if(!done){ done = true; imgs[key] = null; imgsLoaded++; console.log(`[IMG] ${name} FAILED — timeout`); }
+  }, 3000);
+  img.onload = ()=>{ if(!done){ done = true; clearTimeout(timeout); imgs[key] = img; imgsLoaded++; console.log(`[IMG] ${name} loaded OK`); } };
+  img.onerror = ()=>{ if(!done){ done = true; clearTimeout(timeout); imgs[key] = null; imgsLoaded++; console.log(`[IMG] ${name} FAILED — using initials`); } };
   img.src = url;
 }
 function loadAllPlayerImgs(){
@@ -526,41 +643,42 @@ function drawObstacles(){
       ctx.strokeStyle = 'rgba(100,140,255,.3)';
       ctx.lineWidth = 1.5; ctx.stroke();
     } else if(b.label==='paddle'){
-      // Sweeper arm — thick rounded rectangle with orange tip
-      const hw = b.bounds.max.x - b.bounds.min.x;
-      const armW = Math.max(hw, 160);
-      const armH = 20;
-      const tipLen = 20;
+      // Sweeper arm — thick dark navy rectangle with orange tips
+      const armW = b._w || 180;
+      const armH = b._h || 22;
+      const tipLen = 25;
       // Main body — dark navy
       ctx.fillStyle = '#1a1a2e';
       ctx.beginPath();
-      ctx.roundRect(-armW/2, -armH/2, armW - tipLen, armH, 6);
+      ctx.roundRect(-armW/2, -armH/2, armW, armH, 4);
       ctx.fill();
-      // Orange tip
-      ctx.fillStyle = '#ff6b00';
+      // Left orange tip
+      ctx.fillStyle = '#ff6600';
       ctx.beginPath();
-      ctx.roundRect(armW/2 - tipLen, -armH/2, tipLen, armH, [0,6,6,0]);
+      ctx.roundRect(-armW/2, -armH/2, tipLen, armH, [4,0,0,4]);
       ctx.fill();
-      // Left orange tip (other end)
-      ctx.fillStyle = '#ff6b00';
+      // Right orange tip
       ctx.beginPath();
-      ctx.roundRect(-armW/2, -armH/2, tipLen, armH, [6,0,0,6]);
+      ctx.roundRect(armW/2 - tipLen, -armH/2, tipLen, armH, [0,4,4,0]);
       ctx.fill();
-      // Center pivot circle
-      ctx.beginPath(); ctx.arc(0, 0, 8, 0, Math.PI*2);
-      ctx.fillStyle = '#ff6b00'; ctx.fill();
-      ctx.strokeStyle = '#1a1a2e'; ctx.lineWidth = 2; ctx.stroke();
       // Outline
-      ctx.strokeStyle = 'rgba(255,107,0,.4)';
+      ctx.strokeStyle = 'rgba(255,102,0,.4)';
       ctx.lineWidth = 1.5;
       ctx.strokeRect(-armW/2, -armH/2, armW, armH);
+      // Center pivot circle (drawn un-rotated)
+      ctx.restore();
+      ctx.save();
+      ctx.translate(pos.x, pos.y);
+      ctx.beginPath(); ctx.arc(0, 0, 8, 0, Math.PI*2);
+      ctx.fillStyle = '#ff6600'; ctx.fill();
+      ctx.strokeStyle = '#1a1a2e'; ctx.lineWidth = 2; ctx.stroke();
     } else if(b.label==='oscgate'){
       // Oscillating gate — thick dark rectangle with orange end caps
-      const gateW = 80, gateH = 20, capW = 10;
+      const gateW = b._w || 80, gateH = b._h || 22, capW = 12;
       ctx.fillStyle = '#1a1a2e';
       ctx.fillRect(-gateW/2, -gateH/2, gateW, gateH);
       // Left cap
-      ctx.fillStyle = '#ff6b00';
+      ctx.fillStyle = '#ff6600';
       ctx.beginPath();
       ctx.roundRect(-gateW/2, -gateH/2, capW, gateH, [4,0,0,4]);
       ctx.fill();
@@ -569,14 +687,14 @@ function drawObstacles(){
       ctx.roundRect(gateW/2 - capW, -gateH/2, capW, gateH, [0,4,4,0]);
       ctx.fill();
       // Outline
-      ctx.strokeStyle = 'rgba(255,107,0,.4)';
+      ctx.strokeStyle = 'rgba(255,102,0,.4)';
       ctx.lineWidth = 1.5;
       ctx.strokeRect(-gateW/2, -gateH/2, gateW, gateH);
     } else if(b.label==='seesaw'){
       // Seesaw — thick wood-colored plank with triangle pivot
-      const plankW = 240, plankH = 20;
+      const plankW = b._w || 280, plankH = b._h || 22;
       // Plank
-      ctx.fillStyle = '#4a3728';
+      ctx.fillStyle = '#5c3d1e';
       ctx.beginPath();
       ctx.roundRect(-plankW/2, -plankH/2, plankW, plankH, 4);
       ctx.fill();
@@ -605,18 +723,13 @@ function drawObstacles(){
       ctx.lineWidth = 1.5;
       ctx.stroke();
     } else {
-      // Rectangle-based obstacles (slopes, floors)
-      const verts = b.vertices;
-      ctx.beginPath();
-      ctx.moveTo(verts[0].x-pos.x, verts[0].y-pos.y);
-      for(let i=1; i<verts.length; i++){
-        ctx.lineTo(verts[i].x-pos.x, verts[i].y-pos.y);
-      }
-      ctx.closePath();
+      // Rectangle-based obstacles (slopes, floors) — draw from body dims
+      const bw = b._w || 60, bh = b._h || 22;
       ctx.fillStyle = '#1a1a2e';
-      ctx.fill();
+      ctx.fillRect(-bw/2, -bh/2, bw, bh);
       ctx.strokeStyle = 'rgba(100,140,255,.15)';
-      ctx.lineWidth = 1; ctx.stroke();
+      ctx.lineWidth = 1;
+      ctx.strokeRect(-bw/2, -bh/2, bw, bh);
     }
     ctx.restore();
   });
@@ -741,8 +854,8 @@ function drawWinnerScreen(){
     const t2 = Math.min(1,(t-0.15)/0.85);
     ctx.globalAlpha = t2;
 
-    // Winner headshot (55px radius)
-    const bigR = 55;
+    // Winner headshot (60px radius)
+    const bigR = 60;
     const faceY = H/2 - 90;
     ctx.save();
     ctx.beginPath(); ctx.arc(W/2, faceY, bigR, 0, Math.PI*2); ctx.clip();
@@ -772,12 +885,12 @@ function drawWinnerScreen(){
 
     // Player name — bold, large
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.font = '700 32px system-ui';
+    ctx.font = '700 36px system-ui';
     ctx.fillStyle = '#fff';
     ctx.fillText(cfg.name.toUpperCase(), W/2, H/2+10);
 
     // "WINS THE RACE!" text
-    ctx.font = '900 52px system-ui';
+    ctx.font = '900 56px system-ui';
     ctx.fillStyle = cfg.color;
     ctx.shadowColor = cfg.color; ctx.shadowBlur = 40;
     ctx.fillText('WINS THE RACE!', W/2, H/2+65);
@@ -866,9 +979,58 @@ function drawHUD(){
       else if(gap <= 15){ ctx.fillStyle = 'rgba(255,255,255,.8)'; ctx.fillText(`GAP: ${Math.round(gap)}%`, W/2, gapY); }
       else { ctx.fillStyle = '#ff8c00'; ctx.fillText('RUNAWAY!', W/2, gapY); }
     }
+  } else if(N <= 4){
+    // ── 3-4 player compact bar HUD ──
+    const barH = 28, thumbR = 16, barY = 6;
+    const colW = Math.floor(W / N) - 4;
+    const leader = ranking[0];
+
+    for(let i=0; i<N; i++){
+      const cfg = CFG.players[i];
+      const barX = 2 + i * (colW + 4);
+      const pct = pcts[i];
+
+      ctx.fillStyle = 'rgba(10,10,40,0.85)';
+      roundRect(barX, barY, colW, barH, 5); ctx.fill();
+
+      ctx.save();
+      roundRect(barX, barY, colW, barH, 5); ctx.clip();
+      ctx.fillStyle = cfg.color; ctx.globalAlpha = 0.5;
+      ctx.fillRect(barX, barY, colW*(pct/100), barH);
+      ctx.globalAlpha = 1; ctx.restore();
+
+      const thumbCX = barX + 6 + thumbR;
+      const thumbCY = barY + barH/2;
+      const thumbImg = imgs['p'+i];
+      ctx.save();
+      ctx.beginPath(); ctx.arc(thumbCX, thumbCY, thumbR, 0, Math.PI*2); ctx.clip();
+      if(thumbImg && thumbImg.naturalWidth > 0){
+        const scale = Math.max(thumbR*2/thumbImg.naturalWidth, thumbR*2/thumbImg.naturalHeight);
+        const dw = thumbImg.naturalWidth * scale, dh = thumbImg.naturalHeight * scale;
+        ctx.drawImage(thumbImg, thumbCX - dw/2, thumbCY - dh/2 - dh*0.15, dw, dh);
+      } else {
+        ctx.fillStyle = cfg.color;
+        ctx.fillRect(thumbCX-thumbR, thumbCY-thumbR, thumbR*2, thumbR*2);
+        ctx.fillStyle = '#fff'; ctx.font = '700 11px system-ui';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(cfg.name.split(/\s+/).map(w=>w[0]).slice(0,2).join(''), thumbCX, thumbCY);
+      }
+      ctx.restore();
+      ctx.beginPath(); ctx.arc(thumbCX, thumbCY, thumbR, 0, Math.PI*2);
+      ctx.strokeStyle = cfg.color; ctx.lineWidth = 1.5; ctx.stroke();
+
+      ctx.fillStyle = '#fff'; ctx.font = '600 11px system-ui'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      ctx.fillText(`${Math.round(pct)}%`, thumbCX + thumbR + 4, thumbCY);
+
+      if(i===leader && phase==='race'){
+        ctx.fillStyle = '#ffd700'; ctx.font = '700 10px system-ui';
+        ctx.textAlign = 'right';
+        ctx.fillText('LEAD', barX + colW - 4, thumbCY);
+      }
+    }
   } else {
-    // ── Compact leaderboard HUD for 3+ players ──
-    const showCount = N >= 6 ? 3 : N; // top 3 only for 6+
+    // ── Leaderboard HUD for 5+ players ──
+    const showCount = Math.min(4, N);
     const rowH = 28, startY = 6, lbW = 200;
     const lbX = W - lbW - 6;
 
@@ -996,10 +1158,10 @@ function drawDangerWarnings(now){
   ctx.shadowBlur = 6;
   dangerWarnings.forEach(w => {
     const elapsed = (now - w.t) / 1000;
-    const alpha = 1 - (elapsed / 0.5);
+    const alpha = 1 - (elapsed / 0.4);
     if(alpha <= 0) return;
     ctx.globalAlpha = alpha;
-    ctx.fillStyle = '#ff6b00';
+    ctx.fillStyle = '#ff6600';
     ctx.fillText('DANGER!', w.x, w.y - camY - 45);
   });
   ctx.restore();
@@ -1016,7 +1178,7 @@ function drawSlowMoIndicator(){
   ctx.fillStyle = '#ff8c00';
   ctx.shadowColor = '#000';
   ctx.shadowBlur = 4;
-  ctx.fillText('SLOW-MO', W/2, H - 40);
+  ctx.fillText('SLOW MO', W/2, H - 40);
   ctx.restore();
 }
 
@@ -1033,6 +1195,50 @@ function drawVignette(){
   grad.addColorStop(1, `rgba(180,0,0,${pulse})`);
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, H);
+  ctx.restore();
+}
+
+// ════════════════════════════ DEBUG OVERLAY ════════════════════════════
+let _debugDraw = false;
+window.addEventListener('keydown', e=>{
+  if(e.key==='d'||e.key==='D') _debugDraw = !_debugDraw;
+});
+
+function drawDebugOverlay(){
+  if(!_debugDraw) return;
+  ctx.save();
+  ctx.translate(0, -camY);
+  ctx.strokeStyle = '#0f0';
+  ctx.lineWidth = 1;
+  ctx.globalAlpha = 0.7;
+
+  // Draw all obstacle bodies
+  obsBodies.forEach(b=>{
+    if(b.position.y < camY-200 || b.position.y > camY+H+200) return;
+    const verts = b.vertices;
+    ctx.beginPath();
+    ctx.moveTo(verts[0].x, verts[0].y);
+    for(let i=1; i<verts.length; i++) ctx.lineTo(verts[i].x, verts[i].y);
+    ctx.closePath();
+    ctx.stroke();
+  });
+
+  // Draw token bodies
+  tokenBodies.forEach(tb=>{
+    ctx.beginPath();
+    ctx.arc(tb.position.x, tb.position.y, BALL_RADIUS, 0, Math.PI*2);
+    ctx.stroke();
+  });
+
+  ctx.restore();
+
+  // Debug label
+  ctx.save();
+  ctx.fillStyle = '#0f0';
+  ctx.font = '600 12px system-ui';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText('DEBUG ON [D]', 8, H - 24);
   ctx.restore();
 }
 
@@ -1064,22 +1270,23 @@ function loop(now){
   const dt = Math.min((now-lastT)/1000, 0.05);
   lastT = now;
 
-  // Physics
+  // Physics — fixed timestep 16.67ms
   if(phase==='race'){
     // Slow-mo effect — decay back to 1x
     if(slowMoActive && now >= slowMoEnd){
       slowMoActive = false; slowMoScale = 1;
     }
-    const timeScale = slowMoActive ? 0.6 : 1;
-    Engine.update(engine, dt*1000*timeScale);
+    const fixedDt = 1000/60; // 16.67ms
+    const timeScale = slowMoActive ? 0.5 : 1;
+    Engine.update(engine, fixedDt*timeScale);
 
-    // Rotate paddles
-    paddleBodies.forEach(b => Body.setAngle(b, b.angle + b._paddleSpeed));
-    // Oscillating gates
+    // Rotate paddles every frame
+    paddleBodies.forEach(b => Body.setAngle(b, b.angle + b._rotSpeed));
+    // Oscillating gates every frame
     oscGateBodies.forEach(b => {
       const t = performance.now()/1000;
       const s = Math.sin((t / b._oscPeriod + b._oscPhase) * Math.PI * 2);
-      const nx = (b._oscXMin + b._oscXMax)/2 + s * (b._oscXMax - b._oscXMin)/2;
+      const nx = b._oscXCenter + s * b._oscXRange;
       Body.setPosition(b, {x:nx, y:b._oscY});
     });
 
@@ -1093,7 +1300,7 @@ function loop(now){
     }
 
     // Max speed cap — keep action readable
-    const MAX_SPEED = 8;
+    const MAX_SPEED = 9;
     for(let i=0; i<N; i++){
       const tb = tokenBodies[i];
       const spd = Math.sqrt(tb.velocity.x*tb.velocity.x + tb.velocity.y*tb.velocity.y);
@@ -1103,12 +1310,9 @@ function loop(now){
       }
     }
 
-    // Downward nudge + win% bias force
+    // Win% bias force
     for(let i=0; i<N; i++){
       const tb = tokenBodies[i];
-      if(tb.velocity.y < 2){
-        Body.applyForce(tb, tb.position, {x:0, y:0.006});
-      }
       const bias = (CFG.players[i].winBias||50)/100;
       const bForce = (bias - 0.5) * 0.002;
       if(Math.abs(bForce) > 0.00005){
@@ -1124,11 +1328,11 @@ function loop(now){
         const dx = tb.position.x - mob.position.x;
         const dy = tb.position.y - mob.position.y;
         const dist = Math.sqrt(dx*dx + dy*dy);
-        if(dist < 80){
+        if(dist < 100){
           const hasRecent = dangerWarnings.some(w =>
             Math.abs(w.x - tb.position.x) < 40 &&
             Math.abs(w.y - tb.position.y) < 40 &&
-            now - w.t < 500
+            now - w.t < 400
           );
           if(!hasRecent){
             dangerWarnings.push({x:tb.position.x, y:tb.position.y, t:now});
@@ -1136,7 +1340,7 @@ function loop(now){
         }
       }
     }
-    dangerWarnings = dangerWarnings.filter(w => now - w.t < 500);
+    dangerWarnings = dangerWarnings.filter(w => now - w.t < 400);
 
     // Slow-mo tension — when any two balls are split across a moving obstacle
     if(!slowMoActive){
@@ -1150,8 +1354,8 @@ function loop(now){
         }
         if(hasAbove && hasBelow){
           slowMoActive = true;
-          slowMoEnd = now + 2000;
-          slowMoScale = 0.6;
+          slowMoEnd = now + 1500;
+          slowMoScale = 0.5;
           break outer;
         }
       }
@@ -1223,6 +1427,7 @@ function loop(now){
   drawVignette();
   if(phase==='win') drawWinnerScreen();
   drawFPS();
+  drawDebugOverlay();
 
   requestAnimationFrame(loop);
 }
@@ -1306,7 +1511,7 @@ function setPlayerCount(n){
   _modalPlayerCount = n;
   // Update active button
   document.querySelectorAll('.cnt-btn').forEach((btn,i)=>{
-    btn.classList.toggle('active', [2,4,6,8][i]===n);
+    btn.classList.toggle('active', [2,3,4,6,8][i]===n);
   });
   buildPlayerCards();
 }
@@ -1315,7 +1520,7 @@ function openModal(){
   _modalPlayerCount = CFG.playerCount;
   // Update count buttons
   document.querySelectorAll('.cnt-btn').forEach((btn,i)=>{
-    btn.classList.toggle('active', [2,4,6,8][i]===_modalPlayerCount);
+    btn.classList.toggle('active', [2,3,4,6,8][i]===_modalPlayerCount);
   });
   buildPlayerCards();
   hideSearch();
