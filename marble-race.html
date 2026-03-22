@@ -345,18 +345,24 @@ function obstacleFactory(spec, courseScale){
       break;
     }
     case 'sweeper': {
-      result.body = Bodies.rectangle(spec.x, spec.y, spec.w, 16, {
+      const swW = spec.w || 180;
+      result.body = Bodies.rectangle(spec.x, spec.y, swW, 22, {
         isStatic:true, restitution:0.5, friction:0.01, label:'paddle'
       });
-      result.body._paddleSpeed = spec.speed || 0.02;
+      result.body._rotSpeed = spec.speed || 0.02;
+      result.body._w = swW;
+      result.body._h = 22;
       result.paddle = true;
       break;
     }
     case 'seesaw': {
-      result.body = Bodies.rectangle(spec.x, spec.y, spec.w, 16, {
-        isStatic:false, restitution:0.2, friction:0.3, frictionAir:0.05,
+      const ssW = spec.w || 280;
+      result.body = Bodies.rectangle(spec.x, spec.y, ssW, 22, {
+        isStatic:false, restitution:0.2, friction:0.35, frictionAir:0.05,
         density:0.01, label:'seesaw'
       });
+      result.body._w = ssW;
+      result.body._h = 22;
       result.constraint = Constraint.create({
         pointA:{x:spec.x, y:spec.y}, bodyB:result.body,
         pointB:{x:0, y:0}, stiffness:1, length:0
@@ -364,11 +370,15 @@ function obstacleFactory(spec, courseScale){
       break;
     }
     case 'gate': {
-      result.body = Bodies.rectangle(spec.x, spec.y, spec.w||80, spec.h||16, {
+      const gW = spec.w || 80;
+      const gH = spec.h || 22;
+      result.body = Bodies.rectangle(spec.x, spec.y, gW, gH, {
         isStatic:true, restitution:0.3, friction:0.1, label:'oscgate'
       });
-      result.body._oscXMin = spec.xMin;
-      result.body._oscXMax = spec.xMax;
+      result.body._w = gW;
+      result.body._h = gH;
+      result.body._oscXCenter = (spec.xMin + spec.xMax) / 2;
+      result.body._oscXRange = (spec.xMax - spec.xMin) / 2;
       result.body._oscY = spec.y;
       result.body._oscPeriod = spec.period || 3;
       result.body._oscPhase = spec.phase || 0;
@@ -616,41 +626,42 @@ function drawObstacles(){
       ctx.strokeStyle = 'rgba(100,140,255,.3)';
       ctx.lineWidth = 1.5; ctx.stroke();
     } else if(b.label==='paddle'){
-      // Sweeper arm — thick rounded rectangle with orange tip
-      const hw = b.bounds.max.x - b.bounds.min.x;
-      const armW = Math.max(hw, 160);
-      const armH = 20;
-      const tipLen = 20;
+      // Sweeper arm — thick dark navy rectangle with orange tips
+      const armW = b._w || 180;
+      const armH = b._h || 22;
+      const tipLen = 25;
       // Main body — dark navy
       ctx.fillStyle = '#1a1a2e';
       ctx.beginPath();
-      ctx.roundRect(-armW/2, -armH/2, armW - tipLen, armH, 6);
+      ctx.roundRect(-armW/2, -armH/2, armW, armH, 4);
       ctx.fill();
-      // Orange tip
-      ctx.fillStyle = '#ff6b00';
+      // Left orange tip
+      ctx.fillStyle = '#ff6600';
       ctx.beginPath();
-      ctx.roundRect(armW/2 - tipLen, -armH/2, tipLen, armH, [0,6,6,0]);
+      ctx.roundRect(-armW/2, -armH/2, tipLen, armH, [4,0,0,4]);
       ctx.fill();
-      // Left orange tip (other end)
-      ctx.fillStyle = '#ff6b00';
+      // Right orange tip
       ctx.beginPath();
-      ctx.roundRect(-armW/2, -armH/2, tipLen, armH, [6,0,0,6]);
+      ctx.roundRect(armW/2 - tipLen, -armH/2, tipLen, armH, [0,4,4,0]);
       ctx.fill();
-      // Center pivot circle
-      ctx.beginPath(); ctx.arc(0, 0, 8, 0, Math.PI*2);
-      ctx.fillStyle = '#ff6b00'; ctx.fill();
-      ctx.strokeStyle = '#1a1a2e'; ctx.lineWidth = 2; ctx.stroke();
       // Outline
-      ctx.strokeStyle = 'rgba(255,107,0,.4)';
+      ctx.strokeStyle = 'rgba(255,102,0,.4)';
       ctx.lineWidth = 1.5;
       ctx.strokeRect(-armW/2, -armH/2, armW, armH);
+      // Center pivot circle (drawn un-rotated)
+      ctx.restore();
+      ctx.save();
+      ctx.translate(pos.x, pos.y);
+      ctx.beginPath(); ctx.arc(0, 0, 8, 0, Math.PI*2);
+      ctx.fillStyle = '#ff6600'; ctx.fill();
+      ctx.strokeStyle = '#1a1a2e'; ctx.lineWidth = 2; ctx.stroke();
     } else if(b.label==='oscgate'){
       // Oscillating gate — thick dark rectangle with orange end caps
-      const gateW = 80, gateH = 20, capW = 10;
+      const gateW = b._w || 80, gateH = b._h || 22, capW = 12;
       ctx.fillStyle = '#1a1a2e';
       ctx.fillRect(-gateW/2, -gateH/2, gateW, gateH);
       // Left cap
-      ctx.fillStyle = '#ff6b00';
+      ctx.fillStyle = '#ff6600';
       ctx.beginPath();
       ctx.roundRect(-gateW/2, -gateH/2, capW, gateH, [4,0,0,4]);
       ctx.fill();
@@ -659,14 +670,14 @@ function drawObstacles(){
       ctx.roundRect(gateW/2 - capW, -gateH/2, capW, gateH, [0,4,4,0]);
       ctx.fill();
       // Outline
-      ctx.strokeStyle = 'rgba(255,107,0,.4)';
+      ctx.strokeStyle = 'rgba(255,102,0,.4)';
       ctx.lineWidth = 1.5;
       ctx.strokeRect(-gateW/2, -gateH/2, gateW, gateH);
     } else if(b.label==='seesaw'){
       // Seesaw — thick wood-colored plank with triangle pivot
-      const plankW = 240, plankH = 20;
+      const plankW = b._w || 280, plankH = b._h || 22;
       // Plank
-      ctx.fillStyle = '#4a3728';
+      ctx.fillStyle = '#5c3d1e';
       ctx.beginPath();
       ctx.roundRect(-plankW/2, -plankH/2, plankW, plankH, 4);
       ctx.fill();
@@ -1081,10 +1092,10 @@ function drawDangerWarnings(now){
   ctx.shadowBlur = 6;
   dangerWarnings.forEach(w => {
     const elapsed = (now - w.t) / 1000;
-    const alpha = 1 - (elapsed / 0.5);
+    const alpha = 1 - (elapsed / 0.4);
     if(alpha <= 0) return;
     ctx.globalAlpha = alpha;
-    ctx.fillStyle = '#ff6b00';
+    ctx.fillStyle = '#ff6600';
     ctx.fillText('DANGER!', w.x, w.y - camY - 45);
   });
   ctx.restore();
@@ -1101,7 +1112,7 @@ function drawSlowMoIndicator(){
   ctx.fillStyle = '#ff8c00';
   ctx.shadowColor = '#000';
   ctx.shadowBlur = 4;
-  ctx.fillText('SLOW-MO', W/2, H - 40);
+  ctx.fillText('SLOW MO', W/2, H - 40);
   ctx.restore();
 }
 
@@ -1200,16 +1211,16 @@ function loop(now){
       slowMoActive = false; slowMoScale = 1;
     }
     const fixedDt = 1000/60; // 16.67ms
-    const timeScale = slowMoActive ? 0.6 : 1;
+    const timeScale = slowMoActive ? 0.5 : 1;
     Engine.update(engine, fixedDt*timeScale);
 
-    // Rotate paddles
-    paddleBodies.forEach(b => Body.setAngle(b, b.angle + b._paddleSpeed));
-    // Oscillating gates
+    // Rotate paddles every frame
+    paddleBodies.forEach(b => Body.setAngle(b, b.angle + b._rotSpeed));
+    // Oscillating gates every frame
     oscGateBodies.forEach(b => {
       const t = performance.now()/1000;
       const s = Math.sin((t / b._oscPeriod + b._oscPhase) * Math.PI * 2);
-      const nx = (b._oscXMin + b._oscXMax)/2 + s * (b._oscXMax - b._oscXMin)/2;
+      const nx = b._oscXCenter + s * b._oscXRange;
       Body.setPosition(b, {x:nx, y:b._oscY});
     });
 
@@ -1254,11 +1265,11 @@ function loop(now){
         const dx = tb.position.x - mob.position.x;
         const dy = tb.position.y - mob.position.y;
         const dist = Math.sqrt(dx*dx + dy*dy);
-        if(dist < 80){
+        if(dist < 100){
           const hasRecent = dangerWarnings.some(w =>
             Math.abs(w.x - tb.position.x) < 40 &&
             Math.abs(w.y - tb.position.y) < 40 &&
-            now - w.t < 500
+            now - w.t < 400
           );
           if(!hasRecent){
             dangerWarnings.push({x:tb.position.x, y:tb.position.y, t:now});
@@ -1266,7 +1277,7 @@ function loop(now){
         }
       }
     }
-    dangerWarnings = dangerWarnings.filter(w => now - w.t < 500);
+    dangerWarnings = dangerWarnings.filter(w => now - w.t < 400);
 
     // Slow-mo tension — when any two balls are split across a moving obstacle
     if(!slowMoActive){
@@ -1280,8 +1291,8 @@ function loop(now){
         }
         if(hasAbove && hasBelow){
           slowMoActive = true;
-          slowMoEnd = now + 2000;
-          slowMoScale = 0.6;
+          slowMoEnd = now + 1500;
+          slowMoScale = 0.5;
           break outer;
         }
       }
