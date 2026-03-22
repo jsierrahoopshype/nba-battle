@@ -63,10 +63,11 @@ canvas{border-radius:6px;cursor:default;position:relative;z-index:1}
 <div id="modal">
 <h2>⚙ Configure Players</h2>
 <div class="cnt-row">
-<div class="cnt-btn active" onclick="setPlayerCount(2)">2 PLAYERS</div>
-<div class="cnt-btn" onclick="setPlayerCount(4)">4 PLAYERS</div>
-<div class="cnt-btn" onclick="setPlayerCount(6)">6 PLAYERS</div>
-<div class="cnt-btn" onclick="setPlayerCount(8)">8 PLAYERS</div>
+<div class="cnt-btn active" onclick="setPlayerCount(2)">2</div>
+<div class="cnt-btn" onclick="setPlayerCount(3)">3</div>
+<div class="cnt-btn" onclick="setPlayerCount(4)">4</div>
+<div class="cnt-btn" onclick="setPlayerCount(6)">6</div>
+<div class="cnt-btn" onclick="setPlayerCount(8)">8</div>
 </div>
 <div id="player-cards"></div>
 <div id="search-panel" style="display:none">
@@ -311,30 +312,38 @@ const SECTIONS = [
 function obstacleFactory(spec, courseScale){
   const {Bodies, Constraint} = Matter;
   const result = {body:null, paddle:false, oscgate:false, constraint:null};
+  const cs = courseScale || 1;
+  const mid = W / 2; // 270
+
+  // Scale x position toward center proportionally
+  function sx(x){ return mid + (x - mid) * cs; }
 
   switch(spec.type){
     case 'ramp': {
       const slopeT = spec.thickness || 22;
+      const scaledW = spec.w * cs;
+      const baseX = sx(spec.x);
       result.body = Bodies.rectangle(
-        spec.x + (spec.angle>0?spec.w/2:-spec.w/2), spec.y, spec.w, slopeT,
+        baseX + (spec.angle>0?scaledW/2:-scaledW/2), spec.y, scaledW, slopeT,
         {isStatic:true, restitution:spec.restitution!==undefined?spec.restitution:0.2,
          friction:spec.friction!==undefined?spec.friction:0.08, angle:spec.angle, label:'slope'}
       );
-      result.body._w = spec.w;
+      result.body._w = scaledW;
       result.body._h = slopeT;
       break;
     }
     case 'peg': {
       const r = spec.r || 10;
-      result.body = Bodies.circle(spec.x, spec.y, r, {
+      result.body = Bodies.circle(sx(spec.x), spec.y, r, {
         isStatic:true, restitution:spec.restitution!==undefined?spec.restitution:0.7,
         friction:spec.friction!==undefined?spec.friction:0.08, label:'peg', _pegR:r
       });
       break;
     }
     case 'floor': {
-      result.body = Bodies.rectangle(spec.x, spec.y, spec.w, spec.h, {isStatic:true, restitution:0.3, label:'floor'});
-      result.body._w = spec.w;
+      const scaledW = spec.w * cs;
+      result.body = Bodies.rectangle(sx(spec.x), spec.y, scaledW, spec.h, {isStatic:true, restitution:0.3, label:'floor'});
+      result.body._w = scaledW;
       result.body._h = spec.h;
       break;
     }
@@ -345,8 +354,8 @@ function obstacleFactory(spec, courseScale){
       break;
     }
     case 'sweeper': {
-      const swW = spec.w || 180;
-      result.body = Bodies.rectangle(spec.x, spec.y, swW, 22, {
+      const swW = (spec.w || 180) * cs;
+      result.body = Bodies.rectangle(sx(spec.x), spec.y, swW, 22, {
         isStatic:true, restitution:0.5, friction:0.01, label:'paddle'
       });
       result.body._rotSpeed = spec.speed || 0.02;
@@ -356,29 +365,31 @@ function obstacleFactory(spec, courseScale){
       break;
     }
     case 'seesaw': {
-      const ssW = spec.w || 280;
-      result.body = Bodies.rectangle(spec.x, spec.y, ssW, 22, {
+      const ssW = (spec.w || 280) * cs;
+      const ssX = sx(spec.x);
+      result.body = Bodies.rectangle(ssX, spec.y, ssW, 22, {
         isStatic:false, restitution:0.2, friction:0.35, frictionAir:0.05,
         density:0.01, label:'seesaw'
       });
       result.body._w = ssW;
       result.body._h = 22;
       result.constraint = Constraint.create({
-        pointA:{x:spec.x, y:spec.y}, bodyB:result.body,
+        pointA:{x:ssX, y:spec.y}, bodyB:result.body,
         pointB:{x:0, y:0}, stiffness:1, length:0
       });
       break;
     }
     case 'gate': {
-      const gW = spec.w || 80;
+      const gW = (spec.w || 80) * cs;
       const gH = spec.h || 22;
-      result.body = Bodies.rectangle(spec.x, spec.y, gW, gH, {
+      const gX = sx(spec.x);
+      result.body = Bodies.rectangle(gX, spec.y, gW, gH, {
         isStatic:true, restitution:0.3, friction:0.1, label:'oscgate'
       });
       result.body._w = gW;
       result.body._h = gH;
-      result.body._oscXCenter = (spec.xMin + spec.xMax) / 2;
-      result.body._oscXRange = (spec.xMax - spec.xMin) / 2;
+      result.body._oscXCenter = sx((spec.xMin + spec.xMax) / 2);
+      result.body._oscXRange = ((spec.xMax - spec.xMin) / 2) * cs;
       result.body._oscY = spec.y;
       result.body._oscPeriod = spec.period || 3;
       result.body._oscPhase = spec.phase || 0;
@@ -424,11 +435,13 @@ const {Engine, World, Bodies, Body, Composite, Events, Constraint} = Matter;
 let engine, world, tokenBodies=[], obsBodies=[], paddleBodies=[], oscGateBodies=[];
 
 function createPhysics(){
+  // Gravity scales with player count
+  const grav = CFG.playerCount <= 2 ? 0.7 : CFG.playerCount <= 4 ? 0.8 : 0.9;
   if(!engine){
-    engine = Engine.create({gravity:{x:0, y:CFG.gravity}});
+    engine = Engine.create({gravity:{x:0, y:grav}});
   } else {
     Composite.clear(engine.world);
-    engine.gravity.y = CFG.gravity;
+    engine.gravity.y = grav;
   }
   world = engine.world;
   tokenBodies = [];
@@ -449,7 +462,7 @@ function createPhysics(){
   }
 
   // Build level from data-driven sections
-  const courseScale = CFG.playerCount <= 2 ? 1.0 : CFG.playerCount <= 4 ? 1.3 : 1.6;
+  const courseScale = CFG.playerCount <= 2 ? 1.0 : CFG.playerCount <= 4 ? 1.35 : 1.7;
   const level = buildLevel(courseScale);
   obsBodies = level.bodies;
   paddleBodies = level.paddles;
@@ -962,9 +975,58 @@ function drawHUD(){
       else if(gap <= 15){ ctx.fillStyle = 'rgba(255,255,255,.8)'; ctx.fillText(`GAP: ${Math.round(gap)}%`, W/2, gapY); }
       else { ctx.fillStyle = '#ff8c00'; ctx.fillText('RUNAWAY!', W/2, gapY); }
     }
+  } else if(N <= 4){
+    // ── 3-4 player compact bar HUD ──
+    const barH = 28, thumbR = 14, barY = 6;
+    const colW = Math.floor(W / N) - 4;
+    const leader = ranking[0];
+
+    for(let i=0; i<N; i++){
+      const cfg = CFG.players[i];
+      const barX = 2 + i * (colW + 4);
+      const pct = pcts[i];
+
+      ctx.fillStyle = 'rgba(10,10,40,0.85)';
+      roundRect(barX, barY, colW, barH, 5); ctx.fill();
+
+      ctx.save();
+      roundRect(barX, barY, colW, barH, 5); ctx.clip();
+      ctx.fillStyle = cfg.color; ctx.globalAlpha = 0.5;
+      ctx.fillRect(barX, barY, colW*(pct/100), barH);
+      ctx.globalAlpha = 1; ctx.restore();
+
+      const thumbCX = barX + 6 + thumbR;
+      const thumbCY = barY + barH/2;
+      const thumbImg = imgs['p'+i];
+      ctx.save();
+      ctx.beginPath(); ctx.arc(thumbCX, thumbCY, thumbR, 0, Math.PI*2); ctx.clip();
+      if(thumbImg && thumbImg.naturalWidth > 0){
+        const scale = Math.max(thumbR*2/thumbImg.naturalWidth, thumbR*2/thumbImg.naturalHeight);
+        const dw = thumbImg.naturalWidth * scale, dh = thumbImg.naturalHeight * scale;
+        ctx.drawImage(thumbImg, thumbCX - dw/2, thumbCY - dh/2 - dh*0.15, dw, dh);
+      } else {
+        ctx.fillStyle = cfg.color;
+        ctx.fillRect(thumbCX-thumbR, thumbCY-thumbR, thumbR*2, thumbR*2);
+        ctx.fillStyle = '#fff'; ctx.font = '700 11px system-ui';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(cfg.name.split(/\s+/).map(w=>w[0]).slice(0,2).join(''), thumbCX, thumbCY);
+      }
+      ctx.restore();
+      ctx.beginPath(); ctx.arc(thumbCX, thumbCY, thumbR, 0, Math.PI*2);
+      ctx.strokeStyle = cfg.color; ctx.lineWidth = 1.5; ctx.stroke();
+
+      ctx.fillStyle = '#fff'; ctx.font = '600 11px system-ui'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      ctx.fillText(`${Math.round(pct)}%`, thumbCX + thumbR + 4, thumbCY);
+
+      if(i===leader && phase==='race'){
+        ctx.fillStyle = '#ffd700'; ctx.font = '700 10px system-ui';
+        ctx.textAlign = 'right';
+        ctx.fillText('LEAD', barX + colW - 4, thumbCY);
+      }
+    }
   } else {
-    // ── Compact leaderboard HUD for 3+ players ──
-    const showCount = N >= 6 ? 3 : N; // top 3 only for 6+
+    // ── Leaderboard HUD for 5+ players ──
+    const showCount = Math.min(4, N);
     const rowH = 28, startY = 6, lbW = 200;
     const lbX = W - lbW - 6;
 
@@ -1448,7 +1510,7 @@ function setPlayerCount(n){
   _modalPlayerCount = n;
   // Update active button
   document.querySelectorAll('.cnt-btn').forEach((btn,i)=>{
-    btn.classList.toggle('active', [2,4,6,8][i]===n);
+    btn.classList.toggle('active', [2,3,4,6,8][i]===n);
   });
   buildPlayerCards();
 }
@@ -1457,7 +1519,7 @@ function openModal(){
   _modalPlayerCount = CFG.playerCount;
   // Update count buttons
   document.querySelectorAll('.cnt-btn').forEach((btn,i)=>{
-    btn.classList.toggle('active', [2,4,6,8][i]===_modalPlayerCount);
+    btn.classList.toggle('active', [2,3,4,6,8][i]===_modalPlayerCount);
   });
   buildPlayerCards();
   hideSearch();
