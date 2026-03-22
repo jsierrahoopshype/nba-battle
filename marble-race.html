@@ -611,17 +611,17 @@ let trailHistory = [];
 // Drama state
 let lastLeader = -1, leadChangeT = 0;
 let checkpointsPassed = [];
-// Safety stall timers — track how long each ball has had vy < 1.5
-let stallTimers = [];
+// Anti-stuck system — progressive 3-stage recovery
+let stuckTrackers = []; // {lastY, lastProgressT, stage2Until}
 
 function initPlayerArrays(){
   trailHistory = [];
   checkpointsPassed = [];
-  stallTimers = [];
+  stuckTrackers = [];
   for(let i=0; i<CFG.playerCount; i++){
     trailHistory.push([]);
     checkpointsPassed.push([false,false,false]);
-    stallTimers.push(0);
+    stuckTrackers.push({lastY:0, lastProgressT:0, stage2Until:0});
   }
 }
 initPlayerArrays();
@@ -1605,17 +1605,47 @@ function loop(now){
       }
     }
 
-    // Safety nudge — if ball vy < 1.5 for more than 1 second, apply downward force
-    const fixedDtSec = 1/60;
+    // Anti-stuck system — progressive 3-stage recovery
     for(let i=0; i<N; i++){
       const tb = tokenBodies[i];
-      if(tb.velocity.y < 1.5){
-        stallTimers[i] += fixedDtSec;
-        if(stallTimers[i] > 1.0){
-          Body.applyForce(tb, tb.position, {x:0, y:0.005});
+      const st = stuckTrackers[i];
+      const curY = tb.position.y;
+
+      // Initialize on first frame
+      if(st.lastProgressT === 0){ st.lastY = curY; st.lastProgressT = now; }
+
+      // Check if ball made 30px progress — reset timer
+      if(curY - st.lastY >= 30){
+        st.lastY = curY;
+        st.lastProgressT = now;
+      }
+
+      const stuckDuration = (now - st.lastProgressT) / 1000;
+
+      // Temporarily reduce friction during stage 2
+      if(st.stage2Until > 0 && now > st.stage2Until){
+        tb.friction = 0.12;
+        st.stage2Until = 0;
+      }
+
+      if(stuckDuration >= 6){
+        // STAGE 3 — teleport 50px down, set velocity
+        console.log(`[STUCK] Player ${i} STAGE 3 — teleport (stuck ${stuckDuration.toFixed(1)}s)`);
+        Body.setPosition(tb, {x:tb.position.x, y:curY + 50});
+        Body.setVelocity(tb, {x:(Math.random()-0.5)*4, y:3});
+        st.lastY = curY + 50;
+        st.lastProgressT = now;
+      } else if(stuckDuration >= 4){
+        // STAGE 2 — low friction + impulse (once per stuck episode)
+        if(st.stage2Until === 0){
+          console.log(`[STUCK] Player ${i} STAGE 2 — friction drop + impulse (stuck ${stuckDuration.toFixed(1)}s)`);
+          tb.friction = 0.01;
+          st.stage2Until = now + 1000;
+          Body.setVelocity(tb, {x:(Math.random()-0.5)*6, y:-6});
         }
-      } else {
-        stallTimers[i] = 0;
+      } else if(stuckDuration >= 2){
+        // STAGE 1 — gentle downward nudge
+        Body.applyForce(tb, tb.position, {x:0, y:0.004});
       }
     }
 
@@ -1723,39 +1753,44 @@ function loop(now){
       }
     }
 
-    // Camera follows leading ball during race, last racing ball during finishing
-    let leadY = -Infinity, trailYVal = Infinity;
+    // Camera — weighted focus, never follows trailers upward
+    let targetCam;
     if(phase === 'finishing'){
-      // Follow the last ball still racing (not yet finished)
+      // Follow last unfinished ball, or hold at finish
+      let bestUnfinished = -Infinity;
       let hasUnfinished = false;
       for(let i=0; i<N; i++){
         if(!finishedSet.has(i)){
           const py = tokenBodies[i].position.y;
-          if(py > leadY) leadY = py;
-          if(py < trailYVal) trailYVal = py;
+          if(py > bestUnfinished) bestUnfinished = py;
           hasUnfinished = true;
         }
       }
       if(!hasUnfinished){
-        // All finished — hold at finish line area
-        leadY = FINISH_Y;
-        trailYVal = FINISH_Y;
+        targetCam = Math.max(0, FINISH_Y - 200);
+      } else {
+        targetCam = Math.max(0, bestUnfinished - H * 0.35 + 200);
       }
+    } else if(N <= 2){
+      // 2-ball mode: weighted 70% leader + 30% trailer
+      const ys = tokenBodies.map(b => b.position.y);
+      const leaderY = Math.max(...ys);
+      const trailerY = Math.min(...ys);
+      const focusY = leaderY * 0.70 + trailerY * 0.30;
+      targetCam = Math.max(0, focusY - H * 0.35 + 200);
     } else {
-      for(let i=0; i<N; i++){
-        const py = tokenBodies[i].position.y;
-        if(py > leadY) leadY = py;
-        if(py < trailYVal) trailYVal = py;
-      }
+      // 3+ ball mode: weighted center of front 50% of balls
+      const ys = tokenBodies.map(b => b.position.y).sort((a, b) => b - a);
+      const frontCount = Math.max(1, Math.ceil(N / 2));
+      let sumY = 0;
+      for(let i = 0; i < frontCount; i++) sumY += ys[i];
+      const focusY = sumY / frontCount;
+      targetCam = Math.max(0, focusY - H * 0.35 + 200);
     }
-    let targetCam = Math.max(0, leadY - H*0.55);
-    if(phase === 'finishing' && leadY === FINISH_Y){
-      targetCam = Math.max(0, FINISH_Y - 200);
-    } else {
-      const maxCam = Math.max(0, trailYVal - H*0.15);
-      if(targetCam > maxCam) targetCam = maxCam;
-    }
-    camY += (targetCam - camY) * 0.08;
+
+    // Asymmetric lerp: fast downward, slow upward (don't chase trailers up)
+    const lerpSpeed = targetCam >= camY ? 0.08 : 0.08 * 0.20;
+    camY += (targetCam - camY) * lerpSpeed;
   }
 
   if(phase==='results' && now >= autoRestartT){
