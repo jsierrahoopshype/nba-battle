@@ -781,7 +781,8 @@ function drawObstacles(){
       const bColor = b._bumperColor || '#ff6600';
       ctx.beginPath(); ctx.arc(0, 0, br, 0, Math.PI*2);
       ctx.fillStyle = bColor;
-      ctx.shadowColor = bColor; ctx.shadowBlur = 18;
+      const pulse = 14 + 6 * Math.sin(Date.now()/300);
+      ctx.shadowColor = bColor; ctx.shadowBlur = pulse;
       ctx.fill();
       ctx.shadowBlur = 0;
       ctx.strokeStyle = '#fff';
@@ -829,7 +830,7 @@ function drawObstacles(){
     ctx.restore();
   });
 
-  // Finish line — thick checkered pattern at FINISH_Y
+  // Finish line — thick checkered pattern at FINISH_Y (world coords, translate handles camera)
   const fy = FINISH_Y - camY;
   if(fy > -80 && fy < H+80){
     const checkSize = 20;
@@ -837,18 +838,26 @@ function drawObstacles(){
       for(let r=0; r<3; r++){
         const isBlack = (Math.floor(cx/checkSize)+r)%2===0;
         ctx.fillStyle = isBlack ? '#111' : '#fff';
-        ctx.fillRect(cx, FINISH_Y+r*checkSize-camY, checkSize, checkSize);
+        ctx.fillRect(cx, FINISH_Y+r*checkSize, checkSize, checkSize);
       }
     }
     ctx.save();
+    // Dark pill background behind text
     ctx.font = '900 36px system-ui';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom';
+    const txtW = ctx.measureText('FINISH').width;
+    const pillW = txtW + 30, pillH = 44;
+    ctx.fillStyle = 'rgba(0,0,0,0.7)';
+    ctx.beginPath();
+    ctx.roundRect(W/2 - pillW/2, FINISH_Y - 12 - pillH, pillW, pillH, 10);
+    ctx.fill();
+    // Text
     ctx.fillStyle = '#fff';
     ctx.strokeStyle = '#000';
     ctx.lineWidth = 4;
-    ctx.strokeText('FINISH', W/2, FINISH_Y-8-camY);
-    ctx.fillText('FINISH', W/2, FINISH_Y-8-camY);
+    ctx.strokeText('FINISH', W/2, FINISH_Y - 16);
+    ctx.fillText('FINISH', W/2, FINISH_Y - 16);
     ctx.restore();
   }
 
@@ -1421,6 +1430,44 @@ function drawDebugOverlay(){
   ctx.restore();
 }
 
+// ════════════════════════════ MINI-STANDINGS ════════════════════════════
+function drawMiniStandings(){
+  if(phase === 'results') return;
+  const N = tokenBodies.length;
+  if(N < 2) return;
+  const positions = [];
+  for(let i=0; i<N; i++) positions.push({idx:i, y:tokenBodies[i].position.y});
+  positions.sort((a,b)=>b.y - a.y); // furthest down = 1st
+
+  const rowH = 18;
+  const panelH = N * rowH + 10;
+  const panelW = 110;
+  const px = 6, py = H - panelH - 30;
+
+  ctx.save();
+  ctx.fillStyle = 'rgba(10,10,40,0.6)';
+  ctx.beginPath();
+  ctx.roundRect(px, py, panelW, panelH, 6);
+  ctx.fill();
+
+  ctx.font = '700 12px system-ui';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  for(let r=0; r<N; r++){
+    const idx = positions[r].idx;
+    const initials = CFG.players[idx].name.split(/\s+/).map(w=>w[0]).slice(0,2).join('');
+    const ry = py + 5 + r * rowH + rowH/2;
+    ctx.fillStyle = r === 0 ? '#ffd700' : 'rgba(200,220,255,0.8)';
+    ctx.fillText(`${r+1}. ${initials}`, px + 8, ry);
+    // Small color dot
+    ctx.beginPath();
+    ctx.arc(px + panelW - 14, ry, 4, 0, Math.PI*2);
+    ctx.fillStyle = CFG.players[idx].color;
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
 // ════════════════════════════ FPS COUNTER ════════════════════════════
 let _fpsFrames = 0, _fpsLast = 0, _fpsDisplay = 0;
 
@@ -1438,12 +1485,16 @@ function drawFPS(){
 let lastT = 0;
 
 function loop(now){
-  // FPS counter
+  // FPS counter + performance auto-adjust
   _fpsFrames++;
   if(now - _fpsLast >= 1000){
     _fpsDisplay = _fpsFrames;
     _fpsFrames = 0;
     _fpsLast = now;
+    // If FPS drops below 45, cull 50% of particles
+    if(_fpsDisplay > 0 && _fpsDisplay < 45 && particles.length > 4){
+      particles.splice(0, Math.floor(particles.length / 2));
+    }
   }
 
   const dt = Math.min((now-lastT)/1000, 0.05);
@@ -1607,16 +1658,38 @@ function loop(now){
       }
     }
 
-    // Camera follows leading ball (furthest down), smooth lerp 0.08
+    // Camera follows leading ball during race, last racing ball during finishing
     let leadY = -Infinity, trailYVal = Infinity;
-    for(let i=0; i<N; i++){
-      const py = tokenBodies[i].position.y;
-      if(py > leadY) leadY = py;
-      if(py < trailYVal) trailYVal = py;
+    if(phase === 'finishing'){
+      // Follow the last ball still racing (not yet finished)
+      let hasUnfinished = false;
+      for(let i=0; i<N; i++){
+        if(!finishedSet.has(i)){
+          const py = tokenBodies[i].position.y;
+          if(py > leadY) leadY = py;
+          if(py < trailYVal) trailYVal = py;
+          hasUnfinished = true;
+        }
+      }
+      if(!hasUnfinished){
+        // All finished — hold at finish line area
+        leadY = FINISH_Y;
+        trailYVal = FINISH_Y;
+      }
+    } else {
+      for(let i=0; i<N; i++){
+        const py = tokenBodies[i].position.y;
+        if(py > leadY) leadY = py;
+        if(py < trailYVal) trailYVal = py;
+      }
     }
     let targetCam = Math.max(0, leadY - H*0.55);
-    const maxCam = Math.max(0, trailYVal - H*0.15);
-    if(targetCam > maxCam) targetCam = maxCam;
+    if(phase === 'finishing' && leadY === FINISH_Y){
+      targetCam = Math.max(0, FINISH_Y - 200);
+    } else {
+      const maxCam = Math.max(0, trailYVal - H*0.15);
+      if(targetCam > maxCam) targetCam = maxCam;
+    }
     camY += (targetCam - camY) * 0.08;
   }
 
@@ -1633,6 +1706,7 @@ function loop(now){
   for(let i=0; i<tokenBodies.length; i++) drawToken(tokenBodies[i], CFG.players[i], i);
   drawParticlesOnScreen();
   drawHUD();
+  drawMiniStandings();
   drawDangerWarnings(now);
   drawSlowMoIndicator();
   drawLeadChange();
