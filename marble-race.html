@@ -1422,7 +1422,26 @@ function drawDebugOverlay(){
   ctx.lineWidth = 1;
   ctx.globalAlpha = 0.7;
 
+  // Section boundary markers
+  ctx.strokeStyle = 'rgba(255,255,0,0.5)';
+  ctx.font = '600 11px system-ui';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'bottom';
+  SECTIONS.forEach(sec => {
+    const sy = sec.yStart;
+    if(sy > camY - 50 && sy < camY + H + 50){
+      ctx.beginPath();
+      ctx.moveTo(0, sy);
+      ctx.lineTo(W, sy);
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,0,0.7)';
+      ctx.fillText(sec.id, 6, sy - 3);
+    }
+  });
+
   // Draw all obstacle bodies
+  ctx.strokeStyle = '#0f0';
+  ctx.lineWidth = 1;
   obsBodies.forEach(b=>{
     if(b.position.y < camY-200 || b.position.y > camY+H+200) return;
     const verts = b.vertices;
