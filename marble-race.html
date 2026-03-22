@@ -86,16 +86,16 @@ canvas{border-radius:6px;cursor:default;position:relative;z-index:1}
 // ════════════════════════════ CONFIGURATION ════════════════════════════
 const PALETTE = ['#552583','#1D428A','#CE1141','#007A33','#F58426','#5D76A9','#98002E','#00788C'];
 const DEFAULT_NAMES = ['LeBron James','Stephen Curry','Nikola Jokic','Giannis Antetokounmpo','Luka Doncic','Shai Gilgeous-Alexander','Jayson Tatum','Kevin Durant'];
-const DEFAULT_SLUGS = ['2544-lebron-james','201939-stephen-curry','203999-nikola-jokic','203507-giannis-antetokounmpo','1629029-luka-doncic','1628983-shai-gilgeous-alexander','1628369-jayson-tatum','201142-kevin-durant'];
+const DEFAULT_SLUGS = ['2544-lebron-james','201939-stephen-curry','203999-nikola-joki','203507-giannis-antetokounmpo','1629029-luka-doni','1628983-shai-gilgeous-alexander','1628369-jayson-tatum','201142-kevin-durant'];
 
 const CFG = {
   playerCount: 2,
   players: [
     {name:'LeBron James', img:'https://nba-battle.thejorgesierra.workers.dev/headshot/2544-lebron-james.png', color:'#552583', winBias:50},
     {name:'Stephen Curry', img:'https://nba-battle.thejorgesierra.workers.dev/headshot/201939-stephen-curry.png', color:'#1D428A', winBias:50},
-    {name:'Nikola Jokic', img:'https://nba-battle.thejorgesierra.workers.dev/headshot/203999-nikola-jokic.png', color:'#CE1141', winBias:50},
+    {name:'Nikola Jokic', img:'https://nba-battle.thejorgesierra.workers.dev/headshot/203999-nikola-joki.png', color:'#CE1141', winBias:50},
     {name:'Giannis Antetokounmpo', img:'https://nba-battle.thejorgesierra.workers.dev/headshot/203507-giannis-antetokounmpo.png', color:'#007A33', winBias:50},
-    {name:'Luka Doncic', img:'https://nba-battle.thejorgesierra.workers.dev/headshot/1629029-luka-doncic.png', color:'#F58426', winBias:50},
+    {name:'Luka Doncic', img:'https://nba-battle.thejorgesierra.workers.dev/headshot/1629029-luka-doni.png', color:'#F58426', winBias:50},
     {name:'Shai Gilgeous-Alexander', img:'https://nba-battle.thejorgesierra.workers.dev/headshot/1628983-shai-gilgeous-alexander.png', color:'#5D76A9', winBias:50},
     {name:'Jayson Tatum', img:'https://nba-battle.thejorgesierra.workers.dev/headshot/1628369-jayson-tatum.png', color:'#98002E', winBias:50},
     {name:'Kevin Durant', img:'https://nba-battle.thejorgesierra.workers.dev/headshot/201142-kevin-durant.png', color:'#00788C', winBias:50}
@@ -530,6 +530,8 @@ let trailHistory = [];
 // Drama state
 let lastLeader = -1, leadChangeT = 0;
 let checkpointsPassed = [];
+// Safety stall timers — track how long each ball has had vy < 1.5
+let stallTimers = [];
 
 function initPlayerArrays(){
   trailHistory = [];
@@ -547,8 +549,6 @@ let checkpointFlash = {active:false, t:0, color:'', pct:0};
 let dangerWarnings = [];
 // Slow-mo tension effect
 let slowMoActive = false, slowMoEnd = 0, slowMoScale = 1;
-// Safety stall timers — track how long each ball has had vy < 1.5
-let stallTimers = [];
 
 function restartRace(){
   _seed = CFG.seed;
