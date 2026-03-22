@@ -302,7 +302,7 @@ const SECTIONS = [
 
 function obstacleFactory(spec, courseScale){
   const {Bodies, Constraint} = Matter;
-  const result = {body:null, paddle:false, oscgate:false, constraint:null};
+  const result = {body:null, paddle:false, oscgate:false, constraint:null, extraBodies:[], extraPaddles:[]};
   const cs = courseScale || 1;
   const mid = W / 2; // 270
 
@@ -387,6 +387,52 @@ function obstacleFactory(spec, courseScale){
       result.oscgate = true;
       break;
     }
+    case 'bumper': {
+      const br = spec.radius || 20;
+      const bColor = spec.color || '#ff6600';
+      result.body = Bodies.circle(sx(spec.x), spec.y, br, {
+        isStatic:true, restitution:0.85, friction:0.01, label:'bumper', _bumperR:br, _bumperColor:bColor
+      });
+      break;
+    }
+    case 'bouncePad': {
+      const slopeT = spec.thickness || 22;
+      const scaledW = spec.w * cs;
+      const baseX = sx(spec.x);
+      result.body = Bodies.rectangle(
+        baseX + (spec.angle>0?scaledW/2:-scaledW/2), spec.y, scaledW, slopeT,
+        {isStatic:true, restitution:0.7, friction:0.02, angle:spec.angle, label:'bouncePad'}
+      );
+      result.body._w = scaledW;
+      result.body._h = slopeT;
+      break;
+    }
+    case 'spinner': {
+      const spX = sx(spec.x);
+      const armLen = 80 * cs;
+      const armT = 14;
+      const spd = spec.speed || 0.025;
+      // Create 3 arms at 0, 120, 240 degrees
+      for(let a=0; a<3; a++){
+        const angle = (a * Math.PI * 2) / 3;
+        const arm = Bodies.rectangle(spX, spec.y, armLen, armT, {
+          isStatic:true, restitution:0.4, friction:0.01, label:'spinner', angle:angle
+        });
+        arm._rotSpeed = spd;
+        arm._w = armLen;
+        arm._h = armT;
+        arm._spinCenterX = spX;
+        arm._spinCenterY = spec.y;
+        if(a === 0){
+          result.body = arm;
+          result.paddle = true;
+        } else {
+          result.extraBodies.push(arm);
+          result.extraPaddles.push(arm);
+        }
+      }
+      break;
+    }
   }
   return result;
 }
@@ -403,6 +449,10 @@ function buildLevel(courseScale){
         if(res.paddle) paddles.push(res.body);
         if(res.oscgate) gates.push(res.body);
         if(res.constraint) constraints.push(res.constraint);
+      }
+      if(res.extraBodies.length){
+        res.extraBodies.forEach(eb => allBodies.push(eb));
+        res.extraPaddles.forEach(ep => paddles.push(ep));
       }
     });
   });
@@ -592,7 +642,7 @@ function setupCollisionEvents(){
           break;
         }
       }
-      if(tokenBody && (labels.includes('peg')||labels.includes('floor')||labels.includes('slope')||labels.includes('paddle')||labels.includes('seesaw')||labels.includes('oscgate'))){
+      if(tokenBody && (labels.includes('peg')||labels.includes('floor')||labels.includes('slope')||labels.includes('paddle')||labels.includes('seesaw')||labels.includes('oscgate')||labels.includes('bumper')||labels.includes('bouncePad')||labels.includes('spinner'))){
         spawnHitParticles(tokenBody.position.x, tokenBody.position.y, color);
       }
     });
@@ -726,6 +776,48 @@ function drawObstacles(){
       ctx.strokeStyle = 'rgba(100,140,255,.3)';
       ctx.lineWidth = 1.5;
       ctx.stroke();
+    } else if(b.label==='bumper'){
+      // Bumper — bright bouncy circle with glow
+      const br = b._bumperR || 20;
+      const bColor = b._bumperColor || '#ff6600';
+      ctx.beginPath(); ctx.arc(0, 0, br, 0, Math.PI*2);
+      ctx.fillStyle = bColor;
+      ctx.shadowColor = bColor; ctx.shadowBlur = 18;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    } else if(b.label==='bouncePad'){
+      // Bounce pad — bright yellow-orange angled ramp
+      const bpW = b._w || 60, bpH = b._h || 22;
+      ctx.fillStyle = '#ffaa00';
+      ctx.fillRect(-bpW/2, -bpH/2, bpW, bpH);
+      ctx.strokeStyle = 'rgba(255,200,0,.6)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(-bpW/2, -bpH/2, bpW, bpH);
+    } else if(b.label==='spinner'){
+      // Spinner arm — dark navy with orange tips
+      const armW = b._w || 80, armH = b._h || 14;
+      const tipLen = 15;
+      // Main body
+      ctx.fillStyle = '#1a1a2e';
+      ctx.beginPath();
+      ctx.roundRect(-armW/2, -armH/2, armW, armH, 3);
+      ctx.fill();
+      // Left orange tip
+      ctx.fillStyle = '#ff6600';
+      ctx.beginPath();
+      ctx.roundRect(-armW/2, -armH/2, tipLen, armH, [3,0,0,3]);
+      ctx.fill();
+      // Right orange tip
+      ctx.beginPath();
+      ctx.roundRect(armW/2 - tipLen, -armH/2, tipLen, armH, [0,3,3,0]);
+      ctx.fill();
+      // Outline
+      ctx.strokeStyle = 'rgba(255,102,0,.4)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(-armW/2, -armH/2, armW, armH);
     } else {
       // Rectangle-based obstacles (slopes, floors) — draw from body dims
       const bw = b._w || 60, bh = b._h || 22;
