@@ -99,7 +99,7 @@ const CFG = {
     {name:'Jayson Tatum', img:'https://nba-battle.thejorgesierra.workers.dev/headshot/1628369-jayson-tatum.png', color:'#98002E', winBias:50},
     {name:'Kevin Durant', img:'https://nba-battle.thejorgesierra.workers.dev/headshot/201142-kevin-durant.png', color:'#00788C', winBias:50}
   ],
-  gravity: 0.6,
+  gravity: 0.7,
   seed: 42
 };
 
@@ -314,12 +314,14 @@ function obstacleFactory(spec, courseScale){
 
   switch(spec.type){
     case 'ramp': {
-      const slopeT = spec.thickness || 16;
+      const slopeT = spec.thickness || 22;
       result.body = Bodies.rectangle(
         spec.x + (spec.angle>0?spec.w/2:-spec.w/2), spec.y, spec.w, slopeT,
         {isStatic:true, restitution:spec.restitution!==undefined?spec.restitution:0.2,
          friction:spec.friction!==undefined?spec.friction:0.08, angle:spec.angle, label:'slope'}
       );
+      result.body._w = spec.w;
+      result.body._h = slopeT;
       break;
     }
     case 'peg': {
@@ -332,10 +334,14 @@ function obstacleFactory(spec, courseScale){
     }
     case 'floor': {
       result.body = Bodies.rectangle(spec.x, spec.y, spec.w, spec.h, {isStatic:true, restitution:0.3, label:'floor'});
+      result.body._w = spec.w;
+      result.body._h = spec.h;
       break;
     }
     case 'wall': {
       result.body = Bodies.rectangle(spec.x, spec.y, spec.w, spec.h, {isStatic:true, label:'wall'});
+      result.body._w = spec.w;
+      result.body._h = spec.h;
       break;
     }
     case 'sweeper': {
@@ -425,7 +431,7 @@ function createPhysics(){
   for(let i=0; i<n; i++){
     const x = (W/(n+1))*(i+1);
     const tb = Bodies.circle(x, 80, BALL_RADIUS, {
-      restitution:0.2, friction:0.25, frictionAir:0.025, density:0.006, label:'p'+i,
+      restitution:0.15, friction:0.22, frictionAir:0.022, density:0.005, label:'p'+i,
       collisionFilter:{group:-(i+1)}
     });
     tokenBodies.push(tb);
@@ -689,18 +695,13 @@ function drawObstacles(){
       ctx.lineWidth = 1.5;
       ctx.stroke();
     } else {
-      // Rectangle-based obstacles (slopes, floors)
-      const verts = b.vertices;
-      ctx.beginPath();
-      ctx.moveTo(verts[0].x-pos.x, verts[0].y-pos.y);
-      for(let i=1; i<verts.length; i++){
-        ctx.lineTo(verts[i].x-pos.x, verts[i].y-pos.y);
-      }
-      ctx.closePath();
+      // Rectangle-based obstacles (slopes, floors) — draw from body dims
+      const bw = b._w || 60, bh = b._h || 22;
       ctx.fillStyle = '#1a1a2e';
-      ctx.fill();
+      ctx.fillRect(-bw/2, -bh/2, bw, bh);
       ctx.strokeStyle = 'rgba(100,140,255,.15)';
-      ctx.lineWidth = 1; ctx.stroke();
+      ctx.lineWidth = 1;
+      ctx.strokeRect(-bw/2, -bh/2, bw, bh);
     }
     ctx.restore();
   });
@@ -1120,6 +1121,50 @@ function drawVignette(){
   ctx.restore();
 }
 
+// ════════════════════════════ DEBUG OVERLAY ════════════════════════════
+let _debugDraw = false;
+window.addEventListener('keydown', e=>{
+  if(e.key==='d'||e.key==='D') _debugDraw = !_debugDraw;
+});
+
+function drawDebugOverlay(){
+  if(!_debugDraw) return;
+  ctx.save();
+  ctx.translate(0, -camY);
+  ctx.strokeStyle = '#0f0';
+  ctx.lineWidth = 1;
+  ctx.globalAlpha = 0.7;
+
+  // Draw all obstacle bodies
+  obsBodies.forEach(b=>{
+    if(b.position.y < camY-200 || b.position.y > camY+H+200) return;
+    const verts = b.vertices;
+    ctx.beginPath();
+    ctx.moveTo(verts[0].x, verts[0].y);
+    for(let i=1; i<verts.length; i++) ctx.lineTo(verts[i].x, verts[i].y);
+    ctx.closePath();
+    ctx.stroke();
+  });
+
+  // Draw token bodies
+  tokenBodies.forEach(tb=>{
+    ctx.beginPath();
+    ctx.arc(tb.position.x, tb.position.y, BALL_RADIUS, 0, Math.PI*2);
+    ctx.stroke();
+  });
+
+  ctx.restore();
+
+  // Debug label
+  ctx.save();
+  ctx.fillStyle = '#0f0';
+  ctx.font = '600 12px system-ui';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText('DEBUG ON [D]', 8, H - 24);
+  ctx.restore();
+}
+
 // ════════════════════════════ FPS COUNTER ════════════════════════════
 let _fpsFrames = 0, _fpsLast = 0, _fpsDisplay = 0;
 
@@ -1148,14 +1193,15 @@ function loop(now){
   const dt = Math.min((now-lastT)/1000, 0.05);
   lastT = now;
 
-  // Physics
+  // Physics — fixed timestep 16.67ms
   if(phase==='race'){
     // Slow-mo effect — decay back to 1x
     if(slowMoActive && now >= slowMoEnd){
       slowMoActive = false; slowMoScale = 1;
     }
+    const fixedDt = 1000/60; // 16.67ms
     const timeScale = slowMoActive ? 0.6 : 1;
-    Engine.update(engine, dt*1000*timeScale);
+    Engine.update(engine, fixedDt*timeScale);
 
     // Rotate paddles
     paddleBodies.forEach(b => Body.setAngle(b, b.angle + b._paddleSpeed));
@@ -1177,7 +1223,7 @@ function loop(now){
     }
 
     // Max speed cap — keep action readable
-    const MAX_SPEED = 8;
+    const MAX_SPEED = 9;
     for(let i=0; i<N; i++){
       const tb = tokenBodies[i];
       const spd = Math.sqrt(tb.velocity.x*tb.velocity.x + tb.velocity.y*tb.velocity.y);
@@ -1307,6 +1353,7 @@ function loop(now){
   drawVignette();
   if(phase==='win') drawWinnerScreen();
   drawFPS();
+  drawDebugOverlay();
 
   requestAnimationFrame(loop);
 }
