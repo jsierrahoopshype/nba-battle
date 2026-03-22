@@ -124,7 +124,7 @@ function rngRange(a,b){ return a+rng()*(b-a); }
 // ════════════════════════════ LEVEL DESIGN ════════════════════════════
 const FINISH_Y = 8800;
 const LEVEL_H = 9000;
-const BALL_RADIUS = 28;
+const BALL_RADIUS = 26;
 
 // Standard obstacle params
 const STD = {friction:0.10, restitution:0.15, thickness:22, angle:0.611};
@@ -479,8 +479,12 @@ let imgsLoaded = 0;
 function loadImg(key, url, name){
   const img = new Image();
   img.crossOrigin = 'anonymous';
-  img.onload = ()=>{ imgs[key] = img; imgsLoaded++; console.log(`[IMG] ${name} loaded OK`); };
-  img.onerror = ()=>{ imgs[key] = null; imgsLoaded++; console.log(`[IMG] ${name} FAILED — using initials`); };
+  let done = false;
+  const timeout = setTimeout(()=>{
+    if(!done){ done = true; imgs[key] = null; imgsLoaded++; console.log(`[IMG] ${name} FAILED — timeout`); }
+  }, 3000);
+  img.onload = ()=>{ if(!done){ done = true; clearTimeout(timeout); imgs[key] = img; imgsLoaded++; console.log(`[IMG] ${name} loaded OK`); } };
+  img.onerror = ()=>{ if(!done){ done = true; clearTimeout(timeout); imgs[key] = null; imgsLoaded++; console.log(`[IMG] ${name} FAILED — using initials`); } };
   img.src = url;
 }
 function loadAllPlayerImgs(){
@@ -850,8 +854,8 @@ function drawWinnerScreen(){
     const t2 = Math.min(1,(t-0.15)/0.85);
     ctx.globalAlpha = t2;
 
-    // Winner headshot (55px radius)
-    const bigR = 55;
+    // Winner headshot (60px radius)
+    const bigR = 60;
     const faceY = H/2 - 90;
     ctx.save();
     ctx.beginPath(); ctx.arc(W/2, faceY, bigR, 0, Math.PI*2); ctx.clip();
@@ -881,12 +885,12 @@ function drawWinnerScreen(){
 
     // Player name — bold, large
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.font = '700 32px system-ui';
+    ctx.font = '700 36px system-ui';
     ctx.fillStyle = '#fff';
     ctx.fillText(cfg.name.toUpperCase(), W/2, H/2+10);
 
     // "WINS THE RACE!" text
-    ctx.font = '900 52px system-ui';
+    ctx.font = '900 56px system-ui';
     ctx.fillStyle = cfg.color;
     ctx.shadowColor = cfg.color; ctx.shadowBlur = 40;
     ctx.fillText('WINS THE RACE!', W/2, H/2+65);
@@ -977,7 +981,7 @@ function drawHUD(){
     }
   } else if(N <= 4){
     // ── 3-4 player compact bar HUD ──
-    const barH = 28, thumbR = 14, barY = 6;
+    const barH = 28, thumbR = 16, barY = 6;
     const colW = Math.floor(W / N) - 4;
     const leader = ranking[0];
 
@@ -1306,12 +1310,9 @@ function loop(now){
       }
     }
 
-    // Downward nudge + win% bias force
+    // Win% bias force
     for(let i=0; i<N; i++){
       const tb = tokenBodies[i];
-      if(tb.velocity.y < 2){
-        Body.applyForce(tb, tb.position, {x:0, y:0.006});
-      }
       const bias = (CFG.players[i].winBias||50)/100;
       const bForce = (bias - 0.5) * 0.002;
       if(Math.abs(bForce) > 0.00005){
