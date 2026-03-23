@@ -248,8 +248,6 @@ const SECTIONS = [
       // 2 bumpers between first and second pad
       {type:'bumper', x:420, y:3540, radius:20, color:'#ff6600'},
       {type:'bumper', x:350, y:3600, radius:18, color:'#ff8800'},
-      // Conveyor strip (rightward) at y:3650 — lateral travel between pads
-      {type:'conveyorStrip', x:270, y:3650, w:400, dir:1},
       // Right bouncePad at y:3700
       {type:'bouncePad', x:540, y:3700, w:320, angle:-STD.angle, thickness:STD.thickness},
       // 2 bumpers between second and third pad
@@ -278,9 +276,6 @@ const SECTIONS = [
       // Fill bumpers in gap between tilt and conveyor
       {type:'bumper', x:400, y:4440, radius:14, color:'#0066ff'},
       {type:'bumper', x:150, y:4520, radius:18, color:'#0066ff'},
-      // Conveyor strip (leftward) at y:4600
-      {type:'conveyorStrip', x:270, y:4600, w:460, dir:-1},
-      // Bumper after conveyor
       {type:'bumper', x:120, y:4720, radius:18, color:'#ff8800'},
       // Fill bumper between bumper and baitFunnel
       {type:'bumper', x:380, y:4785, radius:14, color:'#0066ff'},
@@ -356,9 +351,6 @@ const SECTIONS = [
       // Entry bouncePads — staggered to prevent V-trap
       {type:'bouncePad', x:0, y:7300, w:200, angle:STD.angle, thickness:STD.thickness},
       {type:'bouncePad', x:540, y:7320, w:200, angle:-STD.angle, thickness:STD.thickness},
-      // Conveyor strip (rightward) at y:7400
-      {type:'conveyorStrip', x:270, y:7400, w:460, dir:1},
-      // Bumper after conveyor
       {type:'bumper', x:420, y:7520, radius:20, color:'#ff4400'},
       // Fill bumper between conveyor bumper and jawGate
       {type:'bumper', x:150, y:7585, radius:14, color:'#0066ff'},
