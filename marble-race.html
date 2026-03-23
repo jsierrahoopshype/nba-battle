@@ -130,6 +130,7 @@ function rngRange(a,b){ return a+rng()*(b-a); }
 const FINISH_Y = 8800;
 const LEVEL_H = 9000;
 const BALL_RADIUS = 26;
+const DANGER_ZONE_Y = 6000;
 
 // Standard obstacle params
 const STD = {friction:0.10, restitution:0.22, thickness:22, angle:0.611};
@@ -235,26 +236,25 @@ const SECTIONS = [
       {type:'peg', x:270, y:4120, r:14, friction:0.05, restitution:0.65}
     ]
   },
-  // ══ SECTION 6: Machine — conveyor + trapdoor + pendulum ══
+  // ══ SECTION 6: Gauntlet — tiltPlatform + conveyor + baitFunnel + pendulum ══
   {
-    id: 'machine', yStart: 4250, yEnd: 5200,
+    id: 'gauntlet', yStart: 4250, yEnd: 5200,
     obstacles: [
       // Entry bumpers
       {type:'bumper', x:160, y:4300, radius:20, color:'#ff6600'},
       {type:'bumper', x:380, y:4300, radius:20, color:'#ff6600'},
-      // Conveyor strip (leftward) at y:4400, full width
-      {type:'conveyorStrip', x:270, y:4450, w:460, dir:-1},
+      // Tilt platform — tips right after 3s
+      {type:'tiltPlatform', x:270, y:4350, w:240, tiltDir:'right'},
+      // Conveyor strip (leftward) at y:4600
+      {type:'conveyorStrip', x:270, y:4600, w:460, dir:-1},
       // Bumper after conveyor
-      {type:'bumper', x:120, y:4560, radius:18, color:'#ff8800'},
-      // Trapdoor at y:4700 — holds balls briefly then drops them
-      {type:'trapdoor', x:270, y:4700, w:360, gap:50, holdTime:2, openDur:1.5},
-      // Bumper below trapdoor
-      {type:'bumper', x:270, y:4830, radius:22, color:'#ff4400'},
-      // Pendulum at y:4950 guarding center
-      {type:'pendulum', x:270, y:4950, length:120, initSpin:0.03},
-      // Wide exit bouncePads at y:5100 — staggered to prevent V-trap
-      {type:'bouncePad', x:0, y:5100, w:200, angle:STD.angle, thickness:STD.thickness},
-      {type:'bouncePad', x:540, y:5120, w:200, angle:-STD.angle, thickness:STD.thickness}
+      {type:'bumper', x:120, y:4720, radius:18, color:'#ff8800'},
+      // Bait funnel — tempting center, punishing width
+      {type:'baitFunnel', x:270, y:4850, w:400},
+      // Pendulum guarding center exit
+      {type:'pendulum', x:270, y:5050, length:120, initSpin:0.03},
+      // Exit peg
+      {type:'peg', x:270, y:5160, r:14, friction:0.05, restitution:0.65}
     ]
   },
   // ══ SECTION 7: Comeback — jawGate gamble + split lanes ══
@@ -280,60 +280,51 @@ const SECTIONS = [
       {type:'peg', x:270, y:6150, r:14, friction:0.05, restitution:0.65}
     ]
   },
-  // ══ SECTION 8: Tension — 4 alternating bouncePads + bumper pairs ══
+  // ══ SECTION 8: Danger Zone — jawGate + tiltPlatform + baitFunnel + aggressive bumpers ══
   {
-    id: 'tension', yStart: 6150, yEnd: 7200,
+    id: 'danger', yStart: 6150, yEnd: 7200,
     obstacles: [
-      // BouncePad 1 left
-      {type:'bouncePad', x:0, y:6200, w:320, angle:STD.angle, thickness:STD.thickness},
-      // 2 bumpers
-      {type:'bumper', x:420, y:6310, radius:20, color:'#ff6600'},
-      {type:'bumper', x:350, y:6380, radius:18, color:'#ff8800'},
-      // BouncePad 2 right
-      {type:'bouncePad', x:540, y:6440, w:320, angle:-STD.angle, thickness:STD.thickness},
-      // 2 bumpers
-      {type:'bumper', x:120, y:6550, radius:20, color:'#ff6600'},
-      {type:'bumper', x:190, y:6620, radius:18, color:'#ff8800'},
-      // BouncePad 3 left
-      {type:'bouncePad', x:0, y:6680, w:320, angle:STD.angle, thickness:STD.thickness},
-      // 2 bumpers
-      {type:'bumper', x:420, y:6790, radius:20, color:'#ff6600'},
-      {type:'bumper', x:350, y:6860, radius:18, color:'#ff4400'},
-      // BouncePad 4 right
-      {type:'bouncePad', x:540, y:6920, w:320, angle:-STD.angle, thickness:STD.thickness},
-      // Recompression bouncePad pair at y:7050 — staggered to prevent V-trap
-      {type:'bouncePad', x:0, y:7050, w:180, angle:STD.angle, thickness:STD.thickness},
-      {type:'bouncePad', x:540, y:7070, w:180, angle:-STD.angle, thickness:STD.thickness},
-      // Exit peg
-      {type:'peg', x:270, y:7160, r:14, friction:0.05, restitution:0.65}
+      // Entry bouncePad
+      {type:'bouncePad', x:0, y:6200, w:200, angle:STD.angle, thickness:STD.thickness},
+      // JawGate at y:6300 — dangerous 3s cycle
+      {type:'jawGate', x:270, y:6300, armLen:110, period:3},
+      // Bumper below jaw
+      {type:'bumper', x:270, y:6450, radius:22, color:'#ff4400'},
+      // Tilt platform — tips left
+      {type:'tiltPlatform', x:270, y:6600, w:240, tiltDir:'left'},
+      // Bait funnel at y:6900
+      {type:'baitFunnel', x:270, y:6900, w:400},
+      // 3 aggressive bumpers at y:7100
+      {type:'bumper', x:140, y:7080, radius:24, color:'#ff2200'},
+      {type:'bumper', x:270, y:7100, radius:26, color:'#ff0000'},
+      {type:'bumper', x:400, y:7080, radius:24, color:'#ff2200'}
     ]
   },
-  // ══ SECTION 9: Finish — pendulum + jawGate + dense chute ══
+  // ══ SECTION 9: Final Gauntlet — conveyor + jawGate + heavy pendulum + narrow chute ══
   {
     id: 'finish', yStart: 7250, yEnd: 8800,
     obstacles: [
-      // 2 bouncePads as initial guides — already staggered vertically
-      {type:'bouncePad', x:0, y:7320, w:220, angle:STD.angle, thickness:STD.thickness},
-      {type:'bouncePad', x:540, y:7450, w:220, angle:-STD.angle, thickness:STD.thickness},
-      // Pendulum at y:7600 guarding chute entry
-      {type:'pendulum', x:270, y:7580, length:100, initSpin:0.04},
-      // Bumpers around pendulum
-      {type:'bumper', x:120, y:7700, radius:20, color:'#ff6600'},
-      {type:'bumper', x:420, y:7700, radius:20, color:'#ff6600'},
-      // Bumper to fill gap before jawGate
-      {type:'bumper', x:270, y:7790, radius:18, color:'#ff8800'},
-      // JawGate at y:7900 — final gamble
-      {type:'jawGate', x:270, y:7880, armLen:90, period:2.5},
+      // Entry bouncePad
+      {type:'bouncePad', x:0, y:7300, w:200, angle:STD.angle, thickness:STD.thickness},
+      // Conveyor strip (rightward) at y:7400
+      {type:'conveyorStrip', x:270, y:7400, w:460, dir:1},
+      // Bumper after conveyor
+      {type:'bumper', x:420, y:7520, radius:20, color:'#ff4400'},
+      // JawGate at y:7650 — fast 2s cycle
+      {type:'jawGate', x:270, y:7650, armLen:110, period:2},
       // Bumper below jaw
-      {type:'bumper', x:270, y:8000, radius:22, color:'#ff4400'},
-      // Peg pair above chute
-      {type:'peg', x:220, y:8100, r:14, friction:0.05, restitution:0.65},
-      {type:'peg', x:320, y:8100, r:14, friction:0.05, restitution:0.65},
-      // Bumper to guide into chute
-      {type:'bumper', x:270, y:8200, radius:20, color:'#ff8800'},
-      // Finish chute walls — 140px wide gap (200 to 340)
-      {type:'floor', x:200, y:8350, w:22, h:300},
-      {type:'floor', x:340, y:8350, w:22, h:300}
+      {type:'bumper', x:270, y:7780, radius:22, color:'#ff2200'},
+      // Heavy pendulum at y:7900 — wide swing
+      {type:'pendulum', x:270, y:7900, length:140, initSpin:0.05},
+      // Bumpers flanking pendulum
+      {type:'bumper', x:100, y:7980, radius:20, color:'#ff4400'},
+      {type:'bumper', x:440, y:7980, radius:20, color:'#ff4400'},
+      // Peg pair guiding into narrow chute
+      {type:'peg', x:200, y:8100, r:14, friction:0.05, restitution:0.65},
+      {type:'peg', x:340, y:8100, r:14, friction:0.05, restitution:0.65},
+      // Narrow finish chute — 120px wide (210 to 330)
+      {type:'floor', x:210, y:8200, w:22, h:400},
+      {type:'floor', x:330, y:8200, w:22, h:400}
     ]
   }
 ];
@@ -535,6 +526,82 @@ function obstacleFactory(spec, courseScale){
       result.conveyor = true;
       break;
     }
+    case 'tiltPlatform': {
+      const tpW = (spec.w || 240) * cs;
+      const tpH = 20;
+      const tpX = sx(spec.x);
+      const tpBody = Bodies.rectangle(tpX, spec.y, tpW, tpH, {
+        isStatic:true, restitution:0.2, friction:0.4, label:'tiltPlatform'
+      });
+      tpBody._w = tpW; tpBody._h = tpH;
+      tpBody._tiltDir = spec.tiltDir === 'left' ? -1 : 1;
+      tpBody._tiltMaxAngle = 0.611; // 35 degrees
+      tpBody._tiltPhase = 'flat'; // flat, tilting, held, resetting
+      tpBody._tiltTimer = 0;
+      tpBody._tiltFlatDur = 3;    // seconds flat before tilting
+      tpBody._tiltDur = 1.5;      // seconds to tilt
+      tpBody._tiltHoldDur = 2.5;  // seconds held at angle
+      tpBody._tiltResetDur = 1.5; // seconds to reset
+      tpBody._pivotX = tpX;
+      tpBody._pivotY = spec.y;
+      result.body = tpBody;
+      result.tiltPlatform = true;
+      break;
+    }
+    case 'baitFunnel': {
+      const bfX = sx(spec.x);
+      const bfW = (spec.w || 400) * cs;
+      const wallH = 80;
+      const centerGap = 60 * cs;
+      const sideGap = 120 * cs;
+      const wallT = 18;
+      // Left outer wall
+      const leftOuter = Bodies.rectangle(bfX - bfW/2, spec.y, wallT, wallH, {
+        isStatic:true, restitution:0.3, friction:0.1, label:'baitFunnel'
+      });
+      leftOuter._w = wallT; leftOuter._h = wallH;
+      // Left inner wall — forms center channel
+      const liX = bfX - centerGap/2;
+      const leftInner = Bodies.rectangle(liX, spec.y, wallT, wallH, {
+        isStatic:true, restitution:0.3, friction:0.1, label:'baitFunnelCenter'
+      });
+      leftInner._w = wallT; leftInner._h = wallH;
+      leftInner._bfSide = -1;
+      leftInner._bfBaseX = liX;
+      leftInner._bfBaseY = spec.y;
+      leftInner._bfReleasing = false;
+      // Right inner wall
+      const riX = bfX + centerGap/2;
+      const rightInner = Bodies.rectangle(riX, spec.y, wallT, wallH, {
+        isStatic:true, restitution:0.3, friction:0.1, label:'baitFunnelCenter'
+      });
+      rightInner._w = wallT; rightInner._h = wallH;
+      rightInner._bfSide = 1;
+      rightInner._bfBaseX = riX;
+      rightInner._bfBaseY = spec.y;
+      rightInner._bfReleasing = false;
+      // Right outer wall
+      const rightOuter = Bodies.rectangle(bfX + bfW/2, spec.y, wallT, wallH, {
+        isStatic:true, restitution:0.3, friction:0.1, label:'baitFunnel'
+      });
+      rightOuter._w = wallT; rightOuter._h = wallH;
+      // Gold floor in center channel to bait players
+      const goldFloor = Bodies.rectangle(bfX, spec.y + wallH/2, centerGap + wallT, 12, {
+        isStatic:true, restitution:0.2, friction:0.5, label:'baitFunnelGold'
+      });
+      goldFloor._w = centerGap + wallT; goldFloor._h = 12;
+      // Link inner walls for release mechanism
+      leftInner._bfPartner = rightInner;
+      rightInner._bfPartner = leftInner;
+      leftInner._bfCenterX = bfX;
+      rightInner._bfCenterX = bfX;
+      result.body = leftOuter;
+      result.extraBodies.push(leftInner, rightInner, rightOuter, goldFloor);
+      result.baitFunnel = true;
+      // Store inner walls for animation
+      result.body._bfInnerWalls = [leftInner, rightInner];
+      break;
+    }
     case 'jawGate': {
       const jX = sx(spec.x);
       const armLen = (spec.armLen || 100) * cs;
@@ -581,6 +648,8 @@ function buildLevel(courseScale){
         if(res.pendulum) pendulumBodies.push(res.body);
         if(res.conveyor) conveyorBodies.push(res.body);
         if(res.jawgate) jawGateBodies.push(...res.jawgate);
+        if(res.tiltPlatform) tiltPlatformBodies.push(res.body);
+        if(res.baitFunnel) baitFunnelBodies.push(res.body);
       }
       if(res.extraBodies.length){
         res.extraBodies.forEach(eb => allBodies.push(eb));
@@ -610,6 +679,7 @@ function buildLevel(courseScale){
 const {Engine, World, Bodies, Body, Composite, Events, Constraint} = Matter;
 let engine, world, tokenBodies=[], obsBodies=[], paddleBodies=[], oscGateBodies=[];
 let trapdoorBodies=[], pendulumBodies=[], conveyorBodies=[], jawGateBodies=[];
+let tiltPlatformBodies=[], baitFunnelBodies=[];
 
 function createPhysics(){
   // Gravity scales with player count — lower = more air time & surface rolling
@@ -629,6 +699,8 @@ function createPhysics(){
   pendulumBodies = [];
   conveyorBodies = [];
   jawGateBodies = [];
+  tiltPlatformBodies = [];
+  baitFunnelBodies = [];
 
   // Tokens — spread evenly across width at same Y
   const n = CFG.playerCount;
@@ -1019,6 +1091,52 @@ function drawObstacles(){
       ctx.strokeStyle = 'rgba(100,200,255,0.3)';
       ctx.lineWidth = 1;
       ctx.strokeRect(-cvW/2, -cvH/2, cvW, cvH);
+    } else if(b.label==='tiltPlatform'){
+      const tpW = b._w || 240, tpH = b._h || 20;
+      ctx.fillStyle = '#3d2b1f';
+      ctx.beginPath();
+      ctx.roundRect(-tpW/2, -tpH/2, tpW, tpH, 4);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(200,160,100,.4)';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(-tpW/2, -tpH/2, tpW, tpH);
+      // Pivot mark at center
+      ctx.fillStyle = '#ff8800';
+      ctx.beginPath(); ctx.arc(0, 0, 5, 0, Math.PI*2); ctx.fill();
+      // Tilt direction indicator
+      const dir = b._tiltDir || 1;
+      ctx.strokeStyle = 'rgba(255,136,0,0.5)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(dir * 20, -tpH/2 - 6);
+      ctx.lineTo(dir * 35, -tpH/2 - 6);
+      ctx.lineTo(dir * 30, -tpH/2 - 12);
+      ctx.stroke();
+    } else if(b.label==='baitFunnel'){
+      // Outer walls — dark
+      const bfW = b._w || 18, bfH = b._h || 80;
+      ctx.fillStyle = '#1a1a2e';
+      ctx.fillRect(-bfW/2, -bfH/2, bfW, bfH);
+      ctx.strokeStyle = 'rgba(100,140,255,.3)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(-bfW/2, -bfH/2, bfW, bfH);
+    } else if(b.label==='baitFunnelCenter'){
+      // Inner walls — bright gold to bait
+      const bfW = b._w || 18, bfH = b._h || 80;
+      ctx.fillStyle = '#cc8800';
+      ctx.fillRect(-bfW/2, -bfH/2, bfW, bfH);
+      ctx.strokeStyle = '#ffd700';
+      ctx.lineWidth = 1.5;
+      ctx.shadowColor = '#ffd700'; ctx.shadowBlur = 8;
+      ctx.strokeRect(-bfW/2, -bfH/2, bfW, bfH);
+      ctx.shadowBlur = 0;
+    } else if(b.label==='baitFunnelGold'){
+      // Gold floor in center
+      const gfW = b._w || 60, gfH = b._h || 12;
+      ctx.fillStyle = '#ffd700';
+      ctx.shadowColor = '#ffd700'; ctx.shadowBlur = 10;
+      ctx.fillRect(-gfW/2, -gfH/2, gfW, gfH);
+      ctx.shadowBlur = 0;
     } else if(b.label==='jawgate'){
       const jW = b._w || 100, jH = b._h || 16;
       ctx.fillStyle = '#cc2200';
@@ -1824,7 +1942,93 @@ function loop(now){
       });
     });
 
+    // TiltPlatform animation — flat → tilting → held → resetting cycle
+    const tpDt = 1/60;
+    tiltPlatformBodies.forEach(tp => {
+      tp._tiltTimer += tpDt;
+      const phase = tp._tiltPhase;
+      if(phase === 'flat'){
+        if(tp._tiltTimer >= tp._tiltFlatDur){
+          tp._tiltPhase = 'tilting'; tp._tiltTimer = 0;
+        }
+      } else if(phase === 'tilting'){
+        const progress = Math.min(1, tp._tiltTimer / tp._tiltDur);
+        const eased = progress * progress; // ease-in
+        Body.setAngle(tp, tp._tiltDir * tp._tiltMaxAngle * eased);
+        if(progress >= 1){
+          tp._tiltPhase = 'held'; tp._tiltTimer = 0;
+        }
+      } else if(phase === 'held'){
+        if(tp._tiltTimer >= tp._tiltHoldDur){
+          tp._tiltPhase = 'resetting'; tp._tiltTimer = 0;
+        }
+      } else if(phase === 'resetting'){
+        const progress = Math.min(1, tp._tiltTimer / tp._tiltResetDur);
+        const eased = 1 - (1 - progress) * (1 - progress); // ease-out
+        Body.setAngle(tp, tp._tiltDir * tp._tiltMaxAngle * (1 - eased));
+        if(progress >= 1){
+          tp._tiltPhase = 'flat'; tp._tiltTimer = 0;
+          Body.setAngle(tp, 0);
+        }
+      }
+    });
+
+    // BaitFunnel release — if ball in center channel is slow, open inner walls
+    baitFunnelBodies.forEach(bf => {
+      const innerWalls = bf._bfInnerWalls;
+      if(!innerWalls) return;
+      const [leftInner, rightInner] = innerWalls;
+      const cx = leftInner._bfCenterX;
+      const cy = leftInner._bfBaseY;
+      const halfGap = Math.abs(rightInner._bfBaseX - leftInner._bfBaseX) / 2;
+      let needRelease = false;
+      for(const tb of tokenBodies){
+        const dx = Math.abs(tb.position.x - cx);
+        const dy = Math.abs(tb.position.y - cy);
+        if(dx < halfGap + 20 && dy < 50){
+          const spd = Math.sqrt(tb.velocity.x*tb.velocity.x + tb.velocity.y*tb.velocity.y);
+          if(spd < 2) needRelease = true;
+        }
+      }
+      if(needRelease && !leftInner._bfReleasing){
+        leftInner._bfReleasing = true;
+        rightInner._bfReleasing = true;
+        leftInner._bfReleaseT = performance.now();
+        rightInner._bfReleaseT = performance.now();
+      }
+      if(leftInner._bfReleasing){
+        const elapsed = (performance.now() - leftInner._bfReleaseT) / 1000;
+        if(elapsed < 2){
+          // Angle walls outward to release
+          const angle = Math.min(0.6, elapsed * 0.4);
+          Body.setAngle(leftInner, -angle);
+          Body.setAngle(rightInner, angle);
+        } else {
+          // Reset
+          Body.setAngle(leftInner, 0);
+          Body.setAngle(rightInner, 0);
+          Body.setPosition(leftInner, {x: leftInner._bfBaseX, y: leftInner._bfBaseY});
+          Body.setPosition(rightInner, {x: rightInner._bfBaseX, y: rightInner._bfBaseY});
+          leftInner._bfReleasing = false;
+          rightInner._bfReleasing = false;
+        }
+      }
+    });
+
     const N = tokenBodies.length;
+
+    // Danger zone — boost bumper impacts for balls past DANGER_ZONE_Y
+    for(let i=0; i<N; i++){
+      const tb = tokenBodies[i];
+      if(tb.position.y > DANGER_ZONE_Y){
+        // Check if just bounced off a bumper (high speed change indicates collision)
+        const spd = Math.sqrt(tb.velocity.x*tb.velocity.x + tb.velocity.y*tb.velocity.y);
+        if(spd > 3){
+          // Amplify velocity slightly for more chaotic bounces
+          Body.setVelocity(tb, {x:tb.velocity.x*1.04, y:tb.velocity.y*1.04});
+        }
+      }
+    }
 
     // Record trail positions
     for(let i=0; i<N; i++){
