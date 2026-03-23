@@ -132,8 +132,14 @@ const LEVEL_H = 9000;
 const BALL_RADIUS = 26;
 const DANGER_ZONE_Y = 6000;
 
+// ═══ Physics material profiles ═══
+const MAT_BALL    = {restitution:0.38, friction:0.14, frictionAir:0.018, density:0.005};
+const MAT_REDIR   = {restitution:0.25, friction:0.08};  // ramps, bouncePads, jawGate, pendulum
+const MAT_POP     = {restitution:0.78, friction:0.01};  // bumpers, pegs
+const MAT_CONTROL = {restitution:0.12, friction:0.35};  // conveyors, tiltPlatform, trapdoor, seesaw
+
 // Standard obstacle params
-const STD = {friction:0.10, restitution:0.22, thickness:22, angle:0.611};
+const STD = {friction:MAT_REDIR.friction, restitution:MAT_REDIR.restitution, thickness:22, angle:0.611};
 
 const SECTIONS = [
   // ══ SECTION 1: Hook — deflectors + bumper diamond + bouncePad catch ══
@@ -347,8 +353,8 @@ function obstacleFactory(spec, courseScale){
       const baseX = sx(spec.x);
       result.body = Bodies.rectangle(
         baseX + (spec.angle>0?scaledW/2:-scaledW/2), spec.y, scaledW, slopeT,
-        {isStatic:true, restitution:spec.restitution!==undefined?spec.restitution:0.2,
-         friction:spec.friction!==undefined?spec.friction:0.08, angle:spec.angle, label:'slope'}
+        {isStatic:true, restitution:spec.restitution!==undefined?spec.restitution:MAT_REDIR.restitution,
+         friction:spec.friction!==undefined?spec.friction:MAT_REDIR.friction, angle:spec.angle, label:'slope'}
       );
       result.body._w = scaledW;
       result.body._h = slopeT;
@@ -357,8 +363,8 @@ function obstacleFactory(spec, courseScale){
     case 'peg': {
       const r = spec.r || 10;
       result.body = Bodies.circle(sx(spec.x), spec.y, r, {
-        isStatic:true, restitution:spec.restitution!==undefined?spec.restitution:0.7,
-        friction:spec.friction!==undefined?spec.friction:0.08, label:'peg', _pegR:r
+        isStatic:true, restitution:MAT_POP.restitution,
+        friction:MAT_POP.friction, label:'peg', _pegR:r
       });
       break;
     }
@@ -378,7 +384,7 @@ function obstacleFactory(spec, courseScale){
     case 'sweeper': {
       const swW = (spec.w || 180) * cs;
       result.body = Bodies.rectangle(sx(spec.x), spec.y, swW, 22, {
-        isStatic:true, restitution:0.5, friction:0.01, label:'paddle'
+        isStatic:true, restitution:MAT_REDIR.restitution, friction:MAT_REDIR.friction, label:'paddle'
       });
       result.body._rotSpeed = spec.speed || 0.02;
       result.body._w = swW;
@@ -390,7 +396,7 @@ function obstacleFactory(spec, courseScale){
       const ssW = (spec.w || 280) * cs;
       const ssX = sx(spec.x);
       result.body = Bodies.rectangle(ssX, spec.y, ssW, 22, {
-        isStatic:false, restitution:0.3, friction:0.15, frictionAir:0.05,
+        isStatic:false, restitution:MAT_CONTROL.restitution, friction:MAT_CONTROL.friction, frictionAir:0.05,
         density:0.01, label:'seesaw'
       });
       result.body._w = ssW;
@@ -422,7 +428,7 @@ function obstacleFactory(spec, courseScale){
       const br = spec.radius || 20;
       const bColor = spec.color || '#ff6600';
       result.body = Bodies.circle(sx(spec.x), spec.y, br, {
-        isStatic:true, restitution:0.70, friction:0.01, label:'bumper', _bumperR:br, _bumperColor:bColor
+        isStatic:true, restitution:MAT_POP.restitution, friction:MAT_POP.friction, label:'bumper', _bumperR:br, _bumperColor:bColor
       });
       break;
     }
@@ -432,7 +438,7 @@ function obstacleFactory(spec, courseScale){
       const baseX = sx(spec.x);
       result.body = Bodies.rectangle(
         baseX + (spec.angle>0?scaledW/2:-scaledW/2), spec.y, scaledW, slopeT,
-        {isStatic:true, restitution:0.55, friction:0.02, angle:spec.angle, label:'bouncePad'}
+        {isStatic:true, restitution:MAT_REDIR.restitution, friction:MAT_REDIR.friction, angle:spec.angle, label:'bouncePad'}
       );
       result.body._w = scaledW;
       result.body._h = slopeT;
@@ -447,7 +453,7 @@ function obstacleFactory(spec, courseScale){
       for(let a=0; a<3; a++){
         const angle = (a * Math.PI * 2) / 3;
         const arm = Bodies.rectangle(spX, spec.y, armLen, armT, {
-          isStatic:true, restitution:0.4, friction:0.01, label:'spinner', angle:angle
+          isStatic:true, restitution:MAT_REDIR.restitution, friction:MAT_REDIR.friction, label:'spinner', angle:angle
         });
         arm._rotSpeed = spd;
         arm._w = armLen;
@@ -472,14 +478,14 @@ function obstacleFactory(spec, courseScale){
       const tdH = 18;
       // Left platform
       const leftBody = Bodies.rectangle(tdX - gap/2 - halfW/2, spec.y, halfW, tdH, {
-        isStatic:true, restitution:0.2, friction:0.3, label:'trapdoor'
+        isStatic:true, restitution:MAT_CONTROL.restitution, friction:MAT_CONTROL.friction, label:'trapdoor'
       });
       leftBody._w = halfW; leftBody._h = tdH;
       leftBody._tdOpen = false; leftBody._tdTimer = 0; leftBody._tdHoldTime = spec.holdTime || 2;
       leftBody._tdOpenDur = spec.openDur || 1.5;
       // Right platform
       const rightBody = Bodies.rectangle(tdX + gap/2 + halfW/2, spec.y, halfW, tdH, {
-        isStatic:true, restitution:0.2, friction:0.3, label:'trapdoor'
+        isStatic:true, restitution:MAT_CONTROL.restitution, friction:MAT_CONTROL.friction, label:'trapdoor'
       });
       rightBody._w = halfW; rightBody._h = tdH;
       rightBody._tdOpen = false; rightBody._tdTimer = 0; rightBody._tdHoldTime = spec.holdTime || 2;
@@ -499,7 +505,7 @@ function obstacleFactory(spec, courseScale){
       const anchorY = spec.y;
       const bodyY = anchorY + pLen / 2;
       const pendBody = Bodies.rectangle(pX, bodyY, pW, pH, {
-        isStatic:false, restitution:0.3, friction:0.1, density:0.05, frictionAir:0.005,
+        isStatic:false, restitution:MAT_REDIR.restitution, friction:MAT_REDIR.friction, density:0.05, frictionAir:0.005,
         label:'pendulum'
       });
       pendBody._w = pW; pendBody._h = pH;
@@ -519,7 +525,7 @@ function obstacleFactory(spec, courseScale){
       const cvX = sx(spec.x);
       const cvH = 18;
       const cvBody = Bodies.rectangle(cvX, spec.y, cvW, cvH, {
-        isStatic:true, restitution:0.1, friction:0.5, label:'conveyor'
+        isStatic:true, restitution:MAT_CONTROL.restitution, friction:MAT_CONTROL.friction, label:'conveyor'
       });
       cvBody._w = cvW; cvBody._h = cvH;
       cvBody._cvDir = spec.dir || -1; // -1 = left, 1 = right
@@ -533,7 +539,7 @@ function obstacleFactory(spec, courseScale){
       const tpH = 20;
       const tpX = sx(spec.x);
       const tpBody = Bodies.rectangle(tpX, spec.y, tpW, tpH, {
-        isStatic:true, restitution:0.2, friction:0.4, label:'tiltPlatform'
+        isStatic:true, restitution:MAT_CONTROL.restitution, friction:MAT_CONTROL.friction, label:'tiltPlatform'
       });
       tpBody._w = tpW; tpBody._h = tpH;
       tpBody._tiltDir = spec.tiltDir === 'left' ? -1 : 1;
@@ -559,13 +565,13 @@ function obstacleFactory(spec, courseScale){
       const wallT = 18;
       // Left outer wall
       const leftOuter = Bodies.rectangle(bfX - bfW/2, spec.y, wallT, wallH, {
-        isStatic:true, restitution:0.3, friction:0.1, label:'baitFunnel'
+        isStatic:true, restitution:MAT_REDIR.restitution, friction:MAT_REDIR.friction, label:'baitFunnel'
       });
       leftOuter._w = wallT; leftOuter._h = wallH;
       // Left inner wall — forms center channel
       const liX = bfX - centerGap/2;
       const leftInner = Bodies.rectangle(liX, spec.y, wallT, wallH, {
-        isStatic:true, restitution:0.3, friction:0.1, label:'baitFunnelCenter'
+        isStatic:true, restitution:MAT_CONTROL.restitution, friction:MAT_CONTROL.friction, label:'baitFunnelCenter'
       });
       leftInner._w = wallT; leftInner._h = wallH;
       leftInner._bfSide = -1;
@@ -575,7 +581,7 @@ function obstacleFactory(spec, courseScale){
       // Right inner wall
       const riX = bfX + centerGap/2;
       const rightInner = Bodies.rectangle(riX, spec.y, wallT, wallH, {
-        isStatic:true, restitution:0.3, friction:0.1, label:'baitFunnelCenter'
+        isStatic:true, restitution:MAT_CONTROL.restitution, friction:MAT_CONTROL.friction, label:'baitFunnelCenter'
       });
       rightInner._w = wallT; rightInner._h = wallH;
       rightInner._bfSide = 1;
@@ -584,12 +590,12 @@ function obstacleFactory(spec, courseScale){
       rightInner._bfReleasing = false;
       // Right outer wall
       const rightOuter = Bodies.rectangle(bfX + bfW/2, spec.y, wallT, wallH, {
-        isStatic:true, restitution:0.3, friction:0.1, label:'baitFunnel'
+        isStatic:true, restitution:MAT_REDIR.restitution, friction:MAT_REDIR.friction, label:'baitFunnel'
       });
       rightOuter._w = wallT; rightOuter._h = wallH;
       // Gold floor in center channel to bait players
       const goldFloor = Bodies.rectangle(bfX, spec.y + wallH/2, centerGap + wallT, 12, {
-        isStatic:true, restitution:0.2, friction:0.5, label:'baitFunnelGold'
+        isStatic:true, restitution:MAT_CONTROL.restitution, friction:MAT_CONTROL.friction, label:'baitFunnelGold'
       });
       goldFloor._w = centerGap + wallT; goldFloor._h = 12;
       // Link inner walls for release mechanism
@@ -611,7 +617,7 @@ function obstacleFactory(spec, courseScale){
       const period = spec.period || 3;
       // Left jaw — anchored at left edge
       const leftJaw = Bodies.rectangle(jX - armLen/2, spec.y, armLen, armT, {
-        isStatic:true, restitution:0.3, friction:0.1, label:'jawgate'
+        isStatic:true, restitution:MAT_REDIR.restitution, friction:MAT_REDIR.friction, label:'jawgate'
       });
       leftJaw._w = armLen; leftJaw._h = armT;
       leftJaw._jawSide = -1; leftJaw._jawCenterX = jX;
@@ -619,7 +625,7 @@ function obstacleFactory(spec, courseScale){
       leftJaw._jawPeriod = period; leftJaw._jawLen = armLen;
       // Right jaw — anchored at right edge
       const rightJaw = Bodies.rectangle(jX + armLen/2, spec.y, armLen, armT, {
-        isStatic:true, restitution:0.3, friction:0.1, label:'jawgate'
+        isStatic:true, restitution:MAT_REDIR.restitution, friction:MAT_REDIR.friction, label:'jawgate'
       });
       rightJaw._w = armLen; rightJaw._h = armT;
       rightJaw._jawSide = 1; rightJaw._jawCenterX = jX;
@@ -709,7 +715,8 @@ function createPhysics(){
   for(let i=0; i<n; i++){
     const x = (W/(n+1))*(i+1);
     const tb = Bodies.circle(x, 80, BALL_RADIUS, {
-      restitution:0.22, friction:0.18, frictionAir:0.022, density:0.005, label:'p'+i,
+      restitution:MAT_BALL.restitution, friction:MAT_BALL.friction,
+      frictionAir:MAT_BALL.frictionAir, density:MAT_BALL.density, label:'p'+i,
       collisionFilter:{group:-(i+1)}
     });
     tokenBodies.push(tb);
@@ -869,6 +876,15 @@ function drawBackground(){
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, H);
 
+  // Radial depth — darker blue in center for tube feel
+  ctx.save();
+  const rg = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, W*0.7);
+  rg.addColorStop(0, 'rgba(30,60,100,0.12)');
+  rg.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = rg;
+  ctx.fillRect(0, 0, W, H);
+  ctx.restore();
+
   // Clouds parallax
   ctx.save();
   clouds.forEach(c=>{
@@ -897,191 +913,102 @@ function drawObstacles(){
     ctx.translate(pos.x, pos.y);
     ctx.rotate(b.angle);
 
+    // ── CAT 3: HARD POP HAZARDS — electric blue, pulsing glow ──
     if(b.label==='peg'){
       const r = b._pegR || 12;
-      const pg = ctx.createRadialGradient(0,0,0,0,0,r);
-      pg.addColorStop(0,'#3a3a5e');pg.addColorStop(1,'#1a1a2e');
-      ctx.beginPath(); ctx.arc(0,0,r,0,Math.PI*2);
-      ctx.fillStyle = pg; ctx.fill();
-      ctx.strokeStyle = 'rgba(100,140,255,.3)';
-      ctx.lineWidth = 1.5; ctx.stroke();
-    } else if(b.label==='paddle'){
-      // Sweeper arm — thick dark navy rectangle with orange tips
-      const armW = b._w || 180;
-      const armH = b._h || 22;
-      const tipLen = 25;
-      // Main body — dark navy
-      ctx.fillStyle = '#1a1a2e';
-      ctx.beginPath();
-      ctx.roundRect(-armW/2, -armH/2, armW, armH, 4);
-      ctx.fill();
-      // Left orange tip
-      ctx.fillStyle = '#ff6600';
-      ctx.beginPath();
-      ctx.roundRect(-armW/2, -armH/2, tipLen, armH, [4,0,0,4]);
-      ctx.fill();
-      // Right orange tip
-      ctx.beginPath();
-      ctx.roundRect(armW/2 - tipLen, -armH/2, tipLen, armH, [0,4,4,0]);
-      ctx.fill();
-      // Outline
-      ctx.strokeStyle = 'rgba(255,102,0,.4)';
-      ctx.lineWidth = 1.5;
-      ctx.strokeRect(-armW/2, -armH/2, armW, armH);
-      // Center pivot circle (drawn un-rotated)
-      ctx.restore();
-      ctx.save();
-      ctx.translate(pos.x, pos.y);
-      ctx.beginPath(); ctx.arc(0, 0, 8, 0, Math.PI*2);
-      ctx.fillStyle = '#ff6600'; ctx.fill();
-      ctx.strokeStyle = '#1a1a2e'; ctx.lineWidth = 2; ctx.stroke();
-    } else if(b.label==='oscgate'){
-      // Oscillating gate — thick dark rectangle with orange end caps
-      const gateW = b._w || 80, gateH = b._h || 22, capW = 12;
-      ctx.fillStyle = '#1a1a2e';
-      ctx.fillRect(-gateW/2, -gateH/2, gateW, gateH);
-      // Left cap
-      ctx.fillStyle = '#ff6600';
-      ctx.beginPath();
-      ctx.roundRect(-gateW/2, -gateH/2, capW, gateH, [4,0,0,4]);
-      ctx.fill();
-      // Right cap
-      ctx.beginPath();
-      ctx.roundRect(gateW/2 - capW, -gateH/2, capW, gateH, [0,4,4,0]);
-      ctx.fill();
-      // Outline
-      ctx.strokeStyle = 'rgba(255,102,0,.4)';
-      ctx.lineWidth = 1.5;
-      ctx.strokeRect(-gateW/2, -gateH/2, gateW, gateH);
-    } else if(b.label==='seesaw'){
-      // Seesaw — thick wood-colored plank with triangle pivot
-      const plankW = b._w || 280, plankH = b._h || 22;
-      // Plank
-      ctx.fillStyle = '#5c3d1e';
-      ctx.beginPath();
-      ctx.roundRect(-plankW/2, -plankH/2, plankW, plankH, 4);
-      ctx.fill();
-      ctx.strokeStyle = 'rgba(200,160,100,.4)';
-      ctx.lineWidth = 1.5;
-      ctx.strokeRect(-plankW/2, -plankH/2, plankW, plankH);
-      // Wood grain lines
-      ctx.strokeStyle = 'rgba(80,50,30,.3)';
-      ctx.lineWidth = 1;
-      for(let g=-plankW/2+20; g<plankW/2; g+=30){
-        ctx.beginPath(); ctx.moveTo(g, -plankH/2+3); ctx.lineTo(g+15, plankH/2-3); ctx.stroke();
-      }
-      // Triangle pivot underneath (drawn in world coords, not rotated)
-      ctx.restore(); // exit rotation
-      ctx.save();
-      ctx.translate(pos.x, pos.y);
-      // Draw triangle below pivot point
-      ctx.fillStyle = '#2a2a4e';
-      ctx.beginPath();
-      ctx.moveTo(-16, 0);
-      ctx.lineTo(16, 0);
-      ctx.lineTo(0, 24);
-      ctx.closePath();
-      ctx.fill();
-      ctx.strokeStyle = 'rgba(100,140,255,.3)';
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-    } else if(b.label==='bumper'){
-      // Bumper — bright bouncy circle with glow
-      const br = b._bumperR || 20;
-      const bColor = b._bumperColor || '#ff6600';
-      ctx.beginPath(); ctx.arc(0, 0, br, 0, Math.PI*2);
-      ctx.fillStyle = bColor;
-      const pulse = 14 + 6 * Math.sin(Date.now()/300);
-      ctx.shadowColor = bColor; ctx.shadowBlur = pulse;
+      const pulse = 10 + 6 * Math.sin(Date.now()/300);
+      ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI*2);
+      ctx.fillStyle = '#0066ff';
+      ctx.shadowColor = '#0044cc'; ctx.shadowBlur = pulse;
       ctx.fill();
       ctx.shadowBlur = 0;
-      ctx.strokeStyle = '#fff';
-      ctx.lineWidth = 3;
-      ctx.stroke();
-    } else if(b.label==='bouncePad'){
-      // Bounce pad — bright yellow-orange angled ramp
-      const bpW = b._w || 60, bpH = b._h || 22;
-      ctx.fillStyle = '#ffaa00';
-      ctx.fillRect(-bpW/2, -bpH/2, bpW, bpH);
-      ctx.strokeStyle = 'rgba(255,200,0,.6)';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(-bpW/2, -bpH/2, bpW, bpH);
-    } else if(b.label==='spinner'){
-      // Spinner arm — dark navy with orange tips
-      const armW = b._w || 80, armH = b._h || 14;
-      const tipLen = 15;
-      // Main body
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+    } else if(b.label==='bumper'){
+      const br = b._bumperR || 20;
+      const pulse = 10 + 6 * Math.sin(Date.now()/300);
+      ctx.beginPath(); ctx.arc(0, 0, br, 0, Math.PI*2);
+      ctx.fillStyle = '#0066ff';
+      ctx.shadowColor = '#0044cc'; ctx.shadowBlur = pulse;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+
+    // ── CAT 3 (active): MACHINERY — charcoal body, red tips, white pivot ──
+    } else if(b.label==='paddle'){
+      const armW = b._w || 180, armH = b._h || 22, tipLen = 25;
       ctx.fillStyle = '#1a1a2e';
-      ctx.beginPath();
-      ctx.roundRect(-armW/2, -armH/2, armW, armH, 3);
-      ctx.fill();
-      // Left orange tip
-      ctx.fillStyle = '#ff6600';
-      ctx.beginPath();
-      ctx.roundRect(-armW/2, -armH/2, tipLen, armH, [3,0,0,3]);
-      ctx.fill();
-      // Right orange tip
-      ctx.beginPath();
-      ctx.roundRect(armW/2 - tipLen, -armH/2, tipLen, armH, [0,3,3,0]);
-      ctx.fill();
-      // Outline
-      ctx.strokeStyle = 'rgba(255,102,0,.4)';
-      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.roundRect(-armW/2, -armH/2, armW, armH, 4); ctx.fill();
+      ctx.fillStyle = '#ff2200';
+      ctx.beginPath(); ctx.roundRect(-armW/2, -armH/2, tipLen, armH, [4,0,0,4]); ctx.fill();
+      ctx.beginPath(); ctx.roundRect(armW/2 - tipLen, -armH/2, tipLen, armH, [0,4,4,0]); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,34,0,.3)'; ctx.lineWidth = 1;
       ctx.strokeRect(-armW/2, -armH/2, armW, armH);
-    } else if(b.label==='trapdoor'){
-      const tdW = b._w || 80, tdH = b._h || 18;
-      const isOpen = b._tdOpen;
-      // Dark wood color, glowing edges when about to open
-      ctx.fillStyle = isOpen ? 'rgba(60,30,10,0.3)' : '#5c3d1e';
-      ctx.beginPath();
-      ctx.roundRect(-tdW/2, -tdH/2, tdW, tdH, 3);
-      ctx.fill();
-      if(!isOpen){
-        const warn = b._tdTimer / b._tdHoldTime;
-        if(warn > 0.5){
-          const glow = (warn - 0.5) * 2; // 0→1 as getting close
-          ctx.strokeStyle = `rgba(255,100,0,${glow * 0.8})`;
-          ctx.lineWidth = 2;
-          ctx.shadowColor = '#ff6600'; ctx.shadowBlur = glow * 15;
-          ctx.strokeRect(-tdW/2, -tdH/2, tdW, tdH);
-          ctx.shadowBlur = 0;
-        } else {
-          ctx.strokeStyle = 'rgba(200,160,100,.4)';
-          ctx.lineWidth = 1;
-          ctx.strokeRect(-tdW/2, -tdH/2, tdW, tdH);
-        }
+      // White pivot (un-rotated)
+      ctx.restore(); ctx.save(); ctx.translate(pos.x, pos.y);
+      ctx.beginPath(); ctx.arc(0, 0, 7, 0, Math.PI*2);
+      ctx.fillStyle = '#fff'; ctx.fill();
+      ctx.strokeStyle = '#1a1a2e'; ctx.lineWidth = 2; ctx.stroke();
+    } else if(b.label==='spinner'){
+      const armW = b._w || 80, armH = b._h || 14, tipLen = 15;
+      ctx.fillStyle = '#1a1a2e';
+      ctx.beginPath(); ctx.roundRect(-armW/2, -armH/2, armW, armH, 3); ctx.fill();
+      ctx.fillStyle = '#ff2200';
+      ctx.beginPath(); ctx.roundRect(-armW/2, -armH/2, tipLen, armH, [3,0,0,3]); ctx.fill();
+      ctx.beginPath(); ctx.roundRect(armW/2 - tipLen, -armH/2, tipLen, armH, [0,3,3,0]); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,34,0,.3)'; ctx.lineWidth = 1;
+      ctx.strokeRect(-armW/2, -armH/2, armW, armH);
+    } else if(b.label==='jawgate'){
+      const jW = b._w || 100, jH = b._h || 16, tipLen = 18;
+      ctx.fillStyle = '#1a1a2e';
+      ctx.beginPath(); ctx.roundRect(-jW/2, -jH/2, jW, jH, 3); ctx.fill();
+      // Red tip on the inner (biting) end
+      const innerSide = b._jawSide || -1;
+      if(innerSide < 0){
+        ctx.fillStyle = '#ff2200';
+        ctx.beginPath(); ctx.roundRect(jW/2 - tipLen, -jH/2, tipLen, jH, [0,3,3,0]); ctx.fill();
+      } else {
+        ctx.fillStyle = '#ff2200';
+        ctx.beginPath(); ctx.roundRect(-jW/2, -jH/2, tipLen, jH, [3,0,0,3]); ctx.fill();
       }
+      ctx.strokeStyle = 'rgba(255,34,0,.3)'; ctx.lineWidth = 1;
+      ctx.strokeRect(-jW/2, -jH/2, jW, jH);
     } else if(b.label==='pendulum'){
       const pW = b._w || 20, pH = b._h || 120;
-      // Dark arm
       ctx.fillStyle = '#1a1a2e';
-      ctx.beginPath();
-      ctx.roundRect(-pW/2, -pH/2, pW, pH, 4);
-      ctx.fill();
-      // Orange tip at bottom
-      ctx.fillStyle = '#ff6600';
-      ctx.beginPath();
-      ctx.roundRect(-pW/2, pH/2 - 25, pW, 25, [0,0,4,4]);
-      ctx.fill();
-      ctx.strokeStyle = 'rgba(255,102,0,.4)';
-      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.roundRect(-pW/2, -pH/2, pW, pH, 4); ctx.fill();
+      // Red tip at bottom
+      ctx.fillStyle = '#ff2200';
+      ctx.beginPath(); ctx.roundRect(-pW/2, pH/2 - 25, pW, 25, [0,0,4,4]); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,34,0,.3)'; ctx.lineWidth = 1;
       ctx.strokeRect(-pW/2, -pH/2, pW, pH);
-      // Anchor point (un-rotated)
-      ctx.restore();
-      ctx.save();
-      ctx.translate(b._anchorX, b._anchorY);
+      // White anchor (un-rotated)
+      ctx.restore(); ctx.save(); ctx.translate(b._anchorX, b._anchorY);
       ctx.beginPath(); ctx.arc(0, 0, 6, 0, Math.PI*2);
-      ctx.fillStyle = '#ff6600'; ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.fill();
       ctx.strokeStyle = '#1a1a2e'; ctx.lineWidth = 2; ctx.stroke();
+
+    // ── CAT 4: CONTROL SURFACES — warm amber, functional look ──
+    } else if(b.label==='seesaw'){
+      const plankW = b._w || 280, plankH = b._h || 22;
+      ctx.fillStyle = '#c17f24';
+      ctx.beginPath(); ctx.roundRect(-plankW/2, -plankH/2, plankW, plankH, 4); ctx.fill();
+      ctx.strokeStyle = 'rgba(160,105,20,.5)'; ctx.lineWidth = 1.5;
+      ctx.strokeRect(-plankW/2, -plankH/2, plankW, plankH);
+      // Triangle pivot (un-rotated)
+      ctx.restore(); ctx.save(); ctx.translate(pos.x, pos.y);
+      ctx.fillStyle = '#1a1a2e';
+      ctx.beginPath(); ctx.moveTo(-14, 0); ctx.lineTo(14, 0); ctx.lineTo(0, 22); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = 'rgba(193,127,36,.4)'; ctx.lineWidth = 1.5; ctx.stroke();
     } else if(b.label==='conveyor'){
       const cvW = b._w || 400, cvH = b._h || 18;
-      ctx.fillStyle = '#2a2a4e';
+      ctx.fillStyle = '#c17f24';
       ctx.fillRect(-cvW/2, -cvH/2, cvW, cvH);
-      // Animated arrows
+      ctx.strokeStyle = 'rgba(160,105,20,.5)'; ctx.lineWidth = 1;
+      ctx.strokeRect(-cvW/2, -cvH/2, cvW, cvH);
+      // White animated arrows
       const dir = b._cvDir || -1;
       const arrowOff = (Date.now() / 200 * dir) % 30;
-      ctx.strokeStyle = 'rgba(100,200,255,0.6)';
-      ctx.lineWidth = 2;
+      ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.lineWidth = 2;
       for(let ax = -cvW/2 + 10 + arrowOff; ax < cvW/2 - 10; ax += 30){
         const tipX = ax + dir * 8;
         ctx.beginPath();
@@ -1090,81 +1017,104 @@ function drawObstacles(){
         ctx.moveTo(tipX, 0); ctx.lineTo(tipX - dir*5, 4);
         ctx.stroke();
       }
-      ctx.strokeStyle = 'rgba(100,200,255,0.3)';
-      ctx.lineWidth = 1;
-      ctx.strokeRect(-cvW/2, -cvH/2, cvW, cvH);
     } else if(b.label==='tiltPlatform'){
       const tpW = b._w || 240, tpH = b._h || 20;
-      ctx.fillStyle = '#3d2b1f';
-      ctx.beginPath();
-      ctx.roundRect(-tpW/2, -tpH/2, tpW, tpH, 4);
-      ctx.fill();
-      ctx.strokeStyle = 'rgba(200,160,100,.4)';
-      ctx.lineWidth = 1.5;
+      ctx.fillStyle = '#c17f24';
+      ctx.beginPath(); ctx.roundRect(-tpW/2, -tpH/2, tpW, tpH, 4); ctx.fill();
+      ctx.strokeStyle = 'rgba(160,105,20,.5)'; ctx.lineWidth = 1.5;
       ctx.strokeRect(-tpW/2, -tpH/2, tpW, tpH);
-      // Pivot mark at center
+      // Orange pivot dot
       ctx.fillStyle = '#ff8800';
       ctx.beginPath(); ctx.arc(0, 0, 5, 0, Math.PI*2); ctx.fill();
-      // Tilt direction indicator
+      // Direction arrow
       const dir = b._tiltDir || 1;
-      ctx.strokeStyle = 'rgba(255,136,0,0.5)';
-      ctx.lineWidth = 2;
+      ctx.strokeStyle = 'rgba(255,136,0,0.6)'; ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.moveTo(dir * 20, -tpH/2 - 6);
       ctx.lineTo(dir * 35, -tpH/2 - 6);
       ctx.lineTo(dir * 30, -tpH/2 - 12);
       ctx.stroke();
+    } else if(b.label==='trapdoor'){
+      const tdW = b._w || 80, tdH = b._h || 18;
+      const isOpen = b._tdOpen;
+      ctx.fillStyle = isOpen ? 'rgba(193,127,36,0.3)' : '#c17f24';
+      ctx.beginPath(); ctx.roundRect(-tdW/2, -tdH/2, tdW, tdH, 3); ctx.fill();
+      if(!isOpen){
+        const warn = b._tdTimer / b._tdHoldTime;
+        if(warn > 0.5){
+          const glow = (warn - 0.5) * 2;
+          ctx.strokeStyle = `rgba(255,100,0,${glow * 0.8})`;
+          ctx.lineWidth = 2;
+          ctx.shadowColor = '#ff6600'; ctx.shadowBlur = glow * 15;
+          ctx.strokeRect(-tdW/2, -tdH/2, tdW, tdH);
+          ctx.shadowBlur = 0;
+        } else {
+          ctx.strokeStyle = 'rgba(160,105,20,.5)'; ctx.lineWidth = 1;
+          ctx.strokeRect(-tdW/2, -tdH/2, tdW, tdH);
+        }
+      }
+
+    // ── CAT 4 (trap): BAIT FUNNEL — outer = slate redirect, inner = amber control ──
     } else if(b.label==='baitFunnel'){
-      // Outer walls — dark
       const bfW = b._w || 18, bfH = b._h || 80;
-      ctx.fillStyle = '#1a1a2e';
+      ctx.fillStyle = '#2c3e50';
       ctx.fillRect(-bfW/2, -bfH/2, bfW, bfH);
-      ctx.strokeStyle = 'rgba(100,140,255,.3)';
-      ctx.lineWidth = 1;
+      ctx.strokeStyle = '#5d7a8a'; ctx.lineWidth = 2;
       ctx.strokeRect(-bfW/2, -bfH/2, bfW, bfH);
     } else if(b.label==='baitFunnelCenter'){
-      // Inner walls — bright gold to bait
       const bfW = b._w || 18, bfH = b._h || 80;
-      ctx.fillStyle = '#cc8800';
+      ctx.fillStyle = '#c17f24';
       ctx.fillRect(-bfW/2, -bfH/2, bfW, bfH);
-      ctx.strokeStyle = '#ffd700';
-      ctx.lineWidth = 1.5;
-      ctx.shadowColor = '#ffd700'; ctx.shadowBlur = 8;
+      ctx.strokeStyle = '#daa530'; ctx.lineWidth = 1.5;
+      ctx.shadowColor = '#c17f24'; ctx.shadowBlur = 6;
       ctx.strokeRect(-bfW/2, -bfH/2, bfW, bfH);
       ctx.shadowBlur = 0;
     } else if(b.label==='baitFunnelGold'){
-      // Gold floor in center
       const gfW = b._w || 60, gfH = b._h || 12;
-      ctx.fillStyle = '#ffd700';
-      ctx.shadowColor = '#ffd700'; ctx.shadowBlur = 10;
+      ctx.fillStyle = '#c17f24';
+      ctx.shadowColor = '#c17f24'; ctx.shadowBlur = 8;
       ctx.fillRect(-gfW/2, -gfH/2, gfW, gfH);
       ctx.shadowBlur = 0;
-    } else if(b.label==='jawgate'){
-      const jW = b._w || 100, jH = b._h || 16;
-      ctx.fillStyle = '#cc2200';
-      ctx.beginPath();
-      ctx.roundRect(-jW/2, -jH/2, jW, jH, 3);
-      ctx.fill();
-      ctx.strokeStyle = 'rgba(255,50,0,0.5)';
-      ctx.lineWidth = 2;
-      ctx.shadowColor = '#cc2200'; ctx.shadowBlur = 8;
-      ctx.strokeRect(-jW/2, -jH/2, jW, jH);
-      ctx.shadowBlur = 0;
+    } else if(b.label==='oscgate'){
+      // Oscillating gate — control surface style
+      const gateW = b._w || 80, gateH = b._h || 22;
+      ctx.fillStyle = '#c17f24';
+      ctx.fillRect(-gateW/2, -gateH/2, gateW, gateH);
+      ctx.strokeStyle = 'rgba(160,105,20,.5)'; ctx.lineWidth = 1.5;
+      ctx.strokeRect(-gateW/2, -gateH/2, gateW, gateH);
+
+    // ── CAT 2: REDIRECT RAMPS / BOUNCEPADS — deep slate ──
+    } else if(b.label==='bouncePad'){
+      const bpW = b._w || 60, bpH = b._h || 22;
+      ctx.fillStyle = '#2c3e50';
+      ctx.fillRect(-bpW/2, -bpH/2, bpW, bpH);
+      // Top-face highlight
+      ctx.strokeStyle = '#5d7a8a'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(-bpW/2, -bpH/2); ctx.lineTo(bpW/2, -bpH/2); ctx.stroke();
     } else {
-      // Rectangle-based obstacles (slopes, floors) — draw from body dims
+      // Default — slopes, floors: deep slate redirect style
       const bw = b._w || 60, bh = b._h || 22;
-      ctx.fillStyle = '#1a1a2e';
+      ctx.fillStyle = '#2c3e50';
       ctx.fillRect(-bw/2, -bh/2, bw, bh);
-      ctx.strokeStyle = 'rgba(100,140,255,.15)';
-      ctx.lineWidth = 1;
-      ctx.strokeRect(-bw/2, -bh/2, bw, bh);
+      // Top-face highlight
+      ctx.strokeStyle = '#5d7a8a'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(-bw/2, -bh/2); ctx.lineTo(bw/2, -bh/2); ctx.stroke();
     }
     ctx.restore();
   });
 
-  // Finish line — thick checkered pattern at FINISH_Y (world coords, translate handles camera)
+  // Finish line — bold checkered pattern with neon green glow
   const fy = FINISH_Y - camY;
   if(fy > -80 && fy < H+80){
+    // Neon green glow line above checker strip
+    ctx.save();
+    ctx.strokeStyle = '#00ff66';
+    ctx.shadowColor = '#00ff66'; ctx.shadowBlur = 18;
+    ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(0, FINISH_Y - 4); ctx.lineTo(W, FINISH_Y - 4); ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.restore();
+    // Checkered pattern
     const checkSize = 20;
     for(let cx=0; cx<W; cx+=checkSize){
       for(let r=0; r<3; r++){
@@ -1184,7 +1134,7 @@ function drawObstacles(){
     ctx.beginPath();
     ctx.roundRect(W/2 - pillW/2, FINISH_Y - 12 - pillH, pillW, pillH, 10);
     ctx.fill();
-    // Text
+    // Bright white text with dark stroke
     ctx.fillStyle = '#fff';
     ctx.strokeStyle = '#000';
     ctx.lineWidth = 4;
@@ -1237,6 +1187,16 @@ function drawToken(body, cfg, idx){
   ctx.fillStyle = gg; ctx.fill();
   ctx.restore();
 
+  // Drop shadow under ball
+  ctx.save();
+  ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI*2);
+  ctx.shadowColor = cfg.color + '80'; // 50% opacity player color
+  ctx.shadowBlur = 15;
+  ctx.shadowOffsetX = 0; ctx.shadowOffsetY = 3;
+  ctx.fillStyle = cfg.color; ctx.fill();
+  ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+  ctx.restore();
+
   // Token circle — face or initials
   const faceImg = imgs['p'+idx];
   const hasFace = CFG.facesInBalls && faceImg && faceImg.naturalWidth > 0;
@@ -1251,28 +1211,26 @@ function drawToken(body, cfg, idx){
     ctx.save();
     ctx.beginPath(); ctx.arc(px, py, clipR, 0, Math.PI*2); ctx.clip();
     const iw = faceImg.naturalWidth, ih = faceImg.naturalHeight;
-    // Crop centered on top 60% of image
     const cropH = ih * 0.6;
-    const cropW = Math.min(iw, cropH); // square-ish crop
+    const cropW = Math.min(iw, cropH);
     const sx = (iw - cropW) / 2, sy = 0;
     const dSize = clipR * 2;
     ctx.drawImage(faceImg, sx, sy, cropW, cropH, px - clipR, py - clipR, dSize, dSize);
     ctx.restore();
   } else {
-    // Draw initials (first letter of each word, max 2)
+    // Bold 2-char initials in white
     const initials = cfg.name.split(/\s+/).map(w=>w[0]).slice(0,2).join('');
     ctx.fillStyle = '#fff';
-    ctx.font = '700 18px system-ui';
+    ctx.font = '900 20px system-ui';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(initials, px, py);
   }
   ctx.restore();
 
-  // 3px colored ring with outer glow
+  // 3px white outer ring for contrast
   ctx.save();
   ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI*2);
-  ctx.strokeStyle = cfg.color; ctx.lineWidth = 3;
-  ctx.shadowColor = cfg.color; ctx.shadowBlur = 12;
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 3;
   ctx.stroke();
   ctx.restore();
 }
