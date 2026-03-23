@@ -853,6 +853,12 @@ function initPlayerArrays(){
   }
 }
 initPlayerArrays();
+// Verification: count conveyorStrip obstacles remaining in SECTIONS
+(function(){
+  let count = 0;
+  SECTIONS.forEach(s => s.obstacles.forEach(o => { if(o.type === 'conveyorStrip') count++; }));
+  console.log('[marble-race] conveyorStrip count in SECTIONS: ' + count);
+})();
 let checkpointFlash = {active:false, t:0, color:'', pct:0};
 // Danger warnings — each entry: {x, y, t (start time)}
 let dangerWarnings = [];
