@@ -559,17 +559,7 @@ function obstacleFactory(spec, courseScale){
       break;
     }
     case 'conveyorStrip': {
-      const cvW = (spec.w || 400) * cs;
-      const cvX = sx(spec.x);
-      const cvH = 18;
-      const cvBody = Bodies.rectangle(cvX, spec.y, cvW, cvH, {
-        isStatic:true, restitution:MAT_CONTROL.restitution, friction:MAT_CONTROL.friction, label:'conveyor'
-      });
-      cvBody._w = cvW; cvBody._h = cvH;
-      cvBody._cvDir = spec.dir || -1; // -1 = left, 1 = right
-      cvBody._cvForce = spec.force || 1.5;
-      result.body = cvBody;
-      result.conveyor = true;
+      // Conveyor obstacle fully removed — skip creation
       break;
     }
     case 'tiltPlatform': {
@@ -692,7 +682,7 @@ function buildLevel(courseScale){
         if(res.constraint) constraints.push(res.constraint);
         if(res.trapdoor) trapdoorBodies.push(...res.trapdoor);
         if(res.pendulum) pendulumBodies.push(res.body);
-        if(res.conveyor) conveyorBodies.push(res.body);
+        // conveyorBodies push removed — conveyors fully disabled
         if(res.jawgate) jawGateBodies.push(...res.jawgate);
         if(res.tiltPlatform) tiltPlatformBodies.push(res.body);
         if(res.baitFunnel) baitFunnelBodies.push(res.body);
@@ -770,6 +760,7 @@ function createPhysics(){
 
   World.add(world, obsBodies);
   level.constraints.forEach(c => World.add(world, c));
+  console.log('[marble-race] conveyorBodies.length after buildLevel:', conveyorBodies.length);
 }
 
 // ════════════════════════════ IMAGES ════════════════════════════
@@ -853,12 +844,6 @@ function initPlayerArrays(){
   }
 }
 initPlayerArrays();
-// Verification: count conveyorStrip obstacles remaining in SECTIONS
-(function(){
-  let count = 0;
-  SECTIONS.forEach(s => s.obstacles.forEach(o => { if(o.type === 'conveyorStrip') count++; }));
-  console.log('[marble-race] conveyorStrip count in SECTIONS: ' + count);
-})();
 let checkpointFlash = {active:false, t:0, color:'', pct:0};
 // Danger warnings — each entry: {x, y, t (start time)}
 let dangerWarnings = [];
@@ -1043,24 +1028,6 @@ function drawObstacles(){
       ctx.fillStyle = '#1a1a2e';
       ctx.beginPath(); ctx.moveTo(-14, 0); ctx.lineTo(14, 0); ctx.lineTo(0, 22); ctx.closePath(); ctx.fill();
       ctx.strokeStyle = 'rgba(193,127,36,.4)'; ctx.lineWidth = 1.5; ctx.stroke();
-    } else if(b.label==='conveyor'){
-      const cvW = b._w || 400, cvH = b._h || 18;
-      ctx.fillStyle = '#c17f24';
-      ctx.fillRect(-cvW/2, -cvH/2, cvW, cvH);
-      ctx.strokeStyle = 'rgba(160,105,20,.5)'; ctx.lineWidth = 1;
-      ctx.strokeRect(-cvW/2, -cvH/2, cvW, cvH);
-      // White animated arrows
-      const dir = b._cvDir || -1;
-      const arrowOff = (Date.now() / 200 * dir) % 30;
-      ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.lineWidth = 2;
-      for(let ax = -cvW/2 + 10 + arrowOff; ax < cvW/2 - 10; ax += 30){
-        const tipX = ax + dir * 8;
-        ctx.beginPath();
-        ctx.moveTo(ax, 0); ctx.lineTo(tipX, 0);
-        ctx.moveTo(tipX, 0); ctx.lineTo(tipX - dir*5, -4);
-        ctx.moveTo(tipX, 0); ctx.lineTo(tipX - dir*5, 4);
-        ctx.stroke();
-      }
     } else if(b.label==='tiltPlatform'){
       const tpW = b._w || 240, tpH = b._h || 20;
       ctx.fillStyle = '#c17f24';
@@ -2022,20 +1989,7 @@ function loop(now){
       }
     }
 
-    // Conveyor strip — apply sideways force to overlapping balls
-    conveyorBodies.forEach(cv => {
-      const cvLeft = cv.position.x - cv._w/2;
-      const cvRight = cv.position.x + cv._w/2;
-      const cvTop = cv.position.y - cv._h/2 - BALL_RADIUS;
-      const cvBot = cv.position.y + cv._h/2;
-      for(let i=0; i<N; i++){
-        const tb = tokenBodies[i];
-        if(tb.position.x > cvLeft && tb.position.x < cvRight &&
-           tb.position.y > cvTop && tb.position.y < cvBot + 5){
-          Body.applyForce(tb, tb.position, {x: cv._cvDir * 0.0015, y:0});
-        }
-      }
-    });
+    // Conveyor strip physics removed — conveyors fully disabled
 
     // Win% bias force
     for(let i=0; i<N; i++){
