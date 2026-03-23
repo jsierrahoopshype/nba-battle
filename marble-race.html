@@ -1946,23 +1946,23 @@ function loop(now){
     const tpDt = 1/60;
     tiltPlatformBodies.forEach(tp => {
       tp._tiltTimer += tpDt;
-      const phase = tp._tiltPhase;
-      if(phase === 'flat'){
+      const tpPhase = tp._tiltPhase;
+      if(tpPhase === 'flat'){
         if(tp._tiltTimer >= tp._tiltFlatDur){
           tp._tiltPhase = 'tilting'; tp._tiltTimer = 0;
         }
-      } else if(phase === 'tilting'){
+      } else if(tpPhase === 'tilting'){
         const progress = Math.min(1, tp._tiltTimer / tp._tiltDur);
         const eased = progress * progress; // ease-in
         Body.setAngle(tp, tp._tiltDir * tp._tiltMaxAngle * eased);
         if(progress >= 1){
           tp._tiltPhase = 'held'; tp._tiltTimer = 0;
         }
-      } else if(phase === 'held'){
+      } else if(tpPhase === 'held'){
         if(tp._tiltTimer >= tp._tiltHoldDur){
           tp._tiltPhase = 'resetting'; tp._tiltTimer = 0;
         }
-      } else if(phase === 'resetting'){
+      } else if(tpPhase === 'resetting'){
         const progress = Math.min(1, tp._tiltTimer / tp._tiltResetDur);
         const eased = 1 - (1 - progress) * (1 - progress); // ease-out
         Body.setAngle(tp, tp._tiltDir * tp._tiltMaxAngle * (1 - eased));
@@ -1999,8 +1999,8 @@ function loop(now){
       if(leftInner._bfReleasing){
         const elapsed = (performance.now() - leftInner._bfReleaseT) / 1000;
         if(elapsed < 2){
-          // Angle walls outward to release
-          const angle = Math.min(0.6, elapsed * 0.4);
+          // Angle walls outward 15° to create escape path
+          const angle = Math.min(0.262, elapsed * 0.2);
           Body.setAngle(leftInner, -angle);
           Body.setAngle(rightInner, angle);
         } else {
@@ -2231,7 +2231,6 @@ function loop(now){
   for(let i=0; i<tokenBodies.length; i++) drawToken(tokenBodies[i], CFG.players[i], i);
   drawParticlesOnScreen();
   drawHUD();
-  drawMiniStandings();
   drawDangerWarnings(now);
   drawSlowMoIndicator();
   drawLeadChange();
