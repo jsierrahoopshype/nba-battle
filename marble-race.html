@@ -132,8 +132,14 @@ const LEVEL_H = 9000;
 const BALL_RADIUS = 26;
 const DANGER_ZONE_Y = 6000;
 
+// ═══ Physics material profiles ═══
+const MAT_BALL    = {restitution:0.38, friction:0.14, frictionAir:0.018, density:0.005};
+const MAT_REDIR   = {restitution:0.25, friction:0.08};  // ramps, bouncePads, jawGate, pendulum
+const MAT_POP     = {restitution:0.78, friction:0.01};  // bumpers, pegs
+const MAT_CONTROL = {restitution:0.12, friction:0.35};  // conveyors, tiltPlatform, trapdoor, seesaw
+
 // Standard obstacle params
-const STD = {friction:0.10, restitution:0.22, thickness:22, angle:0.611};
+const STD = {friction:MAT_REDIR.friction, restitution:MAT_REDIR.restitution, thickness:22, angle:0.611};
 
 const SECTIONS = [
   // ══ SECTION 1: Hook — deflectors + bumper diamond + bouncePad catch ══
@@ -347,8 +353,8 @@ function obstacleFactory(spec, courseScale){
       const baseX = sx(spec.x);
       result.body = Bodies.rectangle(
         baseX + (spec.angle>0?scaledW/2:-scaledW/2), spec.y, scaledW, slopeT,
-        {isStatic:true, restitution:spec.restitution!==undefined?spec.restitution:0.2,
-         friction:spec.friction!==undefined?spec.friction:0.08, angle:spec.angle, label:'slope'}
+        {isStatic:true, restitution:spec.restitution!==undefined?spec.restitution:MAT_REDIR.restitution,
+         friction:spec.friction!==undefined?spec.friction:MAT_REDIR.friction, angle:spec.angle, label:'slope'}
       );
       result.body._w = scaledW;
       result.body._h = slopeT;
@@ -357,8 +363,8 @@ function obstacleFactory(spec, courseScale){
     case 'peg': {
       const r = spec.r || 10;
       result.body = Bodies.circle(sx(spec.x), spec.y, r, {
-        isStatic:true, restitution:spec.restitution!==undefined?spec.restitution:0.7,
-        friction:spec.friction!==undefined?spec.friction:0.08, label:'peg', _pegR:r
+        isStatic:true, restitution:MAT_POP.restitution,
+        friction:MAT_POP.friction, label:'peg', _pegR:r
       });
       break;
     }
@@ -378,7 +384,7 @@ function obstacleFactory(spec, courseScale){
     case 'sweeper': {
       const swW = (spec.w || 180) * cs;
       result.body = Bodies.rectangle(sx(spec.x), spec.y, swW, 22, {
-        isStatic:true, restitution:0.5, friction:0.01, label:'paddle'
+        isStatic:true, restitution:MAT_REDIR.restitution, friction:MAT_REDIR.friction, label:'paddle'
       });
       result.body._rotSpeed = spec.speed || 0.02;
       result.body._w = swW;
@@ -390,7 +396,7 @@ function obstacleFactory(spec, courseScale){
       const ssW = (spec.w || 280) * cs;
       const ssX = sx(spec.x);
       result.body = Bodies.rectangle(ssX, spec.y, ssW, 22, {
-        isStatic:false, restitution:0.3, friction:0.15, frictionAir:0.05,
+        isStatic:false, restitution:MAT_CONTROL.restitution, friction:MAT_CONTROL.friction, frictionAir:0.05,
         density:0.01, label:'seesaw'
       });
       result.body._w = ssW;
@@ -422,7 +428,7 @@ function obstacleFactory(spec, courseScale){
       const br = spec.radius || 20;
       const bColor = spec.color || '#ff6600';
       result.body = Bodies.circle(sx(spec.x), spec.y, br, {
-        isStatic:true, restitution:0.70, friction:0.01, label:'bumper', _bumperR:br, _bumperColor:bColor
+        isStatic:true, restitution:MAT_POP.restitution, friction:MAT_POP.friction, label:'bumper', _bumperR:br, _bumperColor:bColor
       });
       break;
     }
@@ -432,7 +438,7 @@ function obstacleFactory(spec, courseScale){
       const baseX = sx(spec.x);
       result.body = Bodies.rectangle(
         baseX + (spec.angle>0?scaledW/2:-scaledW/2), spec.y, scaledW, slopeT,
-        {isStatic:true, restitution:0.55, friction:0.02, angle:spec.angle, label:'bouncePad'}
+        {isStatic:true, restitution:MAT_REDIR.restitution, friction:MAT_REDIR.friction, angle:spec.angle, label:'bouncePad'}
       );
       result.body._w = scaledW;
       result.body._h = slopeT;
@@ -447,7 +453,7 @@ function obstacleFactory(spec, courseScale){
       for(let a=0; a<3; a++){
         const angle = (a * Math.PI * 2) / 3;
         const arm = Bodies.rectangle(spX, spec.y, armLen, armT, {
-          isStatic:true, restitution:0.4, friction:0.01, label:'spinner', angle:angle
+          isStatic:true, restitution:MAT_REDIR.restitution, friction:MAT_REDIR.friction, label:'spinner', angle:angle
         });
         arm._rotSpeed = spd;
         arm._w = armLen;
@@ -472,14 +478,14 @@ function obstacleFactory(spec, courseScale){
       const tdH = 18;
       // Left platform
       const leftBody = Bodies.rectangle(tdX - gap/2 - halfW/2, spec.y, halfW, tdH, {
-        isStatic:true, restitution:0.2, friction:0.3, label:'trapdoor'
+        isStatic:true, restitution:MAT_CONTROL.restitution, friction:MAT_CONTROL.friction, label:'trapdoor'
       });
       leftBody._w = halfW; leftBody._h = tdH;
       leftBody._tdOpen = false; leftBody._tdTimer = 0; leftBody._tdHoldTime = spec.holdTime || 2;
       leftBody._tdOpenDur = spec.openDur || 1.5;
       // Right platform
       const rightBody = Bodies.rectangle(tdX + gap/2 + halfW/2, spec.y, halfW, tdH, {
-        isStatic:true, restitution:0.2, friction:0.3, label:'trapdoor'
+        isStatic:true, restitution:MAT_CONTROL.restitution, friction:MAT_CONTROL.friction, label:'trapdoor'
       });
       rightBody._w = halfW; rightBody._h = tdH;
       rightBody._tdOpen = false; rightBody._tdTimer = 0; rightBody._tdHoldTime = spec.holdTime || 2;
@@ -499,7 +505,7 @@ function obstacleFactory(spec, courseScale){
       const anchorY = spec.y;
       const bodyY = anchorY + pLen / 2;
       const pendBody = Bodies.rectangle(pX, bodyY, pW, pH, {
-        isStatic:false, restitution:0.3, friction:0.1, density:0.05, frictionAir:0.005,
+        isStatic:false, restitution:MAT_REDIR.restitution, friction:MAT_REDIR.friction, density:0.05, frictionAir:0.005,
         label:'pendulum'
       });
       pendBody._w = pW; pendBody._h = pH;
@@ -519,7 +525,7 @@ function obstacleFactory(spec, courseScale){
       const cvX = sx(spec.x);
       const cvH = 18;
       const cvBody = Bodies.rectangle(cvX, spec.y, cvW, cvH, {
-        isStatic:true, restitution:0.1, friction:0.5, label:'conveyor'
+        isStatic:true, restitution:MAT_CONTROL.restitution, friction:MAT_CONTROL.friction, label:'conveyor'
       });
       cvBody._w = cvW; cvBody._h = cvH;
       cvBody._cvDir = spec.dir || -1; // -1 = left, 1 = right
@@ -533,7 +539,7 @@ function obstacleFactory(spec, courseScale){
       const tpH = 20;
       const tpX = sx(spec.x);
       const tpBody = Bodies.rectangle(tpX, spec.y, tpW, tpH, {
-        isStatic:true, restitution:0.2, friction:0.4, label:'tiltPlatform'
+        isStatic:true, restitution:MAT_CONTROL.restitution, friction:MAT_CONTROL.friction, label:'tiltPlatform'
       });
       tpBody._w = tpW; tpBody._h = tpH;
       tpBody._tiltDir = spec.tiltDir === 'left' ? -1 : 1;
@@ -559,13 +565,13 @@ function obstacleFactory(spec, courseScale){
       const wallT = 18;
       // Left outer wall
       const leftOuter = Bodies.rectangle(bfX - bfW/2, spec.y, wallT, wallH, {
-        isStatic:true, restitution:0.3, friction:0.1, label:'baitFunnel'
+        isStatic:true, restitution:MAT_REDIR.restitution, friction:MAT_REDIR.friction, label:'baitFunnel'
       });
       leftOuter._w = wallT; leftOuter._h = wallH;
       // Left inner wall — forms center channel
       const liX = bfX - centerGap/2;
       const leftInner = Bodies.rectangle(liX, spec.y, wallT, wallH, {
-        isStatic:true, restitution:0.3, friction:0.1, label:'baitFunnelCenter'
+        isStatic:true, restitution:MAT_CONTROL.restitution, friction:MAT_CONTROL.friction, label:'baitFunnelCenter'
       });
       leftInner._w = wallT; leftInner._h = wallH;
       leftInner._bfSide = -1;
@@ -575,7 +581,7 @@ function obstacleFactory(spec, courseScale){
       // Right inner wall
       const riX = bfX + centerGap/2;
       const rightInner = Bodies.rectangle(riX, spec.y, wallT, wallH, {
-        isStatic:true, restitution:0.3, friction:0.1, label:'baitFunnelCenter'
+        isStatic:true, restitution:MAT_CONTROL.restitution, friction:MAT_CONTROL.friction, label:'baitFunnelCenter'
       });
       rightInner._w = wallT; rightInner._h = wallH;
       rightInner._bfSide = 1;
@@ -584,12 +590,12 @@ function obstacleFactory(spec, courseScale){
       rightInner._bfReleasing = false;
       // Right outer wall
       const rightOuter = Bodies.rectangle(bfX + bfW/2, spec.y, wallT, wallH, {
-        isStatic:true, restitution:0.3, friction:0.1, label:'baitFunnel'
+        isStatic:true, restitution:MAT_REDIR.restitution, friction:MAT_REDIR.friction, label:'baitFunnel'
       });
       rightOuter._w = wallT; rightOuter._h = wallH;
       // Gold floor in center channel to bait players
       const goldFloor = Bodies.rectangle(bfX, spec.y + wallH/2, centerGap + wallT, 12, {
-        isStatic:true, restitution:0.2, friction:0.5, label:'baitFunnelGold'
+        isStatic:true, restitution:MAT_CONTROL.restitution, friction:MAT_CONTROL.friction, label:'baitFunnelGold'
       });
       goldFloor._w = centerGap + wallT; goldFloor._h = 12;
       // Link inner walls for release mechanism
@@ -611,7 +617,7 @@ function obstacleFactory(spec, courseScale){
       const period = spec.period || 3;
       // Left jaw — anchored at left edge
       const leftJaw = Bodies.rectangle(jX - armLen/2, spec.y, armLen, armT, {
-        isStatic:true, restitution:0.3, friction:0.1, label:'jawgate'
+        isStatic:true, restitution:MAT_REDIR.restitution, friction:MAT_REDIR.friction, label:'jawgate'
       });
       leftJaw._w = armLen; leftJaw._h = armT;
       leftJaw._jawSide = -1; leftJaw._jawCenterX = jX;
@@ -619,7 +625,7 @@ function obstacleFactory(spec, courseScale){
       leftJaw._jawPeriod = period; leftJaw._jawLen = armLen;
       // Right jaw — anchored at right edge
       const rightJaw = Bodies.rectangle(jX + armLen/2, spec.y, armLen, armT, {
-        isStatic:true, restitution:0.3, friction:0.1, label:'jawgate'
+        isStatic:true, restitution:MAT_REDIR.restitution, friction:MAT_REDIR.friction, label:'jawgate'
       });
       rightJaw._w = armLen; rightJaw._h = armT;
       rightJaw._jawSide = 1; rightJaw._jawCenterX = jX;
@@ -709,7 +715,8 @@ function createPhysics(){
   for(let i=0; i<n; i++){
     const x = (W/(n+1))*(i+1);
     const tb = Bodies.circle(x, 80, BALL_RADIUS, {
-      restitution:0.22, friction:0.18, frictionAir:0.022, density:0.005, label:'p'+i,
+      restitution:MAT_BALL.restitution, friction:MAT_BALL.friction,
+      frictionAir:MAT_BALL.frictionAir, density:MAT_BALL.density, label:'p'+i,
       collisionFilter:{group:-(i+1)}
     });
     tokenBodies.push(tb);
