@@ -284,8 +284,9 @@ const SECTIONS = [
   {
     id: 'danger', yStart: 6150, yEnd: 7200,
     obstacles: [
-      // Entry bouncePad
+      // Entry bouncePads — staggered to prevent V-trap
       {type:'bouncePad', x:0, y:6200, w:200, angle:STD.angle, thickness:STD.thickness},
+      {type:'bouncePad', x:540, y:6220, w:200, angle:-STD.angle, thickness:STD.thickness},
       // JawGate at y:6300 — dangerous 3s cycle
       {type:'jawGate', x:270, y:6300, armLen:110, period:3},
       // Bumper below jaw
@@ -304,8 +305,9 @@ const SECTIONS = [
   {
     id: 'finish', yStart: 7250, yEnd: 8800,
     obstacles: [
-      // Entry bouncePad
+      // Entry bouncePads — staggered to prevent V-trap
       {type:'bouncePad', x:0, y:7300, w:200, angle:STD.angle, thickness:STD.thickness},
+      {type:'bouncePad', x:540, y:7320, w:200, angle:-STD.angle, thickness:STD.thickness},
       // Conveyor strip (rightward) at y:7400
       {type:'conveyorStrip', x:270, y:7400, w:460, dir:1},
       // Bumper after conveyor
@@ -849,7 +851,7 @@ function setupCollisionEvents(){
           break;
         }
       }
-      if(tokenBody && (labels.includes('peg')||labels.includes('floor')||labels.includes('slope')||labels.includes('paddle')||labels.includes('seesaw')||labels.includes('oscgate')||labels.includes('bumper')||labels.includes('bouncePad')||labels.includes('spinner'))){
+      if(tokenBody && (labels.includes('peg')||labels.includes('floor')||labels.includes('slope')||labels.includes('paddle')||labels.includes('seesaw')||labels.includes('oscgate')||labels.includes('bumper')||labels.includes('bouncePad')||labels.includes('spinner')||labels.includes('tiltPlatform')||labels.includes('baitFunnel')||labels.includes('baitFunnelCenter')||labels.includes('baitFunnelGold')||labels.includes('jawgate')||labels.includes('conveyor')||labels.includes('pendulum')||labels.includes('trapdoor'))){
         spawnHitParticles(tokenBody.position.x, tokenBody.position.y, color);
       }
     });
@@ -1795,44 +1797,6 @@ function drawDebugOverlay(){
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
   ctx.fillText('DEBUG ON [D]', 8, H - 24);
-  ctx.restore();
-}
-
-// ════════════════════════════ MINI-STANDINGS ════════════════════════════
-function drawMiniStandings(){
-  if(phase === 'results') return;
-  const N = tokenBodies.length;
-  if(N < 2) return;
-  const positions = [];
-  for(let i=0; i<N; i++) positions.push({idx:i, y:tokenBodies[i].position.y});
-  positions.sort((a,b)=>b.y - a.y); // furthest down = 1st
-
-  const rowH = 18;
-  const panelH = N * rowH + 10;
-  const panelW = 110;
-  const px = 6, py = H - panelH - 30;
-
-  ctx.save();
-  ctx.fillStyle = 'rgba(10,10,40,0.6)';
-  ctx.beginPath();
-  ctx.roundRect(px, py, panelW, panelH, 6);
-  ctx.fill();
-
-  ctx.font = '700 12px system-ui';
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'middle';
-  for(let r=0; r<N; r++){
-    const idx = positions[r].idx;
-    const initials = CFG.players[idx].name.split(/\s+/).map(w=>w[0]).slice(0,2).join('');
-    const ry = py + 5 + r * rowH + rowH/2;
-    ctx.fillStyle = r === 0 ? '#ffd700' : 'rgba(200,220,255,0.8)';
-    ctx.fillText(`${r+1}. ${initials}`, px + 8, ry);
-    // Small color dot
-    ctx.beginPath();
-    ctx.arc(px + panelW - 14, ry, 4, 0, Math.PI*2);
-    ctx.fillStyle = CFG.players[idx].color;
-    ctx.fill();
-  }
   ctx.restore();
 }
 
