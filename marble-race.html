@@ -193,7 +193,7 @@ const SECTIONS = [
       {type:'peg', x:360, y:1640, r:14, friction:0.05, restitution:0.65}
     ]
   },
-  // ══ SECTION 3: Recompression — sweeper + exit ramps + bumpers + seesaw ══
+  // ══ SECTION 3: Recompression — sweeper + exit ramps + bumpers ══
   {
     id: 'recompression', yStart: 1750, yEnd: 2500,
     obstacles: [
@@ -215,10 +215,10 @@ const SECTIONS = [
       // 2 bumpers at y:2200
       {type:'bumper', x:180, y:2200, radius:22, color:'#ff6600'},
       {type:'bumper', x:360, y:2200, radius:22, color:'#ff6600'},
-      // Fill bumper between bumpers and seesaw
+      // Fill bumpers replacing seesaw
       {type:'bumper', x:420, y:2280, radius:18, color:'#0066ff'},
-      // Seesaw at y:2350
-      {type:'seesaw', x:270, y:2350, w:300},
+      {type:'bumper', x:180, y:2350, radius:16, color:'#ff6600'},
+      {type:'bumper', x:360, y:2350, radius:16, color:'#ff6600'},
       // Exit peg
       {type:'peg', x:270, y:2460, r:14, friction:0.05, restitution:0.65}
     ]
@@ -273,15 +273,16 @@ const SECTIONS = [
       {type:'peg', x:270, y:4240, r:14, friction:0.05, restitution:0.65}
     ]
   },
-  // ══ SECTION 6: Gauntlet — tiltPlatform + conveyor + baitFunnel + pendulum ══
+  // ══ SECTION 6: Gauntlet — bumpers + baitFunnel + pendulum ══
   {
     id: 'gauntlet', yStart: 4250, yEnd: 5200,
     obstacles: [
       // Entry bumpers
       {type:'bumper', x:160, y:4300, radius:20, color:'#ff6600'},
       {type:'bumper', x:380, y:4300, radius:20, color:'#ff6600'},
-      // Tilt platform — tips right after 3s
-      {type:'tiltPlatform', x:270, y:4350, w:240, tiltDir:'right'},
+      // Bumper pair replacing tiltPlatform
+      {type:'bumper', x:210, y:4350, radius:16, color:'#ff6600'},
+      {type:'bumper', x:330, y:4350, radius:16, color:'#ff6600'},
       // Fill bumpers in gap between tilt and baitFunnel
       {type:'bumper', x:400, y:4440, radius:14, color:'#0066ff'},
       {type:'bumper', x:150, y:4520, radius:18, color:'#0066ff'},
@@ -335,7 +336,7 @@ const SECTIONS = [
       {type:'peg', x:270, y:6150, r:14, friction:0.05, restitution:0.65}
     ]
   },
-  // ══ SECTION 8: Danger Zone — jawGate + tiltPlatform + baitFunnel + aggressive bumpers ══
+  // ══ SECTION 8: Danger Zone — jawGate + bumpers + baitFunnel + aggressive bumpers ══
   {
     id: 'danger', yStart: 6150, yEnd: 7200,
     obstacles: [
@@ -350,8 +351,9 @@ const SECTIONS = [
       {type:'jawGate', x:270, y:6500, armLen:110, period:3},
       // Bumper below jaw
       {type:'bumper', x:270, y:6600, radius:22, color:'#ff4400'},
-      // Tilt platform — tips left
-      {type:'tiltPlatform', x:270, y:6700, w:240, tiltDir:'left'},
+      // Bumper pair replacing tiltPlatform
+      {type:'bumper', x:210, y:6700, radius:16, color:'#ff6600'},
+      {type:'bumper', x:330, y:6700, radius:16, color:'#ff6600'},
       // Fill bumpers in gap between tilt and baitFunnel
       {type:'bumper', x:120, y:6790, radius:14, color:'#0066ff'},
       {type:'bumper', x:400, y:6860, radius:18, color:'#0066ff'},
@@ -2010,8 +2012,8 @@ function loop(now){
     // Strong downward nudge for slow balls — prevents stalling
     for(let i=0; i<N; i++){
       const tb = tokenBodies[i];
-      if(tb.velocity.y < 2){
-        Body.applyForce(tb, tb.position, {x:0, y:0.008});
+      if(tb.velocity.y < 3){
+        Body.applyForce(tb, tb.position, {x:0, y:0.010});
       }
     }
 
