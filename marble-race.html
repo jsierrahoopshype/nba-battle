@@ -147,9 +147,9 @@ const SECTIONS = [
       {type:'bumper', x:370, y:350, radius:22, color:'#ff6600'},
       {type:'bumper', x:270, y:500, radius:26, color:'#ff4400'},
       {type:'bumper', x:270, y:650, radius:22, color:'#ff6600'},
-      // Wide catch with 2 bouncePads angled inward
-      {type:'bouncePad', x:0, y:770, w:200, angle:STD.angle, thickness:STD.thickness},
-      {type:'bouncePad', x:540, y:770, w:200, angle:-STD.angle, thickness:STD.thickness}
+      // Wide catch with 2 bouncePads angled inward — staggered to prevent V-trap
+      {type:'bouncePad', x:0, y:770, w:180, angle:STD.angle, thickness:STD.thickness},
+      {type:'bouncePad', x:540, y:790, w:180, angle:-STD.angle, thickness:STD.thickness}
     ]
   },
   // ══ SECTION 2: Halfpipe — bouncePads + scattered bumpers ══
@@ -179,9 +179,9 @@ const SECTIONS = [
       {type:'bumper', x:270, y:1800, radius:20, color:'#ff8800'},
       // Sweeper at y:1900
       {type:'sweeper', x:270, y:1900, w:180, speed:0.010},
-      // Wide exit bouncePads below sweeper — 160px+ gap
-      {type:'bouncePad', x:0, y:2050, w:200, angle:STD.angle, thickness:STD.thickness},
-      {type:'bouncePad', x:540, y:2050, w:200, angle:-STD.angle, thickness:STD.thickness},
+      // Wide exit bouncePads below sweeper — staggered to prevent V-trap
+      {type:'bouncePad', x:0, y:2050, w:180, angle:STD.angle, thickness:STD.thickness},
+      {type:'bouncePad', x:540, y:2070, w:180, angle:-STD.angle, thickness:STD.thickness},
       // 2 bumpers at y:2200
       {type:'bumper', x:180, y:2200, radius:22, color:'#ff6600'},
       {type:'bumper', x:360, y:2200, radius:22, color:'#ff6600'},
@@ -203,9 +203,9 @@ const SECTIONS = [
       {type:'bumper', x:100, y:2750, radius:24, color:'#ff6600'},
       {type:'bumper', x:440, y:2750, radius:24, color:'#ff6600'},
       {type:'bumper', x:270, y:2920, radius:22, color:'#ff4400'},
-      // 2 bouncePads as exit guides at y:3100
-      {type:'bouncePad', x:0, y:3100, w:220, angle:STD.angle, thickness:STD.thickness},
-      {type:'bouncePad', x:540, y:3100, w:220, angle:-STD.angle, thickness:STD.thickness},
+      // 2 bouncePads as exit guides at y:3100 — staggered to prevent V-trap
+      {type:'bouncePad', x:0, y:3100, w:200, angle:STD.angle, thickness:STD.thickness},
+      {type:'bouncePad', x:540, y:3120, w:200, angle:-STD.angle, thickness:STD.thickness},
       // Exit peg
       {type:'peg', x:270, y:3280, r:14, friction:0.05, restitution:0.65}
     ]
@@ -248,9 +248,9 @@ const SECTIONS = [
       {type:'bumper', x:270, y:4830, radius:22, color:'#ff4400'},
       // Pendulum at y:4950 guarding center
       {type:'pendulum', x:270, y:4950, length:120, initSpin:0.03},
-      // Wide exit bouncePads at y:5100
-      {type:'bouncePad', x:0, y:5100, w:220, angle:STD.angle, thickness:STD.thickness},
-      {type:'bouncePad', x:540, y:5100, w:220, angle:-STD.angle, thickness:STD.thickness}
+      // Wide exit bouncePads at y:5100 — staggered to prevent V-trap
+      {type:'bouncePad', x:0, y:5100, w:200, angle:STD.angle, thickness:STD.thickness},
+      {type:'bouncePad', x:540, y:5120, w:200, angle:-STD.angle, thickness:STD.thickness}
     ]
   },
   // ══ SECTION 7: Comeback — jawGate gamble + split lanes ══
@@ -269,9 +269,9 @@ const SECTIONS = [
       // Right lane: cleaner (faster but jawGate risk)
       {type:'peg', x:440, y:5600, r:14, friction:0.05, restitution:0.65},
       {type:'peg', x:460, y:5750, r:14, friction:0.05, restitution:0.65},
-      // Recompression funnel at y:6000
-      {type:'bouncePad', x:0, y:6000, w:220, angle:STD.angle, thickness:STD.thickness},
-      {type:'bouncePad', x:540, y:6000, w:220, angle:-STD.angle, thickness:STD.thickness},
+      // Recompression funnel at y:6000 — staggered to prevent V-trap
+      {type:'bouncePad', x:0, y:6000, w:200, angle:STD.angle, thickness:STD.thickness},
+      {type:'bouncePad', x:540, y:6020, w:200, angle:-STD.angle, thickness:STD.thickness},
       // Exit peg
       {type:'peg', x:270, y:6150, r:14, friction:0.05, restitution:0.65}
     ]
@@ -297,9 +297,9 @@ const SECTIONS = [
       {type:'bumper', x:350, y:6860, radius:18, color:'#ff4400'},
       // BouncePad 4 right
       {type:'bouncePad', x:540, y:6920, w:260, angle:-STD.angle, thickness:STD.thickness},
-      // Recompression bouncePad pair at y:7050 — 160px+ gap
-      {type:'bouncePad', x:0, y:7050, w:200, angle:STD.angle, thickness:STD.thickness},
-      {type:'bouncePad', x:540, y:7050, w:200, angle:-STD.angle, thickness:STD.thickness},
+      // Recompression bouncePad pair at y:7050 — staggered to prevent V-trap
+      {type:'bouncePad', x:0, y:7050, w:180, angle:STD.angle, thickness:STD.thickness},
+      {type:'bouncePad', x:540, y:7070, w:180, angle:-STD.angle, thickness:STD.thickness},
       // Exit peg
       {type:'peg', x:270, y:7160, r:14, friction:0.05, restitution:0.65}
     ]
@@ -308,9 +308,9 @@ const SECTIONS = [
   {
     id: 'finish', yStart: 7250, yEnd: 8800,
     obstacles: [
-      // 2 bouncePads as initial guides
-      {type:'bouncePad', x:0, y:7320, w:240, angle:STD.angle, thickness:STD.thickness},
-      {type:'bouncePad', x:540, y:7450, w:240, angle:-STD.angle, thickness:STD.thickness},
+      // 2 bouncePads as initial guides — already staggered vertically
+      {type:'bouncePad', x:0, y:7320, w:220, angle:STD.angle, thickness:STD.thickness},
+      {type:'bouncePad', x:540, y:7450, w:220, angle:-STD.angle, thickness:STD.thickness},
       // Pendulum at y:7600 guarding chute entry
       {type:'pendulum', x:270, y:7580, length:100, initSpin:0.04},
       // Bumpers around pendulum
@@ -393,7 +393,7 @@ function obstacleFactory(spec, courseScale){
       const ssW = (spec.w || 280) * cs;
       const ssX = sx(spec.x);
       result.body = Bodies.rectangle(ssX, spec.y, ssW, 22, {
-        isStatic:false, restitution:0.2, friction:0.35, frictionAir:0.05,
+        isStatic:false, restitution:0.3, friction:0.15, frictionAir:0.05,
         density:0.01, label:'seesaw'
       });
       result.body._w = ssW;
@@ -719,19 +719,14 @@ let finishFlashes = []; // {text, color, t} for position flash
 const DNF_CUTOFF = 25000; // 25s after first finish
 let trailHistory = [];
 // Drama state
-let lastLeader = -1, leadChangeT = 0;
+let lastLeader = -1, leadChangeT = 0, leaderSinceT = 0;
 let checkpointsPassed = [];
-// Anti-stuck system — progressive 3-stage recovery
-let stuckTrackers = []; // {lastY, lastProgressT, stage2Until}
-
 function initPlayerArrays(){
   trailHistory = [];
   checkpointsPassed = [];
-  stuckTrackers = [];
   for(let i=0; i<CFG.playerCount; i++){
     trailHistory.push([]);
     checkpointsPassed.push([false,false,false]);
-    stuckTrackers.push({lastY:0, lastProgressT:0, stage2Until:0});
   }
 }
 initPlayerArrays();
@@ -751,7 +746,7 @@ function restartRace(){
   finishedSet = new Set();
   finishFlashes = [];
   initPlayerArrays();
-  lastLeader = -1; leadChangeT = 0;
+  lastLeader = -1; leadChangeT = 0; leaderSinceT = 0;
   checkpointFlash = {active:false, t:0, color:'', pct:0};
   dangerWarnings = [];
   slowMoActive = false; slowMoEnd = 0; slowMoScale = 1;
@@ -1845,46 +1840,10 @@ function loop(now){
       }
     }
 
-    // Anti-stuck system — progressive 3-stage recovery
+    // Gentle downward nudge for nearly-stopped balls
     for(let i=0; i<N; i++){
       const tb = tokenBodies[i];
-      const st = stuckTrackers[i];
-      const curY = tb.position.y;
-
-      // Initialize on first frame
-      if(st.lastProgressT === 0){ st.lastY = curY; st.lastProgressT = now; }
-
-      // Check if ball made 30px progress — reset timer
-      if(curY - st.lastY >= 30){
-        st.lastY = curY;
-        st.lastProgressT = now;
-      }
-
-      const stuckDuration = (now - st.lastProgressT) / 1000;
-
-      // Temporarily reduce friction during stage 2
-      if(st.stage2Until > 0 && now > st.stage2Until){
-        tb.friction = 0.12;
-        st.stage2Until = 0;
-      }
-
-      if(stuckDuration >= 6){
-        // STAGE 3 — teleport 50px down, set velocity
-        console.log(`[STUCK] Player ${i} STAGE 3 — teleport (stuck ${stuckDuration.toFixed(1)}s)`);
-        Body.setPosition(tb, {x:tb.position.x, y:curY + 50});
-        Body.setVelocity(tb, {x:(Math.random()-0.5)*4, y:3});
-        st.lastY = curY + 50;
-        st.lastProgressT = now;
-      } else if(stuckDuration >= 4){
-        // STAGE 2 — low friction + impulse (once per stuck episode)
-        if(st.stage2Until === 0){
-          console.log(`[STUCK] Player ${i} STAGE 2 — friction drop + impulse (stuck ${stuckDuration.toFixed(1)}s)`);
-          tb.friction = 0.01;
-          st.stage2Until = now + 1000;
-          Body.setVelocity(tb, {x:(Math.random()-0.5)*6, y:-6});
-        }
-      } else if(stuckDuration >= 2){
-        // STAGE 1 — gentle downward nudge
+      if(tb.velocity.y < 1){
         Body.applyForce(tb, tb.position, {x:0, y:0.004});
       }
     }
@@ -1986,13 +1945,16 @@ function loop(now){
       if(rActive) setTimeout(()=>stopRec(), 2000);
     }
 
-    // Lead change detection
+    // Lead change detection — only flash after 5+ seconds of held lead
     let curLeader = 0;
     for(let i=1; i<N; i++){
       if(tokenBodies[i].position.y > tokenBodies[curLeader].position.y) curLeader = i;
     }
-    if(lastLeader >= 0 && curLeader !== lastLeader){
-      leadChangeT = performance.now();
+    if(curLeader !== lastLeader){
+      if(lastLeader >= 0 && leaderSinceT > 0 && (now - leaderSinceT) >= 5000){
+        leadChangeT = performance.now();
+      }
+      leaderSinceT = now;
     }
     lastLeader = curLeader;
 
