@@ -132,7 +132,7 @@ const LEVEL_H = 9000;
 const BALL_RADIUS = 26;
 
 // Standard obstacle params
-const STD = {friction:0.06, restitution:0.22, thickness:22, angle:0.611};
+const STD = {friction:0.10, restitution:0.22, thickness:22, angle:0.611};
 
 const SECTIONS = [
   // ══ SECTION 1: Hook — deflectors + bumper diamond + bouncePad catch ══
@@ -157,13 +157,15 @@ const SECTIONS = [
     id: 'halfpipe', yStart: 900, yEnd: 1700,
     obstacles: [
       // Left bouncePad angling right
-      {type:'bouncePad', x:0, y:950, w:280, angle:STD.angle, thickness:STD.thickness},
+      {type:'bouncePad', x:0, y:950, w:320, angle:STD.angle, thickness:STD.thickness},
       // Bumper to fill air at y:1050
       {type:'bumper', x:400, y:1050, radius:20, color:'#ff6600'},
       // Right bouncePad angling left
-      {type:'bouncePad', x:540, y:1150, w:280, angle:-STD.angle, thickness:STD.thickness},
-      // 3 bumpers scattered y:1300-1500 — no gap > 180px
-      {type:'bumper', x:160, y:1300, radius:22, color:'#ff8800'},
+      {type:'bouncePad', x:540, y:1150, w:320, angle:-STD.angle, thickness:STD.thickness},
+      // Conveyor strip (leftward) at y:1300 — carries balls sideways
+      {type:'conveyorStrip', x:270, y:1300, w:400, dir:-1},
+      // 3 bumpers scattered y:1350-1500 — no gap > 180px
+      {type:'bumper', x:160, y:1350, radius:22, color:'#ff8800'},
       {type:'bumper', x:380, y:1400, radius:22, color:'#ff6600'},
       {type:'bumper', x:270, y:1500, radius:24, color:'#ff4400'},
       // Exit peg pair
@@ -215,17 +217,19 @@ const SECTIONS = [
     id: 'scurve', yStart: 3400, yEnd: 4200,
     obstacles: [
       // Left bouncePad at y:3450
-      {type:'bouncePad', x:0, y:3450, w:260, angle:STD.angle, thickness:STD.thickness},
+      {type:'bouncePad', x:0, y:3450, w:320, angle:STD.angle, thickness:STD.thickness},
       // 2 bumpers between first and second pad
       {type:'bumper', x:420, y:3540, radius:20, color:'#ff6600'},
       {type:'bumper', x:350, y:3600, radius:18, color:'#ff8800'},
-      // Right bouncePad at y:3650
-      {type:'bouncePad', x:540, y:3650, w:260, angle:-STD.angle, thickness:STD.thickness},
+      // Conveyor strip (rightward) at y:3650 — lateral travel between pads
+      {type:'conveyorStrip', x:270, y:3650, w:400, dir:1},
+      // Right bouncePad at y:3700
+      {type:'bouncePad', x:540, y:3700, w:320, angle:-STD.angle, thickness:STD.thickness},
       // 2 bumpers between second and third pad
       {type:'bumper', x:120, y:3740, radius:20, color:'#ff6600'},
       {type:'bumper', x:190, y:3800, radius:18, color:'#ff8800'},
       // Left bouncePad at y:3850
-      {type:'bouncePad', x:0, y:3850, w:260, angle:STD.angle, thickness:STD.thickness},
+      {type:'bouncePad', x:0, y:3850, w:320, angle:STD.angle, thickness:STD.thickness},
       // Exit bumper + peg
       {type:'bumper', x:400, y:3980, radius:20, color:'#ff6600'},
       {type:'peg', x:270, y:4120, r:14, friction:0.05, restitution:0.65}
@@ -281,22 +285,22 @@ const SECTIONS = [
     id: 'tension', yStart: 6150, yEnd: 7200,
     obstacles: [
       // BouncePad 1 left
-      {type:'bouncePad', x:0, y:6200, w:260, angle:STD.angle, thickness:STD.thickness},
+      {type:'bouncePad', x:0, y:6200, w:320, angle:STD.angle, thickness:STD.thickness},
       // 2 bumpers
       {type:'bumper', x:420, y:6310, radius:20, color:'#ff6600'},
       {type:'bumper', x:350, y:6380, radius:18, color:'#ff8800'},
       // BouncePad 2 right
-      {type:'bouncePad', x:540, y:6440, w:260, angle:-STD.angle, thickness:STD.thickness},
+      {type:'bouncePad', x:540, y:6440, w:320, angle:-STD.angle, thickness:STD.thickness},
       // 2 bumpers
       {type:'bumper', x:120, y:6550, radius:20, color:'#ff6600'},
       {type:'bumper', x:190, y:6620, radius:18, color:'#ff8800'},
       // BouncePad 3 left
-      {type:'bouncePad', x:0, y:6680, w:260, angle:STD.angle, thickness:STD.thickness},
+      {type:'bouncePad', x:0, y:6680, w:320, angle:STD.angle, thickness:STD.thickness},
       // 2 bumpers
       {type:'bumper', x:420, y:6790, radius:20, color:'#ff6600'},
       {type:'bumper', x:350, y:6860, radius:18, color:'#ff4400'},
       // BouncePad 4 right
-      {type:'bouncePad', x:540, y:6920, w:260, angle:-STD.angle, thickness:STD.thickness},
+      {type:'bouncePad', x:540, y:6920, w:320, angle:-STD.angle, thickness:STD.thickness},
       // Recompression bouncePad pair at y:7050 — staggered to prevent V-trap
       {type:'bouncePad', x:0, y:7050, w:180, angle:STD.angle, thickness:STD.thickness},
       {type:'bouncePad', x:540, y:7070, w:180, angle:-STD.angle, thickness:STD.thickness},
@@ -425,7 +429,7 @@ function obstacleFactory(spec, courseScale){
       const br = spec.radius || 20;
       const bColor = spec.color || '#ff6600';
       result.body = Bodies.circle(sx(spec.x), spec.y, br, {
-        isStatic:true, restitution:0.85, friction:0.01, label:'bumper', _bumperR:br, _bumperColor:bColor
+        isStatic:true, restitution:0.70, friction:0.01, label:'bumper', _bumperR:br, _bumperColor:bColor
       });
       break;
     }
@@ -435,7 +439,7 @@ function obstacleFactory(spec, courseScale){
       const baseX = sx(spec.x);
       result.body = Bodies.rectangle(
         baseX + (spec.angle>0?scaledW/2:-scaledW/2), spec.y, scaledW, slopeT,
-        {isStatic:true, restitution:0.7, friction:0.02, angle:spec.angle, label:'bouncePad'}
+        {isStatic:true, restitution:0.55, friction:0.02, angle:spec.angle, label:'bouncePad'}
       );
       result.body._w = scaledW;
       result.body._h = slopeT;
@@ -608,8 +612,8 @@ let engine, world, tokenBodies=[], obsBodies=[], paddleBodies=[], oscGateBodies=
 let trapdoorBodies=[], pendulumBodies=[], conveyorBodies=[], jawGateBodies=[];
 
 function createPhysics(){
-  // Gravity scales with player count
-  const grav = CFG.playerCount <= 2 ? 0.7 : CFG.playerCount <= 4 ? 0.8 : 0.9;
+  // Gravity scales with player count — lower = more air time & surface rolling
+  const grav = CFG.playerCount <= 2 ? 0.55 : CFG.playerCount <= 4 ? 0.65 : 0.75;
   if(!engine){
     engine = Engine.create({gravity:{x:0, y:grav}});
   } else {
@@ -631,7 +635,7 @@ function createPhysics(){
   for(let i=0; i<n; i++){
     const x = (W/(n+1))*(i+1);
     const tb = Bodies.circle(x, 80, BALL_RADIUS, {
-      restitution:0.35, friction:0.12, frictionAir:0.022, density:0.005, label:'p'+i,
+      restitution:0.22, friction:0.18, frictionAir:0.022, density:0.005, label:'p'+i,
       collisionFilter:{group:-(i+1)}
     });
     tokenBodies.push(tb);
@@ -1830,7 +1834,7 @@ function loop(now){
     }
 
     // Max speed cap — keep action readable
-    const MAX_SPEED = 9;
+    const MAX_SPEED = 7;
     for(let i=0; i<N; i++){
       const tb = tokenBodies[i];
       const spd = Math.sqrt(tb.velocity.x*tb.velocity.x + tb.velocity.y*tb.velocity.y);
