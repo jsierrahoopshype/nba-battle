@@ -1798,20 +1798,25 @@ function loop(now){
       }
     });
 
-    // JawGate animation — close/open on timer
+    // JawGate animation — close/open on timer, disable collision when open
     jawGateBodies.forEach(jaw => {
       const t = performance.now()/1000;
       const cycle = (t % jaw._jawPeriod) / jaw._jawPeriod; // 0→1
       // 0-0.4: closed (blocking), 0.4-0.6: opening, 0.6-1.0: open
       let angle;
+      let isOpen = false;
       if(cycle < 0.4){
         angle = jaw._jawSide * 0.5; // closed angle
       } else if(cycle < 0.6){
         const openT = (cycle - 0.4) / 0.2;
         angle = jaw._jawSide * 0.5 * (1 - openT);
+        isOpen = true; // opening phase — disable collision
       } else {
-        angle = 0; // open
+        angle = 0; // fully open
+        isOpen = true;
       }
+      // Toggle collision: mask=0 when open so balls pass through cleanly
+      jaw.collisionFilter.mask = isOpen ? 0 : 0xFFFFFFFF;
       Body.setAngle(jaw, angle);
       // Reposition to pivot from base edge
       const pivotX = jaw._jawBaseX;
@@ -1926,14 +1931,6 @@ function loop(now){
       if(spd > MAX_SPEED){
         const scale = MAX_SPEED / spd;
         Body.setVelocity(tb, {x:tb.velocity.x*scale, y:tb.velocity.y*scale});
-      }
-    }
-
-    // Strong downward nudge for slow balls — prevents stalling
-    for(let i=0; i<N; i++){
-      const tb = tokenBodies[i];
-      if(tb.velocity.y < 3){
-        Body.applyForce(tb, tb.position, {x:0, y:0.012});
       }
     }
 
