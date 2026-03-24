@@ -133,125 +133,230 @@ const BALL_RADIUS = 26;
 const DANGER_ZONE_Y = 6000;
 
 // ═══ Physics material profiles ═══
-const MAT_BALL    = {restitution:0.38, friction:0.14, frictionAir:0.018, density:0.005};
-const MAT_REDIR   = {restitution:0.25, friction:0.08};  // ramps, bouncePads, jawGate, pendulum
-const MAT_POP     = {restitution:0.78, friction:0.01};  // bumpers, pegs
+const MAT_BALL    = {restitution:0.45, friction:0.08, frictionAir:0.018, density:0.005};
+const MAT_REDIR   = {restitution:0.30, friction:0.08};  // ramps, bouncePads, jawGate, pendulum
+const MAT_POP     = {restitution:0.75, friction:0.01};  // bumpers, pegs
 const MAT_CONTROL = {restitution:0.12, friction:0.35};  // conveyors, tiltPlatform, trapdoor, seesaw
 
 // Standard obstacle params
 const STD = {friction:MAT_REDIR.friction, restitution:MAT_REDIR.restitution, thickness:22, angle:0.611};
 
 const SECTIONS = [
-  // ══ SECTION 1: Opener — center-intercepting zigzag ══
+  // ══ SECTION 1: Peg Opener — dense pachinko peg field ══
   {
-    id: 'opener', yStart: 150, yEnd: 900,
+    id: 'peg_opener', yStart: 150, yEnd: 950,
     obstacles: [
-      {type:'bouncePad', x:220, y:250, w:240, angle:-0.61, thickness:STD.thickness},
-      {type:'bumper', x:270, y:350, radius:16, color:'#ff6600'},
-      {type:'bouncePad', x:320, y:450, w:240, angle:0.61, thickness:STD.thickness},
-      {type:'bumper', x:200, y:600, radius:16, color:'#ff8800'},
-      {type:'bumper', x:340, y:700, radius:16, color:'#ff6600'},
-      {type:'bouncePad', x:220, y:800, w:240, angle:-0.61, thickness:STD.thickness}
+      // Row 1 y:220
+      {type:'peg', x:150, y:220, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:230, y:220, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:310, y:220, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:390, y:220, r:14, friction:0.01, restitution:0.75},
+      // Row 2 y:310 (offset)
+      {type:'peg', x:190, y:310, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:270, y:310, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:350, y:310, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:430, y:310, r:14, friction:0.01, restitution:0.75},
+      // Row 3 y:400
+      {type:'peg', x:150, y:400, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:230, y:400, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:310, y:400, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:390, y:400, r:14, friction:0.01, restitution:0.75},
+      // Row 4 y:490 (offset)
+      {type:'peg', x:190, y:490, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:270, y:490, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:350, y:490, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:430, y:490, r:14, friction:0.01, restitution:0.75},
+      // Row 5 y:580
+      {type:'peg', x:150, y:580, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:230, y:580, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:310, y:580, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:390, y:580, r:14, friction:0.01, restitution:0.75},
+      // Wide bouncePad exits
+      {type:'bouncePad', x:180, y:750, w:220, angle:-0.52, friction:0.08, restitution:0.30, thickness:22},
+      {type:'bouncePad', x:360, y:850, w:220, angle:0.52, friction:0.08, restitution:0.30, thickness:22}
     ]
   },
-  // ══ SECTION 2: Zigzag — alternating pads + bumpers ══
+  // ══ SECTION 2: Marble Run 1 — long curved ramps ══
   {
-    id: 'zigzag', yStart: 950, yEnd: 1800,
+    id: 'marble_run1', yStart: 1000, yEnd: 1900,
     obstacles: [
-      {type:'bouncePad', x:300, y:1000, w:240, angle:0.61, thickness:STD.thickness},
-      {type:'bumper', x:180, y:1100, radius:16, color:'#ff8800'},
-      {type:'bouncePad', x:220, y:1200, w:240, angle:-0.61, thickness:STD.thickness},
-      {type:'bumper', x:350, y:1300, radius:16, color:'#ff6600'},
-      {type:'bouncePad', x:310, y:1400, w:240, angle:0.61, thickness:STD.thickness},
-      {type:'bumper', x:240, y:1500, radius:16, color:'#ff8800'},
-      {type:'bouncePad', x:230, y:1650, w:240, angle:-0.61, thickness:STD.thickness}
+      // Long left ramp (angles ball right)
+      {type:'bouncePad', x:270, y:1050, w:320, angle:-0.52, friction:0.08, restitution:0.30, thickness:22},
+      // Long right ramp (angles ball left)
+      {type:'bouncePad', x:270, y:1250, w:320, angle:0.52, friction:0.08, restitution:0.30, thickness:22},
+      // Long left ramp
+      {type:'bouncePad', x:270, y:1450, w:320, angle:-0.52, friction:0.08, restitution:0.30, thickness:22},
+      // 3 guide pegs at y:1700
+      {type:'peg', x:200, y:1700, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:270, y:1700, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:340, y:1700, r:14, friction:0.01, restitution:0.75},
+      // Wide funnel exit
+      {type:'bouncePad', x:200, y:1800, w:200, angle:-0.52, friction:0.08, restitution:0.30, thickness:22},
+      {type:'bouncePad', x:340, y:1800, w:200, angle:0.52, friction:0.08, restitution:0.30, thickness:22}
     ]
   },
-  // ══ SECTION 3: Sweeper — bumper triangle + sweeper + exit pads ══
+  // ══ SECTION 3: Sweeper Drama — moving obstacle set piece ══
   {
-    id: 'sweeper1', yStart: 1850, yEnd: 2700,
+    id: 'sweeper_drama', yStart: 1950, yEnd: 2850,
     obstacles: [
-      {type:'bumper', x:200, y:1900, radius:18, color:'#ff6600'},
-      {type:'bumper', x:340, y:1950, radius:18, color:'#ff8800'},
-      {type:'bumper', x:270, y:2050, radius:18, color:'#ff4400'},
-      {type:'sweeper', x:270, y:2300, w:180, speed:0.012},
-      {type:'bouncePad', x:200, y:2500, w:240, angle:-0.61, thickness:STD.thickness},
-      {type:'bouncePad', x:340, y:2600, w:240, angle:0.61, thickness:STD.thickness}
+      // 3 pegs above sweeper
+      {type:'peg', x:180, y:2000, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:270, y:2000, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:360, y:2000, r:14, friction:0.01, restitution:0.75},
+      // SWEEPER
+      {type:'sweeper', x:270, y:2250, w:200, speed:0.010},
+      // 3 pegs below sweeper
+      {type:'peg', x:180, y:2500, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:270, y:2500, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:360, y:2500, r:14, friction:0.01, restitution:0.75},
+      // Exit bouncePads
+      {type:'bouncePad', x:200, y:2700, w:220, angle:-0.52, friction:0.08, restitution:0.30, thickness:22},
+      {type:'bouncePad', x:340, y:2750, w:220, angle:0.52, friction:0.08, restitution:0.30, thickness:22}
     ]
   },
-  // ══ SECTION 4: Spinner — bumpers + spinner + exit pads ══
+  // ══ SECTION 4: Peg Chaos — dense pachinko field ══
   {
-    id: 'spinner1', yStart: 2750, yEnd: 3600,
+    id: 'peg_chaos', yStart: 2900, yEnd: 3800,
     obstacles: [
-      {type:'bumper', x:160, y:2800, radius:18, color:'#ff6600'},
-      {type:'bumper', x:270, y:2850, radius:18, color:'#ff8800'},
-      {type:'bumper', x:380, y:2800, radius:18, color:'#ff6600'},
-      {type:'spinner', x:270, y:3100, speed:0.025},
-      {type:'bouncePad', x:210, y:3400, w:240, angle:-0.61, thickness:STD.thickness},
-      {type:'bouncePad', x:330, y:3500, w:240, angle:0.61, thickness:STD.thickness}
+      // Row 1 y:2950
+      {type:'peg', x:150, y:2950, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:230, y:2950, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:310, y:2950, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:390, y:2950, r:14, friction:0.01, restitution:0.75},
+      // Row 2 y:3060 (offset)
+      {type:'peg', x:110, y:3060, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:190, y:3060, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:270, y:3060, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:350, y:3060, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:430, y:3060, r:14, friction:0.01, restitution:0.75},
+      // Row 3 y:3170
+      {type:'peg', x:150, y:3170, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:230, y:3170, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:310, y:3170, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:390, y:3170, r:14, friction:0.01, restitution:0.75},
+      // Row 4 y:3280 (offset)
+      {type:'peg', x:190, y:3280, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:270, y:3280, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:350, y:3280, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:430, y:3280, r:14, friction:0.01, restitution:0.75},
+      // Row 5 y:3390
+      {type:'peg', x:150, y:3390, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:230, y:3390, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:310, y:3390, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:390, y:3390, r:14, friction:0.01, restitution:0.75},
+      // Row 6 y:3500 (offset)
+      {type:'peg', x:190, y:3500, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:270, y:3500, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:350, y:3500, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:430, y:3500, r:14, friction:0.01, restitution:0.75},
+      // Exit bouncePads
+      {type:'bouncePad', x:200, y:3650, w:220, angle:-0.52, friction:0.08, restitution:0.30, thickness:22},
+      {type:'bouncePad', x:340, y:3750, w:220, angle:0.52, friction:0.08, restitution:0.30, thickness:22}
     ]
   },
-  // ══ SECTION 5: JawGate — entry pads + gate + bumpers + exit pad ══
+  // ══ SECTION 5: Pendulum Gauntlet — pendulum guards center ══
   {
-    id: 'jawgate1', yStart: 3650, yEnd: 4500,
+    id: 'pendulum_gauntlet', yStart: 3850, yEnd: 4750,
     obstacles: [
-      {type:'bouncePad', x:230, y:3700, w:240, angle:-0.61, thickness:STD.thickness},
-      {type:'bouncePad', x:310, y:3900, w:240, angle:0.61, thickness:STD.thickness},
-      {type:'jawGate', x:270, y:4100, armLen:100, period:2.5},
-      {type:'bumper', x:180, y:4250, radius:16, color:'#ff8800'},
-      {type:'bumper', x:270, y:4280, radius:16, color:'#ff4400'},
-      {type:'bumper', x:360, y:4250, radius:16, color:'#ff8800'},
-      {type:'bouncePad', x:220, y:4400, w:240, angle:-0.61, thickness:STD.thickness}
+      // 4 pegs above pendulum
+      {type:'peg', x:160, y:3900, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:230, y:3900, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:310, y:3900, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:380, y:3900, r:14, friction:0.01, restitution:0.75},
+      // PENDULUM
+      {type:'pendulum', x:270, y:4150, length:150, initSpin:0.04},
+      // 4 pegs below pendulum
+      {type:'peg', x:160, y:4400, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:230, y:4400, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:310, y:4400, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:380, y:4400, r:14, friction:0.01, restitution:0.75},
+      // Exit bouncePads
+      {type:'bouncePad', x:200, y:4600, w:220, angle:-0.52, friction:0.08, restitution:0.30, thickness:22},
+      {type:'bouncePad', x:340, y:4650, w:220, angle:0.52, friction:0.08, restitution:0.30, thickness:22}
     ]
   },
-  // ══ SECTION 6: Double Sweeper — counter-rotating sweepers + bumpers ══
+  // ══ SECTION 6: Marble Run 2 — longer S-curve rolls ══
   {
-    id: 'double_sweeper', yStart: 4550, yEnd: 5500,
+    id: 'marble_run2', yStart: 4800, yEnd: 5700,
     obstacles: [
-      {type:'sweeper', x:270, y:4700, w:160, speed:0.012},
-      {type:'bumper', x:180, y:4950, radius:16, color:'#ff8800'},
-      {type:'bumper', x:360, y:4950, radius:16, color:'#ff8800'},
-      {type:'sweeper', x:270, y:5200, w:160, speed:-0.012},
-      {type:'bumper', x:270, y:5400, radius:16, color:'#ff6600'}
+      // Long ramp left
+      {type:'bouncePad', x:270, y:4850, w:340, angle:-0.52, friction:0.08, restitution:0.30, thickness:22},
+      // 3 guide pegs
+      {type:'peg', x:200, y:5100, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:270, y:5100, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:340, y:5100, r:14, friction:0.01, restitution:0.75},
+      // Long ramp right
+      {type:'bouncePad', x:270, y:5250, w:340, angle:0.52, friction:0.08, restitution:0.30, thickness:22},
+      // 3 guide pegs
+      {type:'peg', x:200, y:5500, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:270, y:5500, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:340, y:5500, r:14, friction:0.01, restitution:0.75},
+      // Long ramp left
+      {type:'bouncePad', x:270, y:5600, w:300, angle:-0.52, friction:0.08, restitution:0.30, thickness:22}
     ]
   },
-  // ══ SECTION 7: Pendulum — bumpers + pendulum + jawGate ══
+  // ══ SECTION 7: JawGate Betrayal — gate chaos ══
   {
-    id: 'pendulum', yStart: 5550, yEnd: 6500,
+    id: 'jawgate_betrayal', yStart: 5750, yEnd: 6700,
     obstacles: [
-      {type:'bumper', x:180, y:5600, radius:18, color:'#ff6600'},
-      {type:'bumper', x:360, y:5600, radius:18, color:'#ff6600'},
-      {type:'pendulum', x:270, y:5900, length:160, initSpin:0.04},
-      {type:'bumper', x:200, y:6100, radius:16, color:'#ff8800'},
-      {type:'bumper', x:340, y:6100, radius:16, color:'#ff8800'},
-      {type:'jawGate', x:270, y:6300, armLen:110, period:2}
+      // 4 pegs above gate
+      {type:'peg', x:160, y:5800, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:230, y:5800, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:310, y:5800, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:380, y:5800, r:14, friction:0.01, restitution:0.75},
+      // JAWGATE
+      {type:'jawGate', x:270, y:6000, armLen:100, period:2.5},
+      // 5 staggered pegs below gate
+      {type:'peg', x:190, y:6200, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:350, y:6200, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:150, y:6300, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:270, y:6300, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:390, y:6400, r:14, friction:0.01, restitution:0.75},
+      // Exit bouncePads
+      {type:'bouncePad', x:200, y:6600, w:220, angle:-0.52, friction:0.08, restitution:0.30, thickness:22},
+      {type:'bouncePad', x:340, y:6650, w:220, angle:0.52, friction:0.08, restitution:0.30, thickness:22}
     ]
   },
-  // ══ SECTION 8: Fast Spinner — spinner + bumpers + exit pads ══
+  // ══ SECTION 8: Spinner Danger — spinner + dense pegs ══
   {
-    id: 'spinner2', yStart: 6550, yEnd: 7400,
+    id: 'spinner_danger', yStart: 6750, yEnd: 7700,
     obstacles: [
-      {type:'spinner', x:270, y:6700, speed:0.035},
-      {type:'bumper', x:160, y:6950, radius:16, color:'#ff8800'},
-      {type:'bumper', x:380, y:6950, radius:16, color:'#ff8800'},
-      {type:'bumper', x:270, y:7050, radius:16, color:'#ff4400'},
-      {type:'bouncePad', x:210, y:7200, w:240, angle:-0.61, thickness:STD.thickness},
-      {type:'bouncePad', x:330, y:7300, w:240, angle:0.61, thickness:STD.thickness}
+      // 3 pegs above spinner
+      {type:'peg', x:180, y:6800, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:270, y:6800, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:360, y:6800, r:14, friction:0.01, restitution:0.75},
+      // SPINNER
+      {type:'spinner', x:270, y:7000, speed:0.030},
+      // 6 staggered pegs below spinner
+      {type:'peg', x:150, y:7200, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:270, y:7200, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:390, y:7200, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:190, y:7350, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:310, y:7350, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:430, y:7500, r:14, friction:0.01, restitution:0.75},
+      // Exit bouncePads
+      {type:'bouncePad', x:200, y:7600, w:220, angle:-0.52, friction:0.08, restitution:0.30, thickness:22},
+      {type:'bouncePad', x:340, y:7650, w:220, angle:0.52, friction:0.08, restitution:0.30, thickness:22}
     ]
   },
-  // ══ SECTION 9: Finish — pendulum + jawGate + chute ══
+  // ══ SECTION 9: Finish — pendulum + pegs + chute ══
   {
-    id: 'finish', yStart: 7450, yEnd: 8800,
+    id: 'finish', yStart: 7750, yEnd: 8800,
     obstacles: [
-      {type:'pendulum', x:270, y:7600, length:140, initSpin:0.05},
-      {type:'bumper', x:180, y:7800, radius:16, color:'#ff4400'},
-      {type:'bumper', x:360, y:7800, radius:16, color:'#ff4400'},
-      {type:'jawGate', x:270, y:8000, armLen:110, period:1.8},
-      {type:'bumper', x:220, y:8150, radius:14, color:'#ff2200'},
-      {type:'bumper', x:320, y:8150, radius:14, color:'#ff2200'},
-      // Finish chute walls — 140px wide (200 to 340)
-      {type:'floor', x:200, y:8300, w:60, h:400},
-      {type:'floor', x:340, y:8300, w:60, h:400}
+      // 4 pegs at entry
+      {type:'peg', x:160, y:7800, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:230, y:7800, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:310, y:7800, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:380, y:7800, r:14, friction:0.01, restitution:0.75},
+      // PENDULUM
+      {type:'pendulum', x:270, y:8000, length:130, initSpin:0.05},
+      // 3 guide pegs
+      {type:'peg', x:190, y:8200, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:270, y:8200, r:14, friction:0.01, restitution:0.75},
+      {type:'peg', x:350, y:8200, r:14, friction:0.01, restitution:0.75},
+      // Finish chute walls — 160px wide (190 to 350)
+      {type:'floor', x:190, y:8400, w:80, h:400},
+      {type:'floor', x:350, y:8400, w:80, h:400}
     ]
   }
 ];
@@ -600,7 +705,7 @@ let tiltPlatformBodies=[], baitFunnelBodies=[];
 
 function createPhysics(){
   // Gravity scales with player count — higher = faster falling
-  const grav = CFG.playerCount <= 2 ? 1.1 : CFG.playerCount <= 4 ? 1.2 : 1.3;
+  const grav = CFG.playerCount <= 2 ? 0.9 : CFG.playerCount <= 4 ? 1.0 : 1.1;
   if(!engine){
     engine = Engine.create({gravity:{x:0, y:grav}});
   } else {
