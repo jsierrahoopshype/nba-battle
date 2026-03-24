@@ -2046,44 +2046,36 @@ function loop(now){
       }
     }
 
-    // Camera — weighted focus, never follows trailers upward
-    let targetCam;
-    if(phase === 'finishing'){
-      // Follow last unfinished ball, or hold at finish
-      let bestUnfinished = -Infinity;
-      let hasUnfinished = false;
-      for(let i=0; i<N; i++){
-        if(!finishedSet.has(i)){
-          const py = tokenBodies[i].position.y;
-          if(py > bestUnfinished) bestUnfinished = py;
-          hasUnfinished = true;
-        }
-      }
-      if(!hasUnfinished){
-        targetCam = Math.max(0, FINISH_Y - 200);
-      } else {
-        targetCam = Math.max(0, bestUnfinished - H * 0.35 + 200);
-      }
-    } else if(N <= 2){
-      // 2-ball mode: weighted 70% leader + 30% trailer
-      const ys = tokenBodies.map(b => b.position.y);
-      const leaderY = Math.max(...ys);
-      const trailerY = Math.min(...ys);
-      const focusY = leaderY * 0.70 + trailerY * 0.30;
-      targetCam = Math.max(0, focusY - H * 0.35 + 200);
+    // Camera — follow the leader, not the trailer
+    const sorted = tokenBodies
+      .map((b,i) => ({b, i, y: b.position.y}))
+      .filter(t => !finishedSet.has(t.i))
+      .sort((a,z) => z.y - a.y); // highest Y = furthest down = leader
+    let focusY;
+    const n = CFG.playerCount;
+    if(n <= 2) {
+      // 70% leader, 30% trailer
+      const leader = sorted[0]?.b.position.y ?? FINISH_Y/2;
+      const trailer = sorted[sorted.length-1]?.b.position.y ?? leader;
+      focusY = leader * 0.70 + trailer * 0.30;
+    } else if(n <= 4) {
+      // weighted center of top 2
+      const top = sorted.slice(0,2);
+      focusY = top.reduce((s,t)=>s+t.b.position.y,0)/top.length;
     } else {
-      // 3+ ball mode: weighted center of front 50% of balls
-      const ys = tokenBodies.map(b => b.position.y).sort((a, b) => b - a);
-      const frontCount = Math.max(1, Math.ceil(N / 2));
-      let sumY = 0;
-      for(let i = 0; i < frontCount; i++) sumY += ys[i];
-      const focusY = sumY / frontCount;
-      targetCam = Math.max(0, focusY - H * 0.35 + 200);
+      // weighted center of top 3
+      const top = sorted.slice(0,3);
+      focusY = top.reduce((s,t)=>s+t.b.position.y,0)/top.length;
     }
-
-    // Asymmetric lerp: fast downward, slow upward (don't chase trailers up)
-    const lerpSpeed = targetCam >= camY ? 0.08 : 0.08 * 0.20;
-    camY += (targetCam - camY) * lerpSpeed;
+    // Keep leader in upper 35% of viewport + 180px lookahead
+    const targetCamY = focusY - H * 0.35 + 180;
+    // Asymmetric lerp: fast down, slow up
+    if(targetCamY > camY) {
+      camY += (targetCamY - camY) * 0.09;
+    } else {
+      camY += (targetCamY - camY) * 0.018;
+    }
+    camY = Math.max(0, camY);
   }
 
   if(phase==='results' && now >= autoRestartT){
