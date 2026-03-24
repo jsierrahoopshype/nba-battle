@@ -142,183 +142,116 @@ const MAT_CONTROL = {restitution:0.12, friction:0.35};  // conveyors, tiltPlatfo
 const STD = {friction:MAT_REDIR.friction, restitution:MAT_REDIR.restitution, thickness:22, angle:0.611};
 
 const SECTIONS = [
-  // ══ SECTION 1: Opener — bouncePad guides + scattered bumpers ══
+  // ══ SECTION 1: Opener — center-intercepting zigzag ══
   {
     id: 'opener', yStart: 150, yEnd: 900,
     obstacles: [
-      // Left bouncePad angling balls toward center
-      {type:'bouncePad', x:80, y:200, w:300, angle:STD.angle, thickness:STD.thickness},
-      // Bumpers scattered below left pad (not at ramp exit)
-      {type:'bumper', x:400, y:350, radius:18, color:'#ff6600'},
-      // Right bouncePad offset 200px down to avoid V-pocket
-      {type:'bouncePad', x:460, y:400, w:300, angle:-STD.angle, thickness:STD.thickness},
-      // 3 more bumpers filling gaps below
-      {type:'bumper', x:150, y:520, radius:20, color:'#ff8800'},
-      {type:'bumper', x:340, y:620, radius:18, color:'#ff6600'},
-      {type:'bumper', x:260, y:750, radius:16, color:'#ff4400'},
-      {type:'bumper', x:430, y:830, radius:18, color:'#ff8800'}
+      {type:'bouncePad', x:220, y:250, w:240, angle:-0.61, thickness:STD.thickness},
+      {type:'bumper', x:270, y:350, radius:16, color:'#ff6600'},
+      {type:'bouncePad', x:320, y:450, w:240, angle:0.61, thickness:STD.thickness},
+      {type:'bumper', x:200, y:600, radius:16, color:'#ff8800'},
+      {type:'bumper', x:340, y:700, radius:16, color:'#ff6600'},
+      {type:'bouncePad', x:220, y:800, w:240, angle:-0.61, thickness:STD.thickness}
     ]
   },
-  // ══ SECTION 2: Zigzag — 5 alternating bouncePads ══
+  // ══ SECTION 2: Zigzag — alternating pads + bumpers ══
   {
     id: 'zigzag', yStart: 950, yEnd: 1800,
     obstacles: [
-      // Left pad 1
-      {type:'bouncePad', x:80, y:960, w:300, angle:STD.angle, thickness:STD.thickness},
-      // Bumper between pad 1 and 2
-      {type:'bumper', x:400, y:1050, radius:18, color:'#ff6600'},
-      // Right pad 2 (+160px)
-      {type:'bouncePad', x:460, y:1120, w:300, angle:-STD.angle, thickness:STD.thickness},
-      // Bumper between pad 2 and 3
-      {type:'bumper', x:160, y:1210, radius:18, color:'#ff8800'},
-      // Left pad 3 (+160px)
-      {type:'bouncePad', x:80, y:1280, w:300, angle:STD.angle, thickness:STD.thickness},
-      // Bumper between pad 3 and 4
-      {type:'bumper', x:420, y:1370, radius:20, color:'#ff6600'},
-      // Right pad 4 (+160px)
-      {type:'bouncePad', x:460, y:1440, w:300, angle:-STD.angle, thickness:STD.thickness},
-      // Left pad 5 (+160px)
-      {type:'bouncePad', x:80, y:1600, w:300, angle:STD.angle, thickness:STD.thickness}
+      {type:'bouncePad', x:300, y:1000, w:240, angle:0.61, thickness:STD.thickness},
+      {type:'bumper', x:180, y:1100, radius:16, color:'#ff8800'},
+      {type:'bouncePad', x:220, y:1200, w:240, angle:-0.61, thickness:STD.thickness},
+      {type:'bumper', x:350, y:1300, radius:16, color:'#ff6600'},
+      {type:'bouncePad', x:310, y:1400, w:240, angle:0.61, thickness:STD.thickness},
+      {type:'bumper', x:240, y:1500, radius:16, color:'#ff8800'},
+      {type:'bouncePad', x:230, y:1650, w:240, angle:-0.61, thickness:STD.thickness}
     ]
   },
-  // ══ SECTION 3: Sweeper1 — bumper triangle + sweeper + bouncePad exit ══
+  // ══ SECTION 3: Sweeper — bumper triangle + sweeper + exit pads ══
   {
     id: 'sweeper1', yStart: 1850, yEnd: 2700,
     obstacles: [
-      // Bumper triangle at y:1950
-      {type:'bumper', x:270, y:1900, radius:20, color:'#ff6600'},
-      {type:'bumper', x:140, y:2000, radius:18, color:'#ff8800'},
-      {type:'bumper', x:400, y:2000, radius:18, color:'#ff8800'},
-      // Sweeper at y:2200
-      {type:'sweeper', x:270, y:2200, w:180, speed:0.012},
-      // Bumper below sweeper
-      {type:'bumper', x:350, y:2350, radius:16, color:'#ff4400'},
-      // Left exit bouncePad
-      {type:'bouncePad', x:80, y:2500, w:280, angle:STD.angle, thickness:STD.thickness},
-      // Right exit bouncePad offset +200px
-      {type:'bouncePad', x:460, y:2700, w:280, angle:-STD.angle, thickness:STD.thickness},
-      // Bumper between exit pads
-      {type:'bumper', x:270, y:2600, radius:18, color:'#ff6600'}
+      {type:'bumper', x:200, y:1900, radius:18, color:'#ff6600'},
+      {type:'bumper', x:340, y:1950, radius:18, color:'#ff8800'},
+      {type:'bumper', x:270, y:2050, radius:18, color:'#ff4400'},
+      {type:'sweeper', x:270, y:2300, w:180, speed:0.012},
+      {type:'bouncePad', x:200, y:2500, w:240, angle:-0.61, thickness:STD.thickness},
+      {type:'bouncePad', x:340, y:2600, w:240, angle:0.61, thickness:STD.thickness}
     ]
   },
-  // ══ SECTION 4: Spinner1 — spinner + bumpers + bouncePad exit ══
+  // ══ SECTION 4: Spinner — bumpers + spinner + exit pads ══
   {
     id: 'spinner1', yStart: 2750, yEnd: 3600,
     obstacles: [
-      // Scattered bumpers above spinner
-      {type:'bumper', x:150, y:2800, radius:18, color:'#ff6600'},
-      {type:'bumper', x:400, y:2850, radius:20, color:'#ff8800'},
-      // Spinner at center y:3000
-      {type:'spinner', x:270, y:3000, speed:0.025},
-      // Bumpers flanking spinner
-      {type:'bumper', x:100, y:3100, radius:18, color:'#ff4400'},
-      {type:'bumper', x:440, y:3150, radius:16, color:'#ff4400'},
-      // Left exit bouncePad
-      {type:'bouncePad', x:80, y:3350, w:280, angle:STD.angle, thickness:STD.thickness},
-      // Right exit bouncePad offset +200px
-      {type:'bouncePad', x:460, y:3550, w:280, angle:-STD.angle, thickness:STD.thickness},
-      // Bumper between exit pads
-      {type:'bumper', x:300, y:3450, radius:18, color:'#ff6600'}
+      {type:'bumper', x:160, y:2800, radius:18, color:'#ff6600'},
+      {type:'bumper', x:270, y:2850, radius:18, color:'#ff8800'},
+      {type:'bumper', x:380, y:2800, radius:18, color:'#ff6600'},
+      {type:'spinner', x:270, y:3100, speed:0.025},
+      {type:'bouncePad', x:210, y:3400, w:240, angle:-0.61, thickness:STD.thickness},
+      {type:'bouncePad', x:330, y:3500, w:240, angle:0.61, thickness:STD.thickness}
     ]
   },
-  // ══ SECTION 5: JawGate1 — bouncePad entry + jawGate + bumpers + bouncePad exit ══
+  // ══ SECTION 5: JawGate — entry pads + gate + bumpers + exit pad ══
   {
     id: 'jawgate1', yStart: 3650, yEnd: 4500,
     obstacles: [
-      // Entry bouncePads
-      {type:'bouncePad', x:80, y:3700, w:280, angle:STD.angle, thickness:STD.thickness},
-      {type:'bouncePad', x:460, y:3900, w:280, angle:-STD.angle, thickness:STD.thickness},
-      // Bumper between entry pads
-      {type:'bumper', x:350, y:3800, radius:18, color:'#ff6600'},
-      // JawGate at y:3950
-      {type:'jawGate', x:270, y:3950, armLen:100, period:2.5},
-      // 5 bumpers below gate
-      {type:'bumper', x:140, y:4050, radius:18, color:'#ff8800'},
-      {type:'bumper', x:400, y:4050, radius:18, color:'#ff8800'},
-      {type:'bumper', x:270, y:4120, radius:20, color:'#ff4400'},
-      {type:'bumper', x:160, y:4200, radius:16, color:'#ff6600'},
-      {type:'bumper', x:380, y:4200, radius:16, color:'#ff6600'},
-      // Exit bouncePads
-      {type:'bouncePad', x:80, y:4300, w:280, angle:STD.angle, thickness:STD.thickness},
-      {type:'bouncePad', x:460, y:4500, w:280, angle:-STD.angle, thickness:STD.thickness}
+      {type:'bouncePad', x:230, y:3700, w:240, angle:-0.61, thickness:STD.thickness},
+      {type:'bouncePad', x:310, y:3900, w:240, angle:0.61, thickness:STD.thickness},
+      {type:'jawGate', x:270, y:4100, armLen:100, period:2.5},
+      {type:'bumper', x:180, y:4250, radius:16, color:'#ff8800'},
+      {type:'bumper', x:270, y:4280, radius:16, color:'#ff4400'},
+      {type:'bumper', x:360, y:4250, radius:16, color:'#ff8800'},
+      {type:'bouncePad', x:220, y:4400, w:240, angle:-0.61, thickness:STD.thickness}
     ]
   },
-  // ══ SECTION 6: Double Sweeper — 2 counter-rotating sweepers + bumpers ══
+  // ══ SECTION 6: Double Sweeper — counter-rotating sweepers + bumpers ══
   {
     id: 'double_sweeper', yStart: 4550, yEnd: 5500,
     obstacles: [
-      // Entry bumper
-      {type:'bumper', x:270, y:4600, radius:20, color:'#ff6600'},
-      // Sweeper 1 at y:4700 (clockwise)
-      {type:'sweeper', x:270, y:4700, w:180, speed:0.012},
-      // 4 bumpers between sweepers
-      {type:'bumper', x:140, y:4820, radius:18, color:'#ff8800'},
-      {type:'bumper', x:400, y:4870, radius:18, color:'#ff8800'},
-      {type:'bumper', x:270, y:4950, radius:20, color:'#ff4400'},
-      {type:'bumper', x:150, y:5030, radius:16, color:'#ff6600'},
-      // Sweeper 2 at y:5100 (counter-clockwise)
-      {type:'sweeper', x:270, y:5100, w:180, speed:-0.012},
-      // Exit bumpers
-      {type:'bumper', x:400, y:5250, radius:18, color:'#ff6600'},
-      {type:'bumper', x:160, y:5350, radius:18, color:'#ff8800'}
+      {type:'sweeper', x:270, y:4700, w:160, speed:0.012},
+      {type:'bumper', x:180, y:4950, radius:16, color:'#ff8800'},
+      {type:'bumper', x:360, y:4950, radius:16, color:'#ff8800'},
+      {type:'sweeper', x:270, y:5200, w:160, speed:-0.012},
+      {type:'bumper', x:270, y:5400, radius:16, color:'#ff6600'}
     ]
   },
-  // ══ SECTION 7: Pendulum — bumpers + pendulum + jawGate + bouncePad exit ══
+  // ══ SECTION 7: Pendulum — bumpers + pendulum + jawGate ══
   {
     id: 'pendulum', yStart: 5550, yEnd: 6500,
     obstacles: [
-      // 4 bumpers at y:5700
-      {type:'bumper', x:130, y:5650, radius:18, color:'#ff6600'},
-      {type:'bumper', x:300, y:5700, radius:20, color:'#ff8800'},
-      {type:'bumper', x:430, y:5650, radius:18, color:'#ff6600'},
-      {type:'bumper', x:270, y:5800, radius:16, color:'#ff4400'},
-      // Pendulum at y:5950 guarding center
-      {type:'pendulum', x:270, y:5950, length:160, initSpin:0.04},
-      // JawGate at y:6200 — fast 2s cycle
-      {type:'jawGate', x:270, y:6200, armLen:110, period:2},
-      // Exit bouncePads
-      {type:'bouncePad', x:80, y:6350, w:280, angle:STD.angle, thickness:STD.thickness},
-      {type:'bouncePad', x:460, y:6550, w:280, angle:-STD.angle, thickness:STD.thickness},
-      // Bumper between exit pads
-      {type:'bumper', x:350, y:6450, radius:18, color:'#ff6600'}
+      {type:'bumper', x:180, y:5600, radius:18, color:'#ff6600'},
+      {type:'bumper', x:360, y:5600, radius:18, color:'#ff6600'},
+      {type:'pendulum', x:270, y:5900, length:160, initSpin:0.04},
+      {type:'bumper', x:200, y:6100, radius:16, color:'#ff8800'},
+      {type:'bumper', x:340, y:6100, radius:16, color:'#ff8800'},
+      {type:'jawGate', x:270, y:6300, armLen:110, period:2}
     ]
   },
-  // ══ SECTION 8: Spinner2 — fast spinner + bumpers + bouncePad exit ══
+  // ══ SECTION 8: Fast Spinner — spinner + bumpers + exit pads ══
   {
     id: 'spinner2', yStart: 6550, yEnd: 7400,
     obstacles: [
-      // Fast spinner at y:6700
       {type:'spinner', x:270, y:6700, speed:0.035},
-      // 5 bumpers scattered below
-      {type:'bumper', x:120, y:6850, radius:18, color:'#ff8800'},
-      {type:'bumper', x:420, y:6850, radius:18, color:'#ff8800'},
-      {type:'bumper', x:270, y:6950, radius:20, color:'#ff4400'},
-      {type:'bumper', x:150, y:7060, radius:16, color:'#ff6600'},
-      {type:'bumper', x:400, y:7060, radius:16, color:'#ff6600'},
-      // Exit bouncePads at y:7200
-      {type:'bouncePad', x:80, y:7200, w:280, angle:STD.angle, thickness:STD.thickness},
-      {type:'bouncePad', x:460, y:7400, w:280, angle:-STD.angle, thickness:STD.thickness},
-      // Bumper between exit pads
-      {type:'bumper', x:300, y:7300, radius:18, color:'#ff6600'}
+      {type:'bumper', x:160, y:6950, radius:16, color:'#ff8800'},
+      {type:'bumper', x:380, y:6950, radius:16, color:'#ff8800'},
+      {type:'bumper', x:270, y:7050, radius:16, color:'#ff4400'},
+      {type:'bouncePad', x:210, y:7200, w:240, angle:-0.61, thickness:STD.thickness},
+      {type:'bouncePad', x:330, y:7300, w:240, angle:0.61, thickness:STD.thickness}
     ]
   },
-  // ══ SECTION 9: Finish — pendulum + jawGate + bumpers + narrow chute ══
+  // ══ SECTION 9: Finish — pendulum + jawGate + chute ══
   {
     id: 'finish', yStart: 7450, yEnd: 8800,
     obstacles: [
-      // Pendulum at y:7600
-      {type:'pendulum', x:270, y:7600, length:160, initSpin:0.05},
-      // Bumpers flanking pendulum exit
-      {type:'bumper', x:120, y:7750, radius:18, color:'#ff4400'},
-      {type:'bumper', x:420, y:7750, radius:18, color:'#ff4400'},
-      // JawGate at y:7900 — very fast 1.8s cycle
-      {type:'jawGate', x:270, y:7900, armLen:110, period:1.8},
-      // 2 more bumpers below gate
-      {type:'bumper', x:180, y:8050, radius:20, color:'#ff2200'},
-      {type:'bumper', x:360, y:8050, radius:20, color:'#ff2200'},
-      // Narrow finish chute — 120px wide (210 to 330)
-      {type:'floor', x:210, y:8300, w:22, h:400},
-      {type:'floor', x:330, y:8300, w:22, h:400}
+      {type:'pendulum', x:270, y:7600, length:140, initSpin:0.05},
+      {type:'bumper', x:180, y:7800, radius:16, color:'#ff4400'},
+      {type:'bumper', x:360, y:7800, radius:16, color:'#ff4400'},
+      {type:'jawGate', x:270, y:8000, armLen:110, period:1.8},
+      {type:'bumper', x:220, y:8150, radius:14, color:'#ff2200'},
+      {type:'bumper', x:320, y:8150, radius:14, color:'#ff2200'},
+      // Finish chute walls — 140px wide (200 to 340)
+      {type:'floor', x:200, y:8300, w:60, h:400},
+      {type:'floor', x:340, y:8300, w:60, h:400}
     ]
   }
 ];
@@ -1931,6 +1864,14 @@ function loop(now){
       if(spd > MAX_SPEED){
         const scale = MAX_SPEED / spd;
         Body.setVelocity(tb, {x:tb.velocity.x*scale, y:tb.velocity.y*scale});
+      }
+    }
+
+    // Gentle downward nudge for stalled balls
+    for(let i=0; i<N; i++){
+      const tb = tokenBodies[i];
+      if(tb.velocity.y < 1){
+        Body.applyForce(tb, tb.position, {x:0, y:0.005});
       }
     }
 
