@@ -172,8 +172,8 @@ const SECTIONS = [
       {type:'peg', x:310, y:580, r:14, friction:0.01, restitution:0.75},
       {type:'peg', x:390, y:580, r:14, friction:0.01, restitution:0.75},
       // Wide bouncePad exits
-      {type:'bouncePad', x:180, y:750, w:220, angle:-0.52, friction:0.08, restitution:0.30, thickness:22},
-      {type:'bouncePad', x:360, y:850, w:220, angle:0.52, friction:0.08, restitution:0.30, thickness:22}
+      {type:'bouncePad', x:180, y:750, w:180, angle:0.61, friction:0.08, restitution:0.30, thickness:22},
+      {type:'bouncePad', x:360, y:850, w:180, angle:-0.61, friction:0.08, restitution:0.30, thickness:22}
     ]
   },
   // ══ SECTION 2: Marble Run 1 — long curved ramps ══
@@ -181,18 +181,18 @@ const SECTIONS = [
     id: 'marble_run1', yStart: 1000, yEnd: 1900,
     obstacles: [
       // Long left ramp (angles ball right)
-      {type:'bouncePad', x:270, y:1050, w:320, angle:-0.52, friction:0.08, restitution:0.30, thickness:22},
+      {type:'bouncePad', x:270, y:1050, w:180, angle:0.61, friction:0.08, restitution:0.30, thickness:22},
       // Long right ramp (angles ball left)
-      {type:'bouncePad', x:270, y:1250, w:320, angle:0.52, friction:0.08, restitution:0.30, thickness:22},
+      {type:'bouncePad', x:270, y:1250, w:180, angle:-0.61, friction:0.08, restitution:0.30, thickness:22},
       // Long left ramp
-      {type:'bouncePad', x:270, y:1450, w:320, angle:-0.52, friction:0.08, restitution:0.30, thickness:22},
+      {type:'bouncePad', x:270, y:1450, w:180, angle:0.61, friction:0.08, restitution:0.30, thickness:22},
       // 3 guide pegs at y:1700
       {type:'peg', x:200, y:1700, r:14, friction:0.01, restitution:0.75},
       {type:'peg', x:270, y:1700, r:14, friction:0.01, restitution:0.75},
       {type:'peg', x:340, y:1700, r:14, friction:0.01, restitution:0.75},
       // Wide funnel exit
-      {type:'bouncePad', x:200, y:1800, w:200, angle:-0.52, friction:0.08, restitution:0.30, thickness:22},
-      {type:'bouncePad', x:340, y:1800, w:200, angle:0.52, friction:0.08, restitution:0.30, thickness:22}
+      {type:'bouncePad', x:200, y:1800, w:180, angle:0.61, friction:0.08, restitution:0.30, thickness:22},
+      {type:'bouncePad', x:340, y:1800, w:180, angle:-0.61, friction:0.08, restitution:0.30, thickness:22}
     ]
   },
   // ══ SECTION 3: Sweeper Drama — moving obstacle set piece ══
@@ -210,8 +210,8 @@ const SECTIONS = [
       {type:'peg', x:270, y:2500, r:14, friction:0.01, restitution:0.75},
       {type:'peg', x:360, y:2500, r:14, friction:0.01, restitution:0.75},
       // Exit bouncePads
-      {type:'bouncePad', x:200, y:2700, w:220, angle:-0.52, friction:0.08, restitution:0.30, thickness:22},
-      {type:'bouncePad', x:340, y:2750, w:220, angle:0.52, friction:0.08, restitution:0.30, thickness:22}
+      {type:'bouncePad', x:200, y:2700, w:180, angle:0.61, friction:0.08, restitution:0.30, thickness:22},
+      {type:'bouncePad', x:340, y:2750, w:180, angle:-0.61, friction:0.08, restitution:0.30, thickness:22}
     ]
   },
   // ══ SECTION 4: Peg Chaos — dense pachinko field ══
@@ -250,8 +250,8 @@ const SECTIONS = [
       {type:'peg', x:350, y:3500, r:14, friction:0.01, restitution:0.75},
       {type:'peg', x:430, y:3500, r:14, friction:0.01, restitution:0.75},
       // Exit bouncePads
-      {type:'bouncePad', x:200, y:3650, w:220, angle:-0.52, friction:0.08, restitution:0.30, thickness:22},
-      {type:'bouncePad', x:340, y:3750, w:220, angle:0.52, friction:0.08, restitution:0.30, thickness:22}
+      {type:'bouncePad', x:200, y:3650, w:180, angle:0.61, friction:0.08, restitution:0.30, thickness:22},
+      {type:'bouncePad', x:340, y:3750, w:180, angle:-0.61, friction:0.08, restitution:0.30, thickness:22}
     ]
   },
   // ══ SECTION 5: Pendulum Gauntlet — pendulum guards center ══
@@ -271,8 +271,8 @@ const SECTIONS = [
       {type:'peg', x:310, y:4400, r:14, friction:0.01, restitution:0.75},
       {type:'peg', x:380, y:4400, r:14, friction:0.01, restitution:0.75},
       // Exit bouncePads
-      {type:'bouncePad', x:200, y:4600, w:220, angle:-0.52, friction:0.08, restitution:0.30, thickness:22},
-      {type:'bouncePad', x:340, y:4650, w:220, angle:0.52, friction:0.08, restitution:0.30, thickness:22}
+      {type:'bouncePad', x:200, y:4600, w:180, angle:0.61, friction:0.08, restitution:0.30, thickness:22},
+      {type:'bouncePad', x:340, y:4650, w:180, angle:-0.61, friction:0.08, restitution:0.30, thickness:22}
     ]
   },
   // ══ SECTION 6: Marble Run 2 — longer S-curve rolls ══
@@ -280,19 +280,19 @@ const SECTIONS = [
     id: 'marble_run2', yStart: 4800, yEnd: 5700,
     obstacles: [
       // Long ramp left
-      {type:'bouncePad', x:270, y:4850, w:340, angle:-0.52, friction:0.08, restitution:0.30, thickness:22},
+      {type:'bouncePad', x:270, y:4850, w:180, angle:0.61, friction:0.08, restitution:0.30, thickness:22},
       // 3 guide pegs
       {type:'peg', x:200, y:5100, r:14, friction:0.01, restitution:0.75},
       {type:'peg', x:270, y:5100, r:14, friction:0.01, restitution:0.75},
       {type:'peg', x:340, y:5100, r:14, friction:0.01, restitution:0.75},
       // Long ramp right
-      {type:'bouncePad', x:270, y:5250, w:340, angle:0.52, friction:0.08, restitution:0.30, thickness:22},
+      {type:'bouncePad', x:270, y:5250, w:180, angle:-0.61, friction:0.08, restitution:0.30, thickness:22},
       // 3 guide pegs
       {type:'peg', x:200, y:5500, r:14, friction:0.01, restitution:0.75},
       {type:'peg', x:270, y:5500, r:14, friction:0.01, restitution:0.75},
       {type:'peg', x:340, y:5500, r:14, friction:0.01, restitution:0.75},
       // Long ramp left
-      {type:'bouncePad', x:270, y:5600, w:300, angle:-0.52, friction:0.08, restitution:0.30, thickness:22}
+      {type:'bouncePad', x:270, y:5600, w:180, angle:0.61, friction:0.08, restitution:0.30, thickness:22}
     ]
   },
   // ══ SECTION 7: JawGate Betrayal — gate chaos ══
@@ -313,8 +313,8 @@ const SECTIONS = [
       {type:'peg', x:270, y:6300, r:14, friction:0.01, restitution:0.75},
       {type:'peg', x:390, y:6400, r:14, friction:0.01, restitution:0.75},
       // Exit bouncePads
-      {type:'bouncePad', x:200, y:6600, w:220, angle:-0.52, friction:0.08, restitution:0.30, thickness:22},
-      {type:'bouncePad', x:340, y:6650, w:220, angle:0.52, friction:0.08, restitution:0.30, thickness:22}
+      {type:'bouncePad', x:200, y:6600, w:180, angle:0.61, friction:0.08, restitution:0.30, thickness:22},
+      {type:'bouncePad', x:340, y:6650, w:180, angle:-0.61, friction:0.08, restitution:0.30, thickness:22}
     ]
   },
   // ══ SECTION 8: Spinner Danger — spinner + dense pegs ══
@@ -335,8 +335,8 @@ const SECTIONS = [
       {type:'peg', x:310, y:7350, r:14, friction:0.01, restitution:0.75},
       {type:'peg', x:430, y:7500, r:14, friction:0.01, restitution:0.75},
       // Exit bouncePads
-      {type:'bouncePad', x:200, y:7600, w:220, angle:-0.52, friction:0.08, restitution:0.30, thickness:22},
-      {type:'bouncePad', x:340, y:7650, w:220, angle:0.52, friction:0.08, restitution:0.30, thickness:22}
+      {type:'bouncePad', x:200, y:7600, w:180, angle:0.61, friction:0.08, restitution:0.30, thickness:22},
+      {type:'bouncePad', x:340, y:7650, w:180, angle:-0.61, friction:0.08, restitution:0.30, thickness:22}
     ]
   },
   // ══ SECTION 9: Finish — pendulum + pegs + chute ══
