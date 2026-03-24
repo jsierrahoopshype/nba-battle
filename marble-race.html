@@ -142,263 +142,183 @@ const MAT_CONTROL = {restitution:0.12, friction:0.35};  // conveyors, tiltPlatfo
 const STD = {friction:MAT_REDIR.friction, restitution:MAT_REDIR.restitution, thickness:22, angle:0.611};
 
 const SECTIONS = [
-  // ══ SECTION 1: Hook — deflectors + bumper diamond + bouncePad catch ══
+  // ══ SECTION 1: Opener — bouncePad guides + scattered bumpers ══
   {
-    id: 'hook', yStart: 150, yEnd: 1050,
+    id: 'opener', yStart: 150, yEnd: 900,
     obstacles: [
-      // Left deflector at y:200
-      {type:'ramp', x:0, y:200, w:120, angle:STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
-      // Fill bumper between deflectors
-      {type:'bumper', x:270, y:275, radius:14, color:'#0066ff'},
-      // 4 bumpers in diamond below
-      {type:'bumper', x:170, y:350, radius:22, color:'#ff6600'},
-      {type:'bumper', x:370, y:350, radius:22, color:'#ff6600'},
-      // Right deflector offset +200px to prevent V-pocket
-      {type:'ramp', x:540, y:400, w:120, angle:-STD.angle, friction:STD.friction, restitution:STD.restitution, thickness:STD.thickness},
-      // Fill bumper between diamond rows
-      {type:'bumper', x:400, y:460, radius:14, color:'#0066ff'},
-      {type:'bumper', x:270, y:530, radius:26, color:'#ff4400'},
-      {type:'bumper', x:150, y:600, radius:18, color:'#0066ff'},
-      {type:'bumper', x:270, y:670, radius:22, color:'#ff6600'},
-      // Left bouncePad catch
-      {type:'bouncePad', x:0, y:770, w:180, angle:STD.angle, thickness:STD.thickness},
-      // Fill bumpers in 200px gap before right bouncePad
-      {type:'bumper', x:380, y:830, radius:14, color:'#0066ff'},
-      {type:'bumper', x:200, y:880, radius:14, color:'#0066ff'},
-      {type:'bumper', x:420, y:930, radius:14, color:'#0066ff'},
-      // Right bouncePad offset +200px to prevent V-pocket
-      {type:'bouncePad', x:540, y:970, w:180, angle:-STD.angle, thickness:STD.thickness}
+      // Left bouncePad angling balls toward center
+      {type:'bouncePad', x:80, y:200, w:300, angle:STD.angle, thickness:STD.thickness},
+      // Bumpers scattered below left pad (not at ramp exit)
+      {type:'bumper', x:400, y:350, radius:18, color:'#ff6600'},
+      // Right bouncePad offset 200px down to avoid V-pocket
+      {type:'bouncePad', x:460, y:400, w:300, angle:-STD.angle, thickness:STD.thickness},
+      // 3 more bumpers filling gaps below
+      {type:'bumper', x:150, y:520, radius:20, color:'#ff8800'},
+      {type:'bumper', x:340, y:620, radius:18, color:'#ff6600'},
+      {type:'bumper', x:260, y:750, radius:16, color:'#ff4400'},
+      {type:'bumper', x:430, y:830, radius:18, color:'#ff8800'}
     ]
   },
-  // ══ SECTION 2: Halfpipe — bouncePads + scattered bumpers ══
+  // ══ SECTION 2: Zigzag — 5 alternating bouncePads ══
   {
-    id: 'halfpipe', yStart: 900, yEnd: 1700,
+    id: 'zigzag', yStart: 950, yEnd: 1800,
     obstacles: [
-      // Left bouncePad angling right
-      {type:'bouncePad', x:0, y:950, w:320, angle:STD.angle, thickness:STD.thickness},
-      // Bumper to fill air at y:1050
-      {type:'bumper', x:400, y:1050, radius:20, color:'#ff6600'},
-      // Right bouncePad angling left
-      {type:'bouncePad', x:540, y:1150, w:320, angle:-STD.angle, thickness:STD.thickness},
-      // Fill bumpers in gap after bouncePad
-      {type:'bumper', x:270, y:1240, radius:18, color:'#0066ff'},
-      // 3 bumpers scattered y:1350-1500
-      {type:'bumper', x:160, y:1350, radius:22, color:'#ff8800'},
-      {type:'bumper', x:380, y:1400, radius:22, color:'#ff6600'},
-      {type:'bumper', x:270, y:1500, radius:24, color:'#ff4400'},
-      // Fill bumper before exit pegs
-      {type:'bumper', x:420, y:1570, radius:14, color:'#0066ff'},
-      // Exit peg pair
-      {type:'peg', x:180, y:1640, r:14, friction:0.05, restitution:0.65},
-      {type:'peg', x:360, y:1640, r:14, friction:0.05, restitution:0.65}
+      // Left pad 1
+      {type:'bouncePad', x:80, y:960, w:300, angle:STD.angle, thickness:STD.thickness},
+      // Bumper between pad 1 and 2
+      {type:'bumper', x:400, y:1050, radius:18, color:'#ff6600'},
+      // Right pad 2 (+160px)
+      {type:'bouncePad', x:460, y:1120, w:300, angle:-STD.angle, thickness:STD.thickness},
+      // Bumper between pad 2 and 3
+      {type:'bumper', x:160, y:1210, radius:18, color:'#ff8800'},
+      // Left pad 3 (+160px)
+      {type:'bouncePad', x:80, y:1280, w:300, angle:STD.angle, thickness:STD.thickness},
+      // Bumper between pad 3 and 4
+      {type:'bumper', x:420, y:1370, radius:20, color:'#ff6600'},
+      // Right pad 4 (+160px)
+      {type:'bouncePad', x:460, y:1440, w:300, angle:-STD.angle, thickness:STD.thickness},
+      // Left pad 5 (+160px)
+      {type:'bouncePad', x:80, y:1600, w:300, angle:STD.angle, thickness:STD.thickness}
     ]
   },
-  // ══ SECTION 3: Recompression — sweeper + exit ramps + bumpers ══
+  // ══ SECTION 3: Sweeper1 — bumper triangle + sweeper + bouncePad exit ══
   {
-    id: 'recompression', yStart: 1750, yEnd: 2500,
+    id: 'sweeper1', yStart: 1850, yEnd: 2700,
     obstacles: [
-      // Entry bumper to guide into sweeper
-      {type:'bumper', x:270, y:1800, radius:20, color:'#ff8800'},
-      // Sweeper at y:1900
-      {type:'sweeper', x:270, y:1900, w:180, speed:0.010},
-      // Fill bumper between sweeper and bouncePads
-      {type:'bumper', x:130, y:1975, radius:14, color:'#0066ff'},
-      // Left exit bouncePad below sweeper
-      {type:'bouncePad', x:0, y:2050, w:180, angle:STD.angle, thickness:STD.thickness},
-      // Fill bumpers in gap before right bouncePad
-      {type:'bumper', x:270, y:2110, radius:14, color:'#0066ff'},
-      {type:'bumper', x:400, y:2160, radius:14, color:'#0066ff'},
-      // Right bouncePad offset +200px to prevent V-pocket
-      {type:'bouncePad', x:540, y:2250, w:180, angle:-STD.angle, thickness:STD.thickness},
-      // Fill bumper between bouncePad and bumper row
-      {type:'bumper', x:150, y:2310, radius:14, color:'#0066ff'},
-      // 2 bumpers at y:2200
-      {type:'bumper', x:180, y:2200, radius:22, color:'#ff6600'},
-      {type:'bumper', x:360, y:2200, radius:22, color:'#ff6600'},
-      // Fill bumpers replacing seesaw
-      {type:'bumper', x:420, y:2280, radius:18, color:'#0066ff'},
-      {type:'bumper', x:200, y:2350, radius:16, color:'#ff6600'},
-      {type:'bumper', x:340, y:2350, radius:16, color:'#ff6600'},
-      // Exit peg
-      {type:'peg', x:270, y:2460, r:14, friction:0.05, restitution:0.65}
+      // Bumper triangle at y:1950
+      {type:'bumper', x:270, y:1900, radius:20, color:'#ff6600'},
+      {type:'bumper', x:140, y:2000, radius:18, color:'#ff8800'},
+      {type:'bumper', x:400, y:2000, radius:18, color:'#ff8800'},
+      // Sweeper at y:2200
+      {type:'sweeper', x:270, y:2200, w:180, speed:0.012},
+      // Bumper below sweeper
+      {type:'bumper', x:350, y:2350, radius:16, color:'#ff4400'},
+      // Left exit bouncePad
+      {type:'bouncePad', x:80, y:2500, w:280, angle:STD.angle, thickness:STD.thickness},
+      // Right exit bouncePad offset +200px
+      {type:'bouncePad', x:460, y:2700, w:280, angle:-STD.angle, thickness:STD.thickness},
+      // Bumper between exit pads
+      {type:'bumper', x:270, y:2600, radius:18, color:'#ff6600'}
     ]
   },
-  // ══ SECTION 4: Spinner Zone — spinner + surrounding bumpers + bouncePad exit ══
+  // ══ SECTION 4: Spinner1 — spinner + bumpers + bouncePad exit ══
   {
-    id: 'spinner_zone', yStart: 2550, yEnd: 3350,
+    id: 'spinner1', yStart: 2750, yEnd: 3600,
+    obstacles: [
+      // Scattered bumpers above spinner
+      {type:'bumper', x:150, y:2800, radius:18, color:'#ff6600'},
+      {type:'bumper', x:400, y:2850, radius:20, color:'#ff8800'},
+      // Spinner at center y:3000
+      {type:'spinner', x:270, y:3000, speed:0.025},
+      // Bumpers flanking spinner
+      {type:'bumper', x:100, y:3100, radius:18, color:'#ff4400'},
+      {type:'bumper', x:440, y:3150, radius:16, color:'#ff4400'},
+      // Left exit bouncePad
+      {type:'bouncePad', x:80, y:3350, w:280, angle:STD.angle, thickness:STD.thickness},
+      // Right exit bouncePad offset +200px
+      {type:'bouncePad', x:460, y:3550, w:280, angle:-STD.angle, thickness:STD.thickness},
+      // Bumper between exit pads
+      {type:'bumper', x:300, y:3450, radius:18, color:'#ff6600'}
+    ]
+  },
+  // ══ SECTION 5: JawGate1 — bouncePad entry + jawGate + bumpers + bouncePad exit ══
+  {
+    id: 'jawgate1', yStart: 3650, yEnd: 4500,
+    obstacles: [
+      // Entry bouncePads
+      {type:'bouncePad', x:80, y:3700, w:280, angle:STD.angle, thickness:STD.thickness},
+      {type:'bouncePad', x:460, y:3900, w:280, angle:-STD.angle, thickness:STD.thickness},
+      // Bumper between entry pads
+      {type:'bumper', x:350, y:3800, radius:18, color:'#ff6600'},
+      // JawGate at y:3950
+      {type:'jawGate', x:270, y:3950, armLen:100, period:2.5},
+      // 5 bumpers below gate
+      {type:'bumper', x:140, y:4050, radius:18, color:'#ff8800'},
+      {type:'bumper', x:400, y:4050, radius:18, color:'#ff8800'},
+      {type:'bumper', x:270, y:4120, radius:20, color:'#ff4400'},
+      {type:'bumper', x:160, y:4200, radius:16, color:'#ff6600'},
+      {type:'bumper', x:380, y:4200, radius:16, color:'#ff6600'},
+      // Exit bouncePads
+      {type:'bouncePad', x:80, y:4300, w:280, angle:STD.angle, thickness:STD.thickness},
+      {type:'bouncePad', x:460, y:4500, w:280, angle:-STD.angle, thickness:STD.thickness}
+    ]
+  },
+  // ══ SECTION 6: Double Sweeper — 2 counter-rotating sweepers + bumpers ══
+  {
+    id: 'double_sweeper', yStart: 4550, yEnd: 5500,
     obstacles: [
       // Entry bumper
-      {type:'bumper', x:270, y:2600, radius:18, color:'#ff8800'},
-      // Spinner at center y:2700
-      {type:'spinner', x:270, y:2750, speed:0.025},
-      // 3 bumpers around spinner
-      {type:'bumper', x:100, y:2750, radius:24, color:'#ff6600'},
-      {type:'bumper', x:440, y:2750, radius:24, color:'#ff6600'},
-      // Fill bumper between spinner flanks and center bumper
-      {type:'bumper', x:180, y:2835, radius:14, color:'#0066ff'},
-      {type:'bumper', x:270, y:2920, radius:22, color:'#ff4400'},
-      // Fill bumper between center bumper and bouncePads
-      {type:'bumper', x:380, y:3010, radius:18, color:'#0066ff'},
-      // Left bouncePad exit guide
-      {type:'bouncePad', x:0, y:3100, w:200, angle:STD.angle, thickness:STD.thickness},
-      // Fill bumpers in gap before right bouncePad
-      {type:'bumper', x:270, y:3160, radius:14, color:'#0066ff'},
-      {type:'bumper', x:400, y:3220, radius:14, color:'#0066ff'},
-      // Right bouncePad offset +200px to prevent V-pocket
-      {type:'bouncePad', x:540, y:3300, w:200, angle:-STD.angle, thickness:STD.thickness},
-      // Exit peg
-      {type:'peg', x:270, y:3380, r:14, friction:0.05, restitution:0.65}
+      {type:'bumper', x:270, y:4600, radius:20, color:'#ff6600'},
+      // Sweeper 1 at y:4700 (clockwise)
+      {type:'sweeper', x:270, y:4700, w:180, speed:0.012},
+      // 4 bumpers between sweepers
+      {type:'bumper', x:140, y:4820, radius:18, color:'#ff8800'},
+      {type:'bumper', x:400, y:4870, radius:18, color:'#ff8800'},
+      {type:'bumper', x:270, y:4950, radius:20, color:'#ff4400'},
+      {type:'bumper', x:150, y:5030, radius:16, color:'#ff6600'},
+      // Sweeper 2 at y:5100 (counter-clockwise)
+      {type:'sweeper', x:270, y:5100, w:180, speed:-0.012},
+      // Exit bumpers
+      {type:'bumper', x:400, y:5250, radius:18, color:'#ff6600'},
+      {type:'bumper', x:160, y:5350, radius:18, color:'#ff8800'}
     ]
   },
-  // ══ SECTION 5: S-Curve — 3 alternating bouncePads spaced to prevent V-pockets ══
+  // ══ SECTION 7: Pendulum — bumpers + pendulum + jawGate + bouncePad exit ══
   {
-    id: 'scurve', yStart: 3400, yEnd: 4300,
+    id: 'pendulum', yStart: 5550, yEnd: 6500,
     obstacles: [
-      // Left bouncePad at y:3450
-      {type:'bouncePad', x:0, y:3450, w:320, angle:STD.angle, thickness:STD.thickness},
-      // Fill bumpers across 450px gap to right bouncePad
-      {type:'bumper', x:420, y:3540, radius:20, color:'#ff6600'},
-      {type:'bumper', x:200, y:3620, radius:18, color:'#ff8800'},
-      {type:'bumper', x:350, y:3710, radius:14, color:'#0066ff'},
-      {type:'bumper', x:130, y:3800, radius:18, color:'#ff8800'},
-      // Right bouncePad offset +200px to prevent V-pocket with y:3450
-      {type:'bouncePad', x:540, y:3900, w:320, angle:-STD.angle, thickness:STD.thickness},
-      // Fill bumpers before third bouncePad
-      {type:'bumper', x:400, y:3980, radius:20, color:'#ff6600'},
-      {type:'bumper', x:200, y:4050, radius:18, color:'#0066ff'},
-      // Left bouncePad offset +200px to prevent V-pocket with y:3900
-      {type:'bouncePad', x:0, y:4100, w:320, angle:STD.angle, thickness:STD.thickness},
-      // Exit bumper + peg
-      {type:'bumper', x:350, y:4170, radius:14, color:'#0066ff'},
-      {type:'peg', x:270, y:4240, r:14, friction:0.05, restitution:0.65}
+      // 4 bumpers at y:5700
+      {type:'bumper', x:130, y:5650, radius:18, color:'#ff6600'},
+      {type:'bumper', x:300, y:5700, radius:20, color:'#ff8800'},
+      {type:'bumper', x:430, y:5650, radius:18, color:'#ff6600'},
+      {type:'bumper', x:270, y:5800, radius:16, color:'#ff4400'},
+      // Pendulum at y:5950 guarding center
+      {type:'pendulum', x:270, y:5950, length:160, initSpin:0.04},
+      // JawGate at y:6200 — fast 2s cycle
+      {type:'jawGate', x:270, y:6200, armLen:110, period:2},
+      // Exit bouncePads
+      {type:'bouncePad', x:80, y:6350, w:280, angle:STD.angle, thickness:STD.thickness},
+      {type:'bouncePad', x:460, y:6550, w:280, angle:-STD.angle, thickness:STD.thickness},
+      // Bumper between exit pads
+      {type:'bumper', x:350, y:6450, radius:18, color:'#ff6600'}
     ]
   },
-  // ══ SECTION 6: Gauntlet — bumpers + baitFunnel + pendulum ══
+  // ══ SECTION 8: Spinner2 — fast spinner + bumpers + bouncePad exit ══
   {
-    id: 'gauntlet', yStart: 4250, yEnd: 5200,
+    id: 'spinner2', yStart: 6550, yEnd: 7400,
     obstacles: [
-      // Entry bumpers
-      {type:'bumper', x:160, y:4300, radius:20, color:'#ff6600'},
-      {type:'bumper', x:380, y:4300, radius:20, color:'#ff6600'},
-      // Bumper pair replacing tiltPlatform
-      {type:'bumper', x:180, y:4350, radius:16, color:'#ff6600'},
-      {type:'bumper', x:360, y:4350, radius:16, color:'#ff6600'},
-      // Fill bumpers in gap between tilt and baitFunnel
-      {type:'bumper', x:400, y:4440, radius:14, color:'#0066ff'},
-      {type:'bumper', x:150, y:4520, radius:18, color:'#0066ff'},
-      // Fill bumpers to close 200px gap
-      {type:'bumper', x:350, y:4590, radius:14, color:'#0066ff'},
-      {type:'bumper', x:200, y:4650, radius:14, color:'#0066ff'},
-      {type:'bumper', x:400, y:4710, radius:14, color:'#0066ff'},
-      {type:'bumper', x:120, y:4720, radius:18, color:'#ff8800'},
-      // Fill bumper between bumper and baitFunnel
-      {type:'bumper', x:380, y:4785, radius:14, color:'#0066ff'},
-      // Bait funnel — tempting center, punishing width
-      {type:'baitFunnel', x:270, y:4850, w:400},
-      // Fill bumper in gap between baitFunnel and pendulum
-      {type:'bumper', x:150, y:4950, radius:14, color:'#0066ff'},
-      // Pendulum guarding center exit
-      {type:'pendulum', x:270, y:5050, length:120, initSpin:0.03},
-      // Exit peg
-      {type:'peg', x:270, y:5160, r:14, friction:0.05, restitution:0.65}
+      // Fast spinner at y:6700
+      {type:'spinner', x:270, y:6700, speed:0.035},
+      // 5 bumpers scattered below
+      {type:'bumper', x:120, y:6850, radius:18, color:'#ff8800'},
+      {type:'bumper', x:420, y:6850, radius:18, color:'#ff8800'},
+      {type:'bumper', x:270, y:6950, radius:20, color:'#ff4400'},
+      {type:'bumper', x:150, y:7060, radius:16, color:'#ff6600'},
+      {type:'bumper', x:400, y:7060, radius:16, color:'#ff6600'},
+      // Exit bouncePads at y:7200
+      {type:'bouncePad', x:80, y:7200, w:280, angle:STD.angle, thickness:STD.thickness},
+      {type:'bouncePad', x:460, y:7400, w:280, angle:-STD.angle, thickness:STD.thickness},
+      // Bumper between exit pads
+      {type:'bumper', x:300, y:7300, radius:18, color:'#ff6600'}
     ]
   },
-  // ══ SECTION 7: Comeback — jawGate gamble + split lanes ══
+  // ══ SECTION 9: Finish — pendulum + jawGate + bumpers + narrow chute ══
   {
-    id: 'comeback', yStart: 5250, yEnd: 6200,
+    id: 'finish', yStart: 7450, yEnd: 8800,
     obstacles: [
-      // Entry bumpers
-      {type:'bumper', x:160, y:5300, radius:20, color:'#ff6600'},
-      {type:'bumper', x:380, y:5300, radius:20, color:'#ff6600'},
-      // Fill bumper between entry and jawGate
-      {type:'bumper', x:270, y:5375, radius:14, color:'#0066ff'},
-      // JawGate at y:5400 — dangerous fast route through center
-      {type:'jawGate', x:270, y:5450, armLen:100, period:3},
-      // Left lane: 3 bumpers (slower but safe)
-      {type:'bumper', x:100, y:5550, radius:22, color:'#ff8800'},
-      {type:'bumper', x:80, y:5700, radius:24, color:'#ff6600'},
-      {type:'bumper', x:110, y:5850, radius:22, color:'#ff4400'},
-      // Right lane: cleaner (faster but jawGate risk)
-      {type:'peg', x:440, y:5600, r:14, friction:0.05, restitution:0.65},
-      {type:'peg', x:460, y:5750, r:14, friction:0.05, restitution:0.65},
-      // Fill bumper before recompression
-      {type:'bumper', x:300, y:5925, radius:18, color:'#0066ff'},
-      // Left recompression bouncePad
-      {type:'bouncePad', x:0, y:6000, w:200, angle:STD.angle, thickness:STD.thickness},
-      // Fill bumpers in gap before right bouncePad
-      {type:'bumper', x:270, y:6060, radius:14, color:'#0066ff'},
-      {type:'bumper', x:400, y:6120, radius:14, color:'#0066ff'},
-      // Right bouncePad offset +200px to prevent V-pocket
-      {type:'bouncePad', x:540, y:6200, w:200, angle:-STD.angle, thickness:STD.thickness},
-      // Fill bumper between bouncePad and exit
-      {type:'bumper', x:150, y:6260, radius:14, color:'#0066ff'},
-      // Exit peg
-      {type:'peg', x:270, y:6150, r:14, friction:0.05, restitution:0.65}
-    ]
-  },
-  // ══ SECTION 8: Danger Zone — jawGate + bumpers + baitFunnel + aggressive bumpers ══
-  {
-    id: 'danger', yStart: 6150, yEnd: 7200,
-    obstacles: [
-      // Left entry bouncePad
-      {type:'bouncePad', x:0, y:6200, w:200, angle:STD.angle, thickness:STD.thickness},
-      // Fill bumpers in gap before right bouncePad
-      {type:'bumper', x:270, y:6270, radius:14, color:'#0066ff'},
-      {type:'bumper', x:150, y:6340, radius:14, color:'#0066ff'},
-      // Right bouncePad offset +200px to prevent V-pocket
-      {type:'bouncePad', x:540, y:6400, w:200, angle:-STD.angle, thickness:STD.thickness},
-      // JawGate at y:6500
-      {type:'jawGate', x:270, y:6500, armLen:110, period:3},
-      // Bumper below jaw
-      {type:'bumper', x:270, y:6600, radius:22, color:'#ff4400'},
-      // Bumper pair replacing tiltPlatform
-      {type:'bumper', x:180, y:6700, radius:16, color:'#ff6600'},
-      {type:'bumper', x:360, y:6700, radius:16, color:'#ff6600'},
-      // Fill bumpers in gap between tilt and baitFunnel
-      {type:'bumper', x:120, y:6790, radius:14, color:'#0066ff'},
-      {type:'bumper', x:400, y:6860, radius:18, color:'#0066ff'},
-      // Bait funnel at y:6940
-      {type:'baitFunnel', x:270, y:6940, w:400},
-      // Fill bumper between baitFunnel and aggressive bumpers
-      {type:'bumper', x:270, y:6990, radius:14, color:'#0066ff'},
-      // 3 aggressive bumpers at y:7100
-      {type:'bumper', x:140, y:7080, radius:24, color:'#ff2200'},
-      {type:'bumper', x:270, y:7100, radius:26, color:'#ff0000'},
-      {type:'bumper', x:400, y:7080, radius:24, color:'#ff2200'}
-    ]
-  },
-  // ══ SECTION 9: Final Gauntlet — conveyor + jawGate + heavy pendulum + narrow chute ══
-  {
-    id: 'finish', yStart: 7250, yEnd: 8800,
-    obstacles: [
-      // Left entry bouncePad
-      {type:'bouncePad', x:0, y:7300, w:200, angle:STD.angle, thickness:STD.thickness},
-      // Fill bumpers in 200px gap before right bouncePad
-      {type:'bumper', x:350, y:7360, radius:14, color:'#0066ff'},
-      {type:'bumper', x:200, y:7420, radius:14, color:'#0066ff'},
-      {type:'bumper', x:400, y:7460, radius:14, color:'#0066ff'},
-      // Right bouncePad offset +200px to prevent V-pocket
-      {type:'bouncePad', x:540, y:7500, w:200, angle:-STD.angle, thickness:STD.thickness},
-      {type:'bumper', x:420, y:7560, radius:20, color:'#ff4400'},
-      // Fill bumper before jawGate
-      {type:'bumper', x:150, y:7620, radius:14, color:'#0066ff'},
-      // JawGate at y:7650 — fast 2s cycle
-      {type:'jawGate', x:270, y:7650, armLen:110, period:2},
-      // Bumper below jaw
-      {type:'bumper', x:270, y:7780, radius:22, color:'#ff2200'},
-      // Fill bumper between jaw bumper and pendulum
-      {type:'bumper', x:420, y:7840, radius:14, color:'#0066ff'},
-      // Heavy pendulum at y:7900 — wide swing
-      {type:'pendulum', x:270, y:7900, length:140, initSpin:0.05},
-      // Bumpers flanking pendulum
-      {type:'bumper', x:100, y:7980, radius:20, color:'#ff4400'},
-      {type:'bumper', x:440, y:7980, radius:20, color:'#ff4400'},
-      // Peg pair guiding into narrow chute
-      {type:'peg', x:200, y:8100, r:14, friction:0.05, restitution:0.65},
-      {type:'peg', x:340, y:8100, r:14, friction:0.05, restitution:0.65},
+      // Pendulum at y:7600
+      {type:'pendulum', x:270, y:7600, length:160, initSpin:0.05},
+      // Bumpers flanking pendulum exit
+      {type:'bumper', x:120, y:7750, radius:18, color:'#ff4400'},
+      {type:'bumper', x:420, y:7750, radius:18, color:'#ff4400'},
+      // JawGate at y:7900 — very fast 1.8s cycle
+      {type:'jawGate', x:270, y:7900, armLen:110, period:1.8},
+      // 2 more bumpers below gate
+      {type:'bumper', x:180, y:8050, radius:20, color:'#ff2200'},
+      {type:'bumper', x:360, y:8050, radius:20, color:'#ff2200'},
       // Narrow finish chute — 120px wide (210 to 330)
-      {type:'floor', x:210, y:8200, w:22, h:400},
-      {type:'floor', x:330, y:8200, w:22, h:400}
+      {type:'floor', x:210, y:8300, w:22, h:400},
+      {type:'floor', x:330, y:8300, w:22, h:400}
     ]
   }
 ];
@@ -1878,20 +1798,25 @@ function loop(now){
       }
     });
 
-    // JawGate animation — close/open on timer
+    // JawGate animation — close/open on timer, disable collision when open
     jawGateBodies.forEach(jaw => {
       const t = performance.now()/1000;
       const cycle = (t % jaw._jawPeriod) / jaw._jawPeriod; // 0→1
       // 0-0.4: closed (blocking), 0.4-0.6: opening, 0.6-1.0: open
       let angle;
+      let isOpen = false;
       if(cycle < 0.4){
         angle = jaw._jawSide * 0.5; // closed angle
       } else if(cycle < 0.6){
         const openT = (cycle - 0.4) / 0.2;
         angle = jaw._jawSide * 0.5 * (1 - openT);
+        isOpen = true; // opening phase — disable collision
       } else {
-        angle = 0; // open
+        angle = 0; // fully open
+        isOpen = true;
       }
+      // Toggle collision: mask=0 when open so balls pass through cleanly
+      jaw.collisionFilter.mask = isOpen ? 0 : 0xFFFFFFFF;
       Body.setAngle(jaw, angle);
       // Reposition to pivot from base edge
       const pivotX = jaw._jawBaseX;
@@ -2009,14 +1934,6 @@ function loop(now){
       }
     }
 
-    // Strong downward nudge for slow balls — prevents stalling
-    for(let i=0; i<N; i++){
-      const tb = tokenBodies[i];
-      if(tb.velocity.y < 3){
-        Body.applyForce(tb, tb.position, {x:0, y:0.012});
-      }
-    }
-
     // Conveyor strip physics removed — conveyors fully disabled
 
     // Win% bias force
@@ -2126,44 +2043,36 @@ function loop(now){
       }
     }
 
-    // Camera — weighted focus, never follows trailers upward
-    let targetCam;
-    if(phase === 'finishing'){
-      // Follow last unfinished ball, or hold at finish
-      let bestUnfinished = -Infinity;
-      let hasUnfinished = false;
-      for(let i=0; i<N; i++){
-        if(!finishedSet.has(i)){
-          const py = tokenBodies[i].position.y;
-          if(py > bestUnfinished) bestUnfinished = py;
-          hasUnfinished = true;
-        }
-      }
-      if(!hasUnfinished){
-        targetCam = Math.max(0, FINISH_Y - 200);
-      } else {
-        targetCam = Math.max(0, bestUnfinished - H * 0.35 + 200);
-      }
-    } else if(N <= 2){
-      // 2-ball mode: weighted 70% leader + 30% trailer
-      const ys = tokenBodies.map(b => b.position.y);
-      const leaderY = Math.max(...ys);
-      const trailerY = Math.min(...ys);
-      const focusY = leaderY * 0.70 + trailerY * 0.30;
-      targetCam = Math.max(0, focusY - H * 0.35 + 200);
+    // Camera — follow the leader, not the trailer
+    const sorted = tokenBodies
+      .map((b,i) => ({b, i, y: b.position.y}))
+      .filter(t => !finishedSet.has(t.i))
+      .sort((a,z) => z.y - a.y); // highest Y = furthest down = leader
+    let focusY;
+    const n = CFG.playerCount;
+    if(n <= 2) {
+      // 70% leader, 30% trailer
+      const leader = sorted[0]?.b.position.y ?? FINISH_Y/2;
+      const trailer = sorted[sorted.length-1]?.b.position.y ?? leader;
+      focusY = leader * 0.70 + trailer * 0.30;
+    } else if(n <= 4) {
+      // weighted center of top 2
+      const top = sorted.slice(0,2);
+      focusY = top.reduce((s,t)=>s+t.b.position.y,0)/top.length;
     } else {
-      // 3+ ball mode: weighted center of front 50% of balls
-      const ys = tokenBodies.map(b => b.position.y).sort((a, b) => b - a);
-      const frontCount = Math.max(1, Math.ceil(N / 2));
-      let sumY = 0;
-      for(let i = 0; i < frontCount; i++) sumY += ys[i];
-      const focusY = sumY / frontCount;
-      targetCam = Math.max(0, focusY - H * 0.35 + 200);
+      // weighted center of top 3
+      const top = sorted.slice(0,3);
+      focusY = top.reduce((s,t)=>s+t.b.position.y,0)/top.length;
     }
-
-    // Asymmetric lerp: fast downward, slow upward (don't chase trailers up)
-    const lerpSpeed = targetCam >= camY ? 0.08 : 0.08 * 0.20;
-    camY += (targetCam - camY) * lerpSpeed;
+    // Keep leader in upper 35% of viewport + 180px lookahead
+    const targetCamY = focusY - H * 0.35 + 180;
+    // Asymmetric lerp: fast down, slow up
+    if(targetCamY > camY) {
+      camY += (targetCamY - camY) * 0.09;
+    } else {
+      camY += (targetCamY - camY) * 0.018;
+    }
+    camY = Math.max(0, camY);
   }
 
   if(phase==='results' && now >= autoRestartT){
