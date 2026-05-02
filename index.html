@@ -361,7 +361,7 @@ const WEAPONS = [
 ];
 
 // ═══════════════════════════ TEAM DB ═══════════════════════════
-const NBA_LOGO_CDN = 'https://cdn.nba.com/logos/nba/';
+const NBA_LOGO_CDN = 'https://nba-battle.thejorgesierra.workers.dev/team-logo/';
 const TEAM_DB = [
   {teamId:1610612737, abbr:'ATL', name:'Atlanta Hawks',          color:'#E03A3E', bg:'#C1D32F'},
   {teamId:1610612738, abbr:'BOS', name:'Boston Celtics',         color:'#007A33', bg:'#BA9653'},
@@ -573,7 +573,7 @@ function loadImages(roster, cb){
     if(IMGS[p.id]){ pending--; if(pending===0) cb(); return; }
     // Team entry — load logo from NBA CDN (cross-origin)
     if(p._team && p._teamId){
-      const logoUrl = NBA_LOGO_CDN + p._teamId + '/global/L/logo.svg';
+      const logoUrl = NBA_LOGO_CDN + p._teamId;
       const img = new Image();
       img.crossOrigin = 'anonymous';
       img.onload = ()=>{ IMGS[p.id]=img; console.log('Loaded logo for '+p.name+' (CORS OK)'); pending--; if(pending===0) cb(); };
@@ -2064,7 +2064,7 @@ function buildTeamsTab(){
 
   // Show current team entries in roster
   DRAFT.roster.forEach((p,i)=>{
-    const logoUrl = p._team && p._teamId ? NBA_LOGO_CDN+p._teamId+'/global/L/logo.svg' : '';
+    const logoUrl = p._team && p._teamId ? NBA_LOGO_CDN+p._teamId : '';
     html+=`<div class="pcard">
       <button class="del" onclick="removeP(${i});switchTab('teams')">✕</button>
       <div class="prow">
@@ -2109,7 +2109,7 @@ function buildTeamList(q){
   return list.map(t=>`
     <div class="ppi" onclick="addTeam(${t.teamId})">
       <div class="ppi-face" style="background:${t.bg};display:flex;align-items:center;justify-content:center;">
-        <img src="${NBA_LOGO_CDN}${t.teamId}/global/L/logo.svg" style="width:80%;height:80%;object-fit:contain;" onerror="this.outerHTML='<span style=\\'font-size:11px;font-weight:700;color:${t.color}\\'>${t.abbr}</span>'">
+        <img src="${NBA_LOGO_CDN}${t.teamId}" style="width:80%;height:80%;object-fit:contain;" onerror="this.outerHTML='<span style=\\'font-size:11px;font-weight:700;color:${t.color}\\'>${t.abbr}</span>'">
       </div>
       <div><div class="ppi-name">${t.name}</div><div class="ppi-team">${t.abbr}</div></div>
     </div>`).join('');
