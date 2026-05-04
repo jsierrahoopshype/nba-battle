@@ -21,6 +21,26 @@ export default {
       }
     }
 
+    // Proxy NBA team logos with CORS headers
+    if (url.pathname.startsWith('/team-logo/')) {
+      const teamId = url.pathname.replace('/team-logo/', '');
+      const logoUrl = `https://cdn.nba.com/logos/nba/${teamId}/global/L/logo.svg`;
+
+      try {
+        const response = await fetch(logoUrl);
+        const headers = new Headers(response.headers);
+        headers.set('Access-Control-Allow-Origin', '*');
+        headers.set('Content-Type', 'image/svg+xml');
+        headers.set('Cache-Control', 'public, max-age=86400');
+        return new Response(response.body, {
+          status: response.status,
+          headers
+        });
+      } catch (e) {
+        return new Response('Logo not found', { status: 404 });
+      }
+    }
+
     // Proxy headshot images with CORS headers (legacy route)
     if (url.pathname.startsWith('/headshot/')) {
       const slug = url.pathname.replace('/headshot/', '');
